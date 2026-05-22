@@ -811,7 +811,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Subcategoria</label>
-                <input class="form-input" id="filtro-subcat" placeholder="Ex: Energia, Aluguel...">
+                <select class="form-select" id="filtro-subcat"><option value="">Todas as subcategorias</option></select>
               </div>
               <div class="form-group">
                 <label class="form-label">Tipo</label>
@@ -866,7 +866,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
             <div class="cfg-row"><div><div class="cfg-label">Turno Duplo (8h)</div><div class="cfg-sub">equivalente a 2 turnos</div></div><input class="cfg-input" id="preco-turno8h" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Hora Avulsa</div></div><input class="cfg-input" id="preco-avulsa" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Pacote 10h / mês</div></div><input class="cfg-input" id="preco-10h" placeholder="R$ 0,00"></div>
-            <div class="cfg-row"><div><div class="cfg-label">Pacote 20h / mês</div></div><input class="cfg-input" id="preco-20h" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Desconto padrão (%)</div><div class="cfg-sub">Aplicado automaticamente se configurado</div></div><input class="cfg-input" id="preco-desconto" placeholder="0" type="number" min="0" max="100" style="width:80px;text-align:center"></div>
           </div>
           <div class="card">
@@ -902,6 +901,17 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
             <div class="cfg-title">Conta</div>
             <div class="cfg-row"><div class="cfg-label">E-mail da administradora</div><div style="font-size:.82rem;color:var(--text-lighter)" id="cfg-email">—</div></div>
             <div class="cfg-row"><div><div class="cfg-label">Alterar senha</div></div><button class="btn btn-secondary btn-sm" onclick="openModal('alterar-senha')">Alterar</button></div>
+          </div>
+          <!-- Subcategorias -->
+          <div class="card" style="grid-column:1/-1">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
+              <div class="cfg-title" style="margin-bottom:0">Subcategorias</div>
+              <button class="btn btn-primary btn-sm" onclick="openModal('nova-subcat')">+ Nova Subcategoria</button>
+            </div>
+            <div style="font-size:.75rem;color:var(--text-lighter);margin-bottom:.875rem">Cadastre as subcategorias para usar nos lançamentos de receitas e despesas.</div>
+            <div id="subcat-list" style="display:flex;gap:.5rem;flex-wrap:wrap">
+              <div style="font-size:.8rem;color:var(--text-lighter)">Carregando subcategorias...</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1074,7 +1084,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       <div class="form-group"><label class="form-label">Categoria</label><select class="form-select" id="despesa-cat"><option>Fixo</option><option>Variável</option><option>Extra</option></select></div>
       <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-input" id="despesa-valor" placeholder="0,00"></div>
     </div>
-    <div class="form-group"><label class="form-label">Subcategoria</label><input class="form-input" id="despesa-subcat" placeholder="Ex: Energia, Aluguel, Internet..."></div>
+    <div class="form-group"><label class="form-label">Subcategoria</label><select class="form-select" id="despesa-subcat"><option value="">Selecionar...</option></select></div>
     <div class="form-group"><label class="form-label">Vencimento</label><input class="form-input" type="date" id="despesa-venc"></div>
     <div class="form-group">
       <label class="form-label">Parcelado?</label>
@@ -1112,7 +1122,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       </div>
       <div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="receita-tipo"><option>Turno Fixo</option><option>Pacote de Horas</option><option>Hora Avulsa</option></select></div>
     </div>
-    <div class="form-group"><label class="form-label">Subcategoria</label><input class="form-input" id="receita-subcat" placeholder="Ex: Locação, Pacote, Avulso..."></div>
+    <div class="form-group"><label class="form-label">Subcategoria</label><select class="form-select" id="receita-subcat"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-input" id="receita-valor" placeholder="0,00" oninput="calcDescontoReceita()"></div>
       <div class="form-group"><label class="form-label">Desconto (%)</label><input class="form-input" id="receita-desconto" placeholder="0" type="number" min="0" max="100" oninput="calcDescontoReceita()"></div>
@@ -1124,6 +1134,26 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('nova-receita')">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarReceita()">Lançar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nova Subcategoria -->
+<div class="modal-overlay" id="modal-nova-subcat" onclick="closeModalBg(event,'nova-subcat')">
+  <div class="modal modal-sm">
+    <div class="modal-title">Nova Subcategoria</div>
+    <div class="form-group"><label class="form-label">Nome da Subcategoria</label><input class="form-input" id="subcat-nome" placeholder="Ex: Energia, Aluguel, Locação..."></div>
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <select class="form-select" id="subcat-tipo">
+        <option value="ambos">Receitas e Despesas</option>
+        <option value="receita">Apenas Receitas</option>
+        <option value="despesa">Apenas Despesas</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('nova-subcat')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarSubcat()">Salvar</button>
     </div>
   </div>
 </div>
@@ -1230,6 +1260,8 @@ async function initApp() {
   initAgenda();
   loadPlanos();
   initRelatorios();
+  loadSubcats();
+  renovarHorasMensais();
 }
 
 // ══ CONFIG ══
@@ -1689,28 +1721,34 @@ async function toggleStatusDesp(el,id) {
 }
 
 async function salvarDespesa() {
-  const id=document.getElementById('despesa-edit-id').value;
-  const data={
-    descricao:document.getElementById('despesa-desc').value,
-    categoria:document.getElementById('despesa-cat').value,
-    valor:document.getElementById('despesa-valor').value,
-    vencimento:document.getElementById('despesa-venc').value,
-    status:'Pendente',
-    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  const id = document.getElementById('despesa-edit-id').value;
+  const numParcelas = parseInt(document.getElementById('despesa-parcelas').value) || 1;
+  const data = {
+    descricao: document.getElementById('despesa-desc').value,
+    categoria: document.getElementById('despesa-cat').value,
+    subcategoria: document.getElementById('despesa-subcat').value,
+    valor: document.getElementById('despesa-valor').value,
+    vencimento: document.getElementById('despesa-venc').value,
+    status: 'Pendente',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   if(!data.descricao){showToast('Descrição é obrigatória.','error');return;}
   try {
-    if(id){
-      data.historico=firebase.firestore.FieldValue.arrayUnion({editadoEm:new Date().toISOString(),por:auth.currentUser?.email||'admin'});
+    if(id) {
+      data.historico = firebase.firestore.FieldValue.arrayUnion({editadoEm:new Date().toISOString(),por:auth.currentUser?.email||'admin'});
       await db.collection('despesas').doc(id).update(data);
+      showToast('Despesa atualizada!','success');
+    } else if(numParcelas > 1) {
+      await salvarDespesaComParcelas(data, numParcelas);
+      showToast(`${numParcelas} parcelas lançadas com vencimentos automáticos!`,'success');
     } else {
-      data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
       await db.collection('despesas').add(data);
+      showToast('Despesa lançada!','success');
     }
     closeModal('nova-despesa');
-    showToast(id?'Despesa atualizada!':'Despesa lançada!','success');
     loadFinanceiro();
-  } catch(e){showToast('Erro ao salvar despesa.','error');}
+  } catch(e) { showToast('Erro ao salvar despesa.','error'); console.error(e); }
 }
 
 function editarDespesa(id) {
@@ -2132,11 +2170,129 @@ async function salvarReceita() {
   } catch(e) { showToast('Erro ao lançar receita.','error'); console.error(e); }
 }
 
-// ── RELATÓRIO FILTRADO ──
+// ── SUBCATEGORIAS ──
+let subcatsCache = [];
+
+async function loadSubcats() {
+  try {
+    const snap = await db.collection('subcategorias').orderBy('nome').get();
+    subcatsCache = snap.docs.map(d => ({id:d.id,...d.data()}));
+    renderSubcatList();
+    updateSubcatSelects();
+  } catch(e) { console.error(e); }
+}
+
+function renderSubcatList() {
+  const list = document.getElementById('subcat-list');
+  if(!list) return;
+  if(subcatsCache.length === 0) {
+    list.innerHTML = '<div style="font-size:.8rem;color:var(--text-lighter)">Nenhuma subcategoria cadastrada ainda.</div>';
+    return;
+  }
+  list.innerHTML = subcatsCache.map(s => `
+    <div style="display:flex;align-items:center;gap:4px;background:#f3f4f6;border:1px solid var(--border);border-radius:6px;padding:4px 10px">
+      <span style="font-size:.78rem;font-weight:500">${s.nome}</span>
+      <span style="font-size:.65rem;color:var(--text-lighter)">${s.tipo==='receita'?'R':s.tipo==='despesa'?'D':'R/D'}</span>
+      <button onclick="excluirSubcat('${s.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-lighter);font-size:.8rem;padding:0 2px;line-height:1">×</button>
+    </div>`).join('');
+}
+
+function updateSubcatSelects() {
+  const desp = document.getElementById('despesa-subcat');
+  const rec = document.getElementById('receita-subcat');
+  const filtro = document.getElementById('filtro-subcat');
+  const despOpts = '<option value="">Selecionar...</option>' +
+    subcatsCache.filter(s=>s.tipo==='ambos'||s.tipo==='despesa').map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+  const recOpts = '<option value="">Selecionar...</option>' +
+    subcatsCache.filter(s=>s.tipo==='ambos'||s.tipo==='receita').map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+  const filtroOpts = '<option value="">Todas as subcategorias</option>' +
+    subcatsCache.map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+  if(desp) desp.innerHTML = despOpts;
+  if(rec) rec.innerHTML = recOpts;
+  if(filtro) filtro.innerHTML = filtroOpts;
+}
+
+async function salvarSubcat() {
+  const nome = document.getElementById('subcat-nome').value.trim();
+  const tipo = document.getElementById('subcat-tipo').value;
+  if(!nome) { showToast('Digite o nome da subcategoria.','error'); return; }
+  try {
+    await db.collection('subcategorias').add({nome, tipo, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+    document.getElementById('subcat-nome').value = '';
+    closeModal('nova-subcat');
+    showToast('Subcategoria salva!','success');
+    loadSubcats();
+  } catch(e) { showToast('Erro ao salvar subcategoria.','error'); }
+}
+
+async function excluirSubcat(id) {
+  if(!confirm('Excluir esta subcategoria?')) return;
+  try {
+    await db.collection('subcategorias').doc(id).delete();
+    showToast('Subcategoria removida.','success');
+    loadSubcats();
+  } catch(e) { showToast('Erro ao excluir.','error'); }
+}
+
+// ── PACOTE DE HORAS — FLUXO ──
+async function descontarHorasPacote(profId, horas) {
+  if(!profId || !horas) return;
+  try {
+    const ref = db.collection('profissionais').doc(profId);
+    const doc = await ref.get();
+    if(doc.exists) {
+      const atual = doc.data().horasUsadas || 0;
+      await ref.update({horasUsadas: atual + horas, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+    }
+  } catch(e) { console.error('Erro ao descontar horas:', e); }
+}
+
+async function renovarHorasMensais() {
+  // Chamado no início de cada mês — reseta horasUsadas para 0
+  const hoje = new Date();
+  if(hoje.getDate() !== 1) return; // só roda no dia 1
+  try {
+    const snap = await db.collection('profissionais')
+      .where('vinculo','==','Pacote de Horas')
+      .where('status','==','Ativo').get();
+    const batch = db.batch();
+    snap.docs.forEach(d => batch.update(d.ref, {horasUsadas: 0}));
+    await batch.commit();
+    console.log('Horas mensais renovadas.');
+  } catch(e) { console.error(e); }
+}
+
+// ── DESPESAS PARCELADAS — VENCIMENTOS CORRETOS ──
+async function salvarDespesaComParcelas(data, numParcelas) {
+  const batch = db.batch();
+  const baseDate = new Date(data.vencimento + 'T12:00:00');
+  const valorParcela = (parseFloat(data.valor.replace(',','.')) / numParcelas).toFixed(2);
+
+  for(let i = 0; i < numParcelas; i++) {
+    const vencParcela = new Date(baseDate);
+    vencParcela.setMonth(vencParcela.getMonth() + i);
+    const vencStr = vencParcela.toISOString().split('T')[0];
+    const ref = db.collection('despesas').doc();
+    batch.set(ref, {
+      ...data,
+      valor: valorParcela,
+      vencimento: vencStr,
+      status: 'Pendente',
+      parcela: `${i+1}/${numParcelas}`,
+      parcelado: true,
+      parcelaNum: i+1,
+      totalParcelas: numParcelas,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+  await batch.commit();
+}
+
+// ── FILTRO SUBCAT (update) ──
 async function gerarRelatFiltrado() {
   const profFiltro = document.getElementById('filtro-prof').value;
   const catFiltro = document.getElementById('filtro-cat').value;
-  const subcatFiltro = document.getElementById('filtro-subcat').value.toLowerCase();
+  const subcatFiltro = document.getElementById('filtro-subcat').value;
   const tipoFiltro = document.getElementById('filtro-tipo').value;
   const dataInicio = document.getElementById('filtro-data-inicio').value;
   const dataFim = document.getElementById('filtro-data-fim').value;
@@ -2155,7 +2311,7 @@ async function gerarRelatFiltrado() {
     let todos = [...receitas,...despesas];
     if(profFiltro) todos = todos.filter(x=>x.profId===profFiltro||x.profissional===profFiltro);
     if(catFiltro) todos = todos.filter(x=>x.categoria===catFiltro);
-    if(subcatFiltro) todos = todos.filter(x=>(x.subcategoria||'').toLowerCase().includes(subcatFiltro));
+    if(subcatFiltro) todos = todos.filter(x=>x.subcategoria===subcatFiltro);
     if(dataInicio) todos = todos.filter(x=>x.vencimento>=dataInicio);
     if(dataFim) todos = todos.filter(x=>x.vencimento<=dataFim);
 
@@ -2172,7 +2328,7 @@ async function gerarRelatFiltrado() {
     tabela.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span></div>` +
       (todos.length === 0 ? '<div style="padding:1rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum resultado encontrado.</div>' :
       todos.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
-        <span style="font-weight:500">${x.descricao||x.profissional||'—'} <span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span></span>
+        <span style="font-weight:500">${x.descricao||x.profissional||'—'} <span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span>${x.parcela?` <span class="badge badge-neutral" style="font-size:.6rem">${x.parcela}</span>`:''}</span>
         <span>${x.categoria||'—'}</span>
         <span>${x.subcategoria||'—'}</span>
         <span>${x.vencimento?formatDate(x.vencimento):'—'}</span>
