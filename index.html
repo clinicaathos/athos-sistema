@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#a07850">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Áthos">
+<link rel="manifest" href="manifest.json">
 <title>Áthos — Sistema de Gestão</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -384,10 +390,43 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   .form-row{grid-template-columns:1fr;}
   .week-days{display:none;}
   .content{padding:1rem;}
-  .agenda-controls{padding:.75rem 1rem;}
+  .agenda-controls{padding:.75rem 1rem;flex-direction:column;align-items:flex-start;}
   .prof-grid{grid-template-columns:1fr;}
   .indicadores-grid{grid-template-columns:1fr 1fr;}
   .stats-grid{grid-template-columns:1fr 1fr;}
+  /* Agenda mobile */
+  .agenda-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .ag-cols{min-width:320px;grid-template-columns:70px 1fr 1fr;}
+  .turno-bar-header{min-width:320px;grid-template-columns:70px 1fr 1fr;}
+  .hora-row{min-width:320px;grid-template-columns:70px 1fr 1fr;}
+  .hora-label{padding:0 .5rem;font-size:.65rem;}
+  .hora-cell{min-height:44px;padding:2px;}
+  .bb-name{font-size:.7rem;}
+  .bb-spec{font-size:.6rem;}
+  .bb-type{font-size:.56rem;}
+  /* Week view mobile */
+  .week-grid{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .wg-head{min-width:500px;grid-template-columns:60px repeat(6,1fr);}
+  .wg-turno-label{min-width:500px;grid-template-columns:60px repeat(6,1fr);}
+  .wg-row{min-width:500px;grid-template-columns:60px repeat(6,1fr);}
+  /* Modal mobile */
+  .modal{width:100%;max-width:100%;border-radius:14px 14px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:85vh;margin:0;padding:1.25rem 1rem;}
+  .modal-overlay{align-items:flex-end;padding:0;}
+  .modal-sm{width:100%;max-width:100%;}
+  .modal-lg{width:100%;max-width:100%;}
+  /* Fin tabs mobile */
+  .fin-tabs{overflow-x:auto;flex-wrap:nowrap;}
+  .fin-tab{white-space:nowrap;font-size:.72rem;padding:.5rem .75rem;}
+  /* Sala occ mobile */
+  .sala-occ{flex-direction:column;}
+  .sala-occ-card{min-width:unset;}
+  /* View switcher mobile */
+  .view-switcher{flex-shrink:0;}
+  .view-btn{padding:5px 10px;font-size:.72rem;}
+  /* Data table mobile */
+  .dt-head,.dt-row{font-size:.75rem;padding:.6rem .75rem;}
+  /* Agenda controls mobile */
+  .agenda-controls>div:last-child{width:100%;justify-content:space-between;}
 }
 @media(max-width:480px){
   .stats-grid{grid-template-columns:1fr;}
@@ -639,6 +678,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
         <div class="sec-header">
           <span class="sec-title" id="fin-mes-label">Financeiro — Maio 2025</span>
           <div style="display:flex;gap:.5rem">
+            <button class="btn btn-secondary" onclick="openModal('nova-receita')">+ Receita</button>
             <button class="btn btn-secondary" onclick="openModal('nova-despesa')">+ Despesa</button>
             <button class="btn btn-primary" onclick="exportarFinanceiro()">↓ Exportar</button>
           </div>
@@ -689,6 +729,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
           <div class="relat-tab active" onclick="showRelatTab('mensal',this)">Mensal</div>
           <div class="relat-tab" onclick="showRelatTab('semestral',this)">Semestral</div>
           <div class="relat-tab" onclick="showRelatTab('anual',this)">Anual</div>
+          <div class="relat-tab" onclick="showRelatTab('filtrado',this)">🔍 Filtrado</div>
         </div>
 
         <!-- MENSAL -->
@@ -747,6 +788,64 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
             <canvas id="chart-anual" height="120"></canvas>
           </div>
         </div>
+
+        <!-- FILTRADO -->
+        <div class="relat-content" id="relat-filtrado">
+          <div class="card" style="margin-bottom:1rem">
+            <div style="font-size:.82rem;font-weight:600;margin-bottom:1rem">Filtros do Relatório</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Profissional</label>
+                <select class="form-select" id="filtro-prof">
+                  <option value="">Todos os profissionais</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Categoria</label>
+                <select class="form-select" id="filtro-cat">
+                  <option value="">Todas as categorias</option>
+                  <option>Fixo</option><option>Variável</option><option>Extra</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Subcategoria</label>
+                <input class="form-input" id="filtro-subcat" placeholder="Ex: Energia, Aluguel...">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" id="filtro-tipo">
+                  <option value="">Receitas e Despesas</option>
+                  <option>Apenas Receitas</option>
+                  <option>Apenas Despesas</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Data inicial</label>
+                <input class="form-input" type="date" id="filtro-data-inicio">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Data final</label>
+                <input class="form-input" type="date" id="filtro-data-fim">
+              </div>
+            </div>
+            <div style="display:flex;gap:.5rem;margin-top:.5rem">
+              <button class="btn btn-primary" onclick="gerarRelatFiltrado()">Gerar Relatório</button>
+              <button class="btn btn-secondary" onclick="exportarRelatorio()">↓ Exportar PDF</button>
+            </div>
+          </div>
+          <div id="relat-filtrado-resultado" style="display:none">
+            <div class="indicadores-grid" id="filtrado-indicadores"></div>
+            <div class="data-table" id="filtrado-tabela">
+              <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+                <span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ══ CONFIGURAÇÕES ══ -->
@@ -764,9 +863,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
           <div class="card">
             <div class="cfg-title">Tabela de Preços</div>
             <div class="cfg-row"><div><div class="cfg-label">Turno Fixo (4h)</div><div class="cfg-sub">por turno/semana</div></div><input class="cfg-input" id="preco-turno" placeholder="R$ 0,00"></div>
+            <div class="cfg-row"><div><div class="cfg-label">Turno Duplo (8h)</div><div class="cfg-sub">equivalente a 2 turnos</div></div><input class="cfg-input" id="preco-turno8h" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Hora Avulsa</div></div><input class="cfg-input" id="preco-avulsa" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Pacote 10h / mês</div></div><input class="cfg-input" id="preco-10h" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Pacote 20h / mês</div></div><input class="cfg-input" id="preco-20h" placeholder="R$ 0,00"></div>
+            <div class="cfg-row"><div><div class="cfg-label">Desconto padrão (%)</div><div class="cfg-sub">Aplicado automaticamente se configurado</div></div><input class="cfg-input" id="preco-desconto" placeholder="0" type="number" min="0" max="100" style="width:80px;text-align:center"></div>
           </div>
           <div class="card">
             <div class="cfg-title">Horários de Funcionamento</div>
@@ -818,7 +919,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
     <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="loc-prof"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Sala</label><select class="form-select" id="loc-sala"><option value="1" id="loc-s1-opt">Sala 1</option><option value="2" id="loc-s2-opt">Sala 2</option></select></div>
-      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo"><option>Turno Fixo</option><option>Pacote de Horas</option><option>Hora Avulsa</option></select></div>
+      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo"><option>Turno Fixo (4h)</option><option>Turno Duplo (8h — 2 turnos)</option><option>Pacote de Horas</option><option>Hora Avulsa</option></select></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Hora Início</label><select class="form-select" id="loc-inicio"><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>18:00</option><option>19:00</option><option>20:00</option><option>21:00</option></select></div>
@@ -829,6 +930,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       <div class="form-group"><label class="form-label">Data Término</label><input class="form-input" type="date" id="loc-data-fim"></div>
     </div>
     <div class="form-group"><label class="form-label">Recorrência</label><select class="form-select" id="loc-recorrencia"><option>Apenas este horário</option><option>Semanal</option><option>Quinzenal</option><option>Mensal</option></select></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Desconto (%)</label><input class="form-input" id="loc-desconto" type="number" min="0" max="100" placeholder="0" oninput="calcDescontoLocacao()"></div>
+      <div class="form-group"><label class="form-label">Valor final</label><input class="form-input" id="loc-valor-final" readonly placeholder="Automático" style="background:#f9fafb;color:var(--success);font-weight:600"></div>
+    </div>
     <div class="form-group"><label class="form-label">Observação (exibida na agenda)</label><input class="form-input" type="text" id="loc-obs" placeholder="Ex: Último dia, Início de contrato..."></div>
     <div class="form-group">
       <label class="form-label">Cor do bloco na agenda</label>
@@ -896,6 +1001,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       <div class="form-group"><label class="form-label">Início do Contrato</label><input class="form-input" type="date" id="prof-contrato-inicio"></div>
       <div class="form-group"><label class="form-label">Vencimento</label><input class="form-input" type="date" id="prof-contrato-fim"></div>
     </div>
+    <div class="form-group">
+      <label class="form-label">Vencimento da Locação</label>
+      <select class="form-select" id="prof-venc-locacao">
+        <option value="5">5 dias antes</option>
+        <option value="15" selected>15 dias antes</option>
+        <option value="30">30 dias antes</option>
+      </select>
+    </div>
     <div class="form-group"><label class="form-label">Observações</label><textarea class="form-textarea" id="prof-obs" placeholder="Observações gerais sobre o profissional..."></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('novo-prof')">Cancelar</button>
@@ -958,15 +1071,59 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
     <input type="hidden" id="despesa-edit-id">
     <div class="form-group"><label class="form-label">Descrição</label><input class="form-input" id="despesa-desc" placeholder="Ex: Conta de energia"></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Categoria</label><select class="form-select" id="despesa-cat"><option>Fixo</option><option>Variável</option><option>Eventual</option></select></div>
+      <div class="form-group"><label class="form-label">Categoria</label><select class="form-select" id="despesa-cat"><option>Fixo</option><option>Variável</option><option>Extra</option></select></div>
       <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-input" id="despesa-valor" placeholder="0,00"></div>
     </div>
+    <div class="form-group"><label class="form-label">Subcategoria</label><input class="form-input" id="despesa-subcat" placeholder="Ex: Energia, Aluguel, Internet..."></div>
     <div class="form-group"><label class="form-label">Vencimento</label><input class="form-input" type="date" id="despesa-venc"></div>
-    <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem">Histórico de alterações será registrado automaticamente.</div>
+    <div class="form-group">
+      <label class="form-label">Parcelado?</label>
+      <select class="form-select" id="despesa-parcelas" onchange="toggleParcelas(this)">
+        <option value="1">Não — pagamento único</option>
+        <option value="2">2x</option><option value="3">3x</option>
+        <option value="4">4x</option><option value="6">6x</option><option value="12">12x</option>
+      </select>
+    </div>
+    <div id="parcelas-info" style="display:none;background:var(--info-bg);border:1px solid #bfdbfe;border-radius:8px;padding:.7rem .875rem;font-size:.78rem;color:var(--info);margin-bottom:.875rem">
+      📅 As parcelas serão pré-lançadas automaticamente nos meses seguintes, aguardando confirmação.
+    </div>
+    <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem">Histórico de alterações registrado automaticamente.</div>
     <div class="modal-actions">
       <button class="btn btn-danger btn-sm" id="despesa-excluir-btn" style="display:none" onclick="excluirDespesa()">Excluir</button>
       <button class="btn btn-secondary" onclick="closeModal('nova-despesa')">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarDespesa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nova Receita -->
+<div class="modal-overlay" id="modal-nova-receita" onclick="closeModalBg(event,'nova-receita')">
+  <div class="modal modal-sm">
+    <div class="modal-title">Lançar Receita</div>
+    <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="receita-prof"><option value="">Selecionar...</option></select></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Categoria</label>
+        <select class="form-select" id="receita-cat">
+          <option>Fixa</option>
+          <option>Variável</option>
+          <option>Extra</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="receita-tipo"><option>Turno Fixo</option><option>Pacote de Horas</option><option>Hora Avulsa</option></select></div>
+    </div>
+    <div class="form-group"><label class="form-label">Subcategoria</label><input class="form-input" id="receita-subcat" placeholder="Ex: Locação, Pacote, Avulso..."></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-input" id="receita-valor" placeholder="0,00" oninput="calcDescontoReceita()"></div>
+      <div class="form-group"><label class="form-label">Desconto (%)</label><input class="form-input" id="receita-desconto" placeholder="0" type="number" min="0" max="100" oninput="calcDescontoReceita()"></div>
+    </div>
+    <div id="receita-valor-final-wrap" style="display:none;background:var(--success-bg);border:1px solid #6ee7b7;border-radius:8px;padding:.6rem .875rem;font-size:.82rem;color:var(--success);margin-bottom:.875rem">
+      💰 Valor final com desconto: <strong id="receita-valor-final">R$ 0,00</strong>
+    </div>
+    <div class="form-group"><label class="form-label">Vencimento</label><input class="form-input" type="date" id="receita-venc"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('nova-receita')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarReceita()">Lançar</button>
     </div>
   </div>
 </div>
@@ -1211,9 +1368,15 @@ function filterProfs(filtro, el) {
 }
 
 function updateProfSelect() {
-  const sel = document.getElementById('loc-prof');
-  sel.innerHTML = '<option value="">Selecionar...</option>' +
+  const opts = '<option value="">Selecionar...</option>' +
     profissionaisCache.filter(p=>p.status==='Ativo').map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+  const sel = document.getElementById('loc-prof');
+  if(sel) sel.innerHTML = opts;
+  const recSel = document.getElementById('receita-prof');
+  if(recSel) recSel.innerHTML = opts;
+  const filtroSel = document.getElementById('filtro-prof');
+  if(filtroSel) filtroSel.innerHTML = '<option value="">Todos os profissionais</option>' +
+    profissionaisCache.map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
 }
 
 function updateVinculoAuto() {
@@ -1903,6 +2066,122 @@ function showToast(msg,type='success') {
   toast.textContent=msg;
   document.body.appendChild(toast);
   setTimeout(()=>toast.remove(),3000);
+}
+
+// ── DESCONTO LOCAÇÃO ──
+function calcDescontoLocacao() {
+  const desconto = parseFloat(document.getElementById('loc-desconto').value) || 0;
+  const config = appConfig;
+  // Use turno fixo price as base if available
+  const base = parseFloat((config.precoTurno||'0').replace(/[^\d,]/g,'').replace(',','.')) || 0;
+  if(base > 0 && desconto > 0) {
+    const final = base * (1 - desconto/100);
+    document.getElementById('loc-valor-final').value = formatMoney(final);
+  } else {
+    document.getElementById('loc-valor-final').value = '';
+  }
+}
+
+// ── DESCONTO RECEITA ──
+function calcDescontoReceita() {
+  const valor = parseFloat(document.getElementById('receita-valor').value.replace(',','.')) || 0;
+  const desconto = parseFloat(document.getElementById('receita-desconto').value) || 0;
+  const wrap = document.getElementById('receita-valor-final-wrap');
+  if(valor > 0 && desconto > 0) {
+    const final = valor * (1 - desconto/100);
+    document.getElementById('receita-valor-final').textContent = formatMoney(final);
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+// ── PARCELAS ──
+function toggleParcelas(sel) {
+  const info = document.getElementById('parcelas-info');
+  info.style.display = sel.value > 1 ? 'block' : 'none';
+}
+
+// ── SALVAR RECEITA ──
+async function salvarReceita() {
+  const profId = document.getElementById('receita-prof').value;
+  const valor = document.getElementById('receita-valor').value;
+  const desconto = document.getElementById('receita-desconto').value || '0';
+  const valorFinal = parseFloat(valor.replace(',','.')) * (1 - parseFloat(desconto)/100);
+  const data = {
+    profissional: profId ? (profissionaisCache.find(p=>p.id===profId)?.nome||profId) : '—',
+    profId,
+    categoria: document.getElementById('receita-cat').value,
+    tipo: document.getElementById('receita-tipo').value,
+    subcategoria: document.getElementById('receita-subcat').value,
+    valor: valor,
+    desconto: desconto,
+    valorFinal: isNaN(valorFinal) ? valor : valorFinal.toFixed(2),
+    vencimento: document.getElementById('receita-venc').value,
+    status: 'Pendente',
+    mes: new Date().getMonth(),
+    ano: new Date().getFullYear(),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if(!data.profissional || data.profissional === '—') { showToast('Selecione um profissional.','error'); return; }
+  try {
+    await db.collection('receitas').add(data);
+    closeModal('nova-receita');
+    showToast('Receita lançada!','success');
+    loadFinanceiro();
+  } catch(e) { showToast('Erro ao lançar receita.','error'); console.error(e); }
+}
+
+// ── RELATÓRIO FILTRADO ──
+async function gerarRelatFiltrado() {
+  const profFiltro = document.getElementById('filtro-prof').value;
+  const catFiltro = document.getElementById('filtro-cat').value;
+  const subcatFiltro = document.getElementById('filtro-subcat').value.toLowerCase();
+  const tipoFiltro = document.getElementById('filtro-tipo').value;
+  const dataInicio = document.getElementById('filtro-data-inicio').value;
+  const dataFim = document.getElementById('filtro-data-fim').value;
+
+  try {
+    let receitas = [], despesas = [];
+    if(tipoFiltro !== 'Apenas Despesas') {
+      const recSnap = await db.collection('receitas').get();
+      receitas = recSnap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Receita'}));
+    }
+    if(tipoFiltro !== 'Apenas Receitas') {
+      const despSnap = await db.collection('despesas').get();
+      despesas = despSnap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Despesa'}));
+    }
+
+    let todos = [...receitas,...despesas];
+    if(profFiltro) todos = todos.filter(x=>x.profId===profFiltro||x.profissional===profFiltro);
+    if(catFiltro) todos = todos.filter(x=>x.categoria===catFiltro);
+    if(subcatFiltro) todos = todos.filter(x=>(x.subcategoria||'').toLowerCase().includes(subcatFiltro));
+    if(dataInicio) todos = todos.filter(x=>x.vencimento>=dataInicio);
+    if(dataFim) todos = todos.filter(x=>x.vencimento<=dataFim);
+
+    const totalRec = receitas.filter(x=>todos.includes(x)).reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
+    const totalDesp = despesas.filter(x=>todos.includes(x)).reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
+
+    document.getElementById('filtrado-indicadores').innerHTML = `
+      <div class="ind-card"><div class="ind-label">Receitas filtradas</div><div class="ind-value" style="color:var(--success)">${formatMoney(totalRec)}</div><div class="ind-delta">${receitas.length} lançamentos</div></div>
+      <div class="ind-card"><div class="ind-label">Despesas filtradas</div><div class="ind-value" style="color:var(--danger)">${formatMoney(totalDesp)}</div><div class="ind-delta">${despesas.length} lançamentos</div></div>
+      <div class="ind-card"><div class="ind-label">Saldo filtrado</div><div class="ind-value">${formatMoney(totalRec-totalDesp)}</div><div class="ind-delta ${totalRec-totalDesp>=0?'pos':'neg'}">${totalRec-totalDesp>=0?'positivo':'negativo'}</div></div>
+      <div class="ind-card"><div class="ind-label">Total de registros</div><div class="ind-value">${todos.length}</div></div>`;
+
+    const tabela = document.getElementById('filtrado-tabela');
+    tabela.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span></div>` +
+      (todos.length === 0 ? '<div style="padding:1rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum resultado encontrado.</div>' :
+      todos.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+        <span style="font-weight:500">${x.descricao||x.profissional||'—'} <span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span></span>
+        <span>${x.categoria||'—'}</span>
+        <span>${x.subcategoria||'—'}</span>
+        <span>${x.vencimento?formatDate(x.vencimento):'—'}</span>
+        <span style="font-weight:600;color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</span>
+      </div>`).join(''));
+
+    document.getElementById('relat-filtrado-resultado').style.display = 'block';
+    showToast(`${todos.length} registros encontrados.`,'success');
+  } catch(e) { showToast('Erro ao gerar relatório.','error'); console.error(e); }
 }
 
 // Enter key no login
