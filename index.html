@@ -437,6 +437,76 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:10px;}
+
+/* ── DARK MODE ── */
+body.dark{--bg:#111827;--white:#1f2937;--border:#374151;--text:#f9fafb;--text-light:#9ca3af;--text-lighter:#6b7280;--gold-pale:rgba(160,120,80,.15);background:#111827;}
+body.dark .sidebar,body.dark .topbar,body.dark .modal,body.dark .login-box{background:#1f2937;border-color:#374151;}
+body.dark .card,body.dark .stat-card,body.dark .data-table,body.dark .agenda-wrap,body.dark .plano-card,body.dark .prof-card,body.dark .fin-card,body.dark .prev-card,body.dark .ind-card,body.dark .chart-wrap,body.dark .month-grid,body.dark .week-grid{background:#1f2937;border-color:#374151;}
+body.dark .dt-head,body.dark .ag-cols,body.dark .turno-bar-header,body.dark #loading-screen,body.dark .wg-head{background:#111827;}
+body.dark .dt-row:hover,body.dark .prof-card:hover{background:rgba(255,255,255,.03);}
+body.dark .form-input,body.dark .form-select,body.dark .form-textarea,body.dark .cfg-input,body.dark .sala-inp,body.dark .alert-day-input{background:#111827;border-color:#374151;color:#f9fafb;}
+body.dark .hora-label,body.dark .wg-time,body.dark .hora-cell{background:#1a2332;}
+body.dark .day-pill{background:#1f2937;border-color:#374151;}
+body.dark .day-pill .dd{color:#9ca3af;}
+body.dark .nav-item:hover{background:rgba(255,255,255,.05);}
+body.dark .month-day{border-color:#374151;}
+body.dark .month-day.other-month{background:#111827;}
+body.dark .fin-card-item,body.dark .fin-sticky-summary,body.dark .qf-btn,body.dark .dash-shortcut{background:#1f2937;border-color:#374151;}
+body.dark .fin-search-input{background:#111827;border-color:#374151;color:#f9fafb;}
+body.dark .tag{background:#111827;border-color:#374151;}
+.dark-toggle{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;transition:all .15s;color:var(--text-light);}
+.dark-toggle:hover{border-color:var(--gold);color:var(--gold);}
+
+/* ── FINANCIAL MOBILE ── */
+.fin-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.fin-cards-mobile{display:none;}
+@media(max-width:640px){
+  .fin-table-desktop{display:none!important;}
+  .fin-cards-mobile{display:block;}
+}
+.fin-card-item{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:.875rem 1rem;margin-bottom:.625rem;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform .15s;user-select:none;}
+.fin-card-item-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
+.fin-card-item-name{font-size:.84rem;font-weight:600;color:var(--text);flex:1;padding-right:.5rem;}
+.fin-card-item-value{font-size:.88rem;font-weight:700;}
+.fin-card-item-meta{display:flex;gap:.5rem;align-items:center;font-size:.72rem;color:var(--text-light);flex-wrap:wrap;margin-top:4px;}
+.swipe-action{position:absolute;right:0;top:0;bottom:0;width:72px;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;pointer-events:none;opacity:0;transition:opacity .15s;border-radius:0 10px 10px 0;}
+.swipe-action.success{background:var(--success);color:#fff;}
+.swipe-action.warning{background:var(--warning);color:#fff;}
+.fin-card-item.swiped-right .swipe-action{opacity:1;}
+
+/* ── STICKY SUMMARY ── */
+.fin-sticky-summary{background:var(--white);border-bottom:1px solid var(--border);padding:.6rem 1.5rem;display:none;gap:1.5rem;align-items:center;}
+@media(max-width:768px){.fin-sticky-summary{display:flex;flex-wrap:wrap;padding:.5rem 1rem;gap:.875rem;}}
+.fin-sticky-label{font-size:.58rem;font-weight:600;color:var(--text-lighter);text-transform:uppercase;letter-spacing:.06em;}
+.fin-sticky-val{font-size:.86rem;font-weight:700;margin-top:1px;}
+
+/* ── QUICK FILTERS ── */
+.quick-filters{display:flex;gap:.375rem;margin-bottom:.875rem;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;}
+.quick-filters::-webkit-scrollbar{display:none;}
+.qf-btn{padding:5px 12px;border-radius:20px;font-size:.72rem;font-weight:500;border:1px solid var(--border);background:var(--white);color:var(--text-light);cursor:pointer;white-space:nowrap;transition:all .15s;font-family:'Inter',sans-serif;flex-shrink:0;}
+.qf-btn:hover{border-color:var(--gold);color:var(--gold);}
+.qf-btn.active{background:var(--gold);color:#fff;border-color:var(--gold);}
+
+/* ── SEARCH ── */
+.fin-search{position:relative;margin-bottom:.875rem;}
+.fin-search-input{width:100%;padding:8px 11px 8px 34px;border:1px solid var(--border);border-radius:8px;background:var(--white);color:var(--text);font-family:'Inter',sans-serif;font-size:.84rem;outline:none;transition:border-color .15s;}
+.fin-search-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(160,120,80,.1);}
+.fin-search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-lighter);pointer-events:none;font-size:.85rem;}
+
+/* ── DASHBOARD SHORTCUTS ── */
+.dash-shortcuts{display:flex;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;}
+.dash-shortcut{flex:1;min-width:130px;padding:.75rem 1rem;border-radius:10px;border:1px solid var(--border);background:var(--white);cursor:pointer;display:flex;align-items:center;gap:.625rem;font-family:'Inter',sans-serif;font-size:.8rem;font-weight:500;color:var(--text-light);transition:all .15s;box-shadow:var(--shadow);border:none;outline:none;}
+.dash-shortcut:hover{border-color:var(--gold);color:var(--gold);box-shadow:var(--shadow-md);}
+.dash-shortcut-icon{font-size:1.1rem;}
+
+/* ── PLANO DELETE BTN ── */
+.plano-del-btn{position:absolute;top:.625rem;right:.625rem;width:24px;height:24px;border-radius:50%;border:1px solid #fecaca;background:var(--danger-bg);color:var(--danger);font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:all .15s;line-height:1;}
+.plano-card:hover .plano-del-btn{opacity:1;}
+.plano-del-btn:hover{background:var(--danger);color:#fff;}
+
+/* ── WHATSAPP BTN ── */
+.wpp-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;background:#25d366;color:#fff;font-size:.65rem;font-weight:600;cursor:pointer;border:none;font-family:'Inter',sans-serif;transition:opacity .15s;text-decoration:none;white-space:nowrap;}
+.wpp-btn:hover{opacity:.85;}
 </style>
 </head>
 <body>
@@ -511,14 +581,35 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
         </button>
         <div class="page-title" id="page-title">Dashboard</div>
       </div>
-      <div id="topbar-acts" style="display:flex;gap:.5rem;align-items:center"></div>
+      <div id="topbar-acts" style="display:flex;gap:.5rem;align-items:center">
+        <button class="dark-toggle" onclick="toggleDarkMode()" id="dark-btn" title="Modo escuro">🌙</button>
+      </div>
     </div>
 
-    <div class="content">
+        <div class="fin-sticky-summary" id="fin-sticky">
+          <div><div class="fin-sticky-label">Receita</div><div class="fin-sticky-val" style="color:var(--success)" id="sticky-rec">—</div></div>
+          <div><div class="fin-sticky-label">Despesas</div><div class="fin-sticky-val" style="color:var(--danger)" id="sticky-desp">—</div></div>
+          <div><div class="fin-sticky-label">Saldo</div><div class="fin-sticky-val" id="sticky-saldo">—</div></div>
+        </div>
+        <div class="content">
 
       <!-- ══ DASHBOARD ══ -->
       <div class="page active" id="page-dashboard">
         <div id="bday-banner"></div>
+        <div class="dash-shortcuts">
+          <button class="dash-shortcut" onclick="showPage('financeiro',document.querySelector('[onclick*=financeiro]'));openModal('nova-receita')">
+            <span class="dash-shortcut-icon">💰</span> Lançar Receita
+          </button>
+          <button class="dash-shortcut" onclick="showPage('financeiro',document.querySelector('[onclick*=financeiro]'));openModal('nova-despesa')">
+            <span class="dash-shortcut-icon">💸</span> Lançar Despesa
+          </button>
+          <button class="dash-shortcut" onclick="showPage('agenda',document.querySelector('[onclick*=agenda]'));openModal('nova-locacao')">
+            <span class="dash-shortcut-icon">📅</span> Nova Locação
+          </button>
+          <button class="dash-shortcut" onclick="showPage('profissionais',document.querySelector('[onclick*=profissionais]'));openModal('novo-prof')">
+            <span class="dash-shortcut-icon">👤</span> Novo Profissional
+          </button>
+        </div>
         <div class="stats-grid">
           <div class="stat-card"><div class="stat-label">Receita do Mês</div><div class="stat-value" style="color:var(--gold)" id="dash-receita">—</div><div class="stat-sub" id="dash-receita-sub">carregando...</div></div>
           <div class="stat-card"><div class="stat-label">Turnos Hoje</div><div class="stat-value" id="dash-turnos">—</div><div class="stat-sub" id="dash-turnos-sub">carregando...</div></div>
@@ -695,18 +786,42 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
             <div class="fin-tab" onclick="showFinTab('prev',this)">📊 Previsão próx. mês</div>
           </div>
           <div class="fin-content active" id="fin-rec" style="padding:0 1.25rem 1.25rem">
-            <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem;margin-top:.25rem">💡 Clique no status para alterar</div>
-            <div class="data-table" id="rec-table">
-              <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Profissional</span><span>Tipo</span><span>Vencimento</span><span>Valor</span><span>Status</span></div>
+            <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem;margin-top:.25rem">💡 Clique no status para alterar · No celular, deslize para pagar</div>
+            <div class="quick-filters">
+              <button class="qf-btn active" onclick="filtrarRec('todos',this)">Todos</button>
+              <button class="qf-btn" onclick="filtrarRec('pendente',this)">Pendentes</button>
+              <button class="qf-btn" onclick="filtrarRec('pago',this)">Pagos</button>
+              <button class="qf-btn" onclick="filtrarRec('vencido',this)">Vencidos</button>
+              <button class="qf-btn" onclick="filtrarRec('mes',this)">Este mês</button>
+            </div>
+            <div class="fin-search">
+              <span class="fin-search-icon">🔍</span>
+              <input class="fin-search-input" type="text" placeholder="Buscar por profissional..." oninput="buscarRec(this.value)">
+            </div>
+            <div class="data-table fin-table-desktop" id="rec-table">
+              <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px"><span>Profissional</span><span>Tipo</span><span>Vencimento</span><span>Valor</span><span>Status</span><span>WhatsApp</span></div>
               <div style="padding:1rem;font-size:.82rem;color:var(--text-lighter)">Carregando...</div>
             </div>
+            <div class="fin-cards-mobile" id="rec-cards-mobile"></div>
           </div>
           <div class="fin-content" id="fin-desp" style="padding:0 1.25rem 1.25rem">
-            <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem;margin-top:.25rem">💡 Clique no status para alterar</div>
-            <div class="data-table" id="desp-table">
+            <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem;margin-top:.25rem">💡 Clique no status para alterar · No celular, deslize para pagar</div>
+            <div class="quick-filters">
+              <button class="qf-btn active" onclick="filtrarDesp('todos',this)">Todos</button>
+              <button class="qf-btn" onclick="filtrarDesp('pendente',this)">Pendentes</button>
+              <button class="qf-btn" onclick="filtrarDesp('pago',this)">Pagos</button>
+              <button class="qf-btn" onclick="filtrarDesp('vencido',this)">Vencidos</button>
+              <button class="qf-btn" onclick="filtrarDesp('mes',this)">Este mês</button>
+            </div>
+            <div class="fin-search">
+              <span class="fin-search-icon">🔍</span>
+              <input class="fin-search-input" type="text" placeholder="Buscar por descrição..." oninput="buscarDesp(this.value)">
+            </div>
+            <div class="data-table fin-table-desktop" id="desp-table">
               <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Vencimento</span><span>Valor</span><span>Status</span></div>
               <div style="padding:1rem;font-size:.82rem;color:var(--text-lighter)">Carregando...</div>
             </div>
+            <div class="fin-cards-mobile" id="desp-cards-mobile"></div>
           </div>
           <div class="fin-content" id="fin-prev" style="padding:0 1.25rem 1.25rem">
             <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.875rem;margin-top:.25rem">📊 Projeção automática baseada nos contratos e despesas fixas cadastrados</div>
@@ -865,6 +980,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
             <div class="cfg-row"><div><div class="cfg-label">Turno Fixo (4h)</div><div class="cfg-sub">por turno/semana</div></div><input class="cfg-input" id="preco-turno" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Turno Duplo (8h)</div><div class="cfg-sub">equivalente a 2 turnos</div></div><input class="cfg-input" id="preco-turno8h" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Hora Avulsa</div></div><input class="cfg-input" id="preco-avulsa" placeholder="R$ 0,00"></div>
+            <div class="cfg-row"><div><div class="cfg-label">Pacote 5h / mês</div></div><input class="cfg-input" id="preco-5h" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Pacote 10h / mês</div></div><input class="cfg-input" id="preco-10h" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Desconto padrão (%)</div><div class="cfg-sub">Aplicado automaticamente se configurado</div></div><input class="cfg-input" id="preco-desconto" placeholder="0" type="number" min="0" max="100" style="width:80px;text-align:center"></div>
           </div>
@@ -1091,7 +1207,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       <select class="form-select" id="despesa-parcelas" onchange="toggleParcelas(this)">
         <option value="1">Não — pagamento único</option>
         <option value="2">2x</option><option value="3">3x</option>
-        <option value="4">4x</option><option value="6">6x</option><option value="12">12x</option>
+        <option value="4">4x</option><option value="5">5x</option>
+        <option value="6">6x</option><option value="7">7x</option>
+        <option value="8">8x</option><option value="9">9x</option>
+        <option value="10">10x</option><option value="11">11x</option>
+        <option value="12">12x</option>
       </select>
     </div>
     <div id="parcelas-info" style="display:none;background:var(--info-bg);border:1px solid #bfdbfe;border-radius:8px;padding:.7rem .875rem;font-size:.78rem;color:var(--info);margin-bottom:.875rem">
@@ -1574,6 +1694,9 @@ function updateDashboardProfs() {
     const diff=Math.floor((new Date(p.contratoFim)-hoje)/(1000*60*60*24));
     alertas.push({icon:'⚠️',title:`Contrato vence em ${diff} dia${diff!==1?'s':''}`,sub:p.nome,action:`abrirRenovar('${p.id}')`});
   });
+  // Vínculo 6 meses
+  const vinculoAlertas = checkVinculoAlertas(profissionaisCache);
+  vinculoAlertas.forEach(a => alertas.push(a));
 
   document.getElementById('dash-alertas-count').textContent=alertas.length;
   if(alertas.length===0){
@@ -1631,42 +1754,102 @@ async function loadFinanceiro() {
     document.getElementById('fin-despesas-total').textContent=formatMoney(totalDesp);
     document.getElementById('fin-saldo').textContent=formatMoney(saldo);
     document.getElementById('fin-saldo-sub').textContent=saldo>=0?'resultado positivo':'resultado negativo';
+    updateStickySummary(totalRec, totalDesp);
     document.getElementById('fin-saldo').style.color=saldo>=0?'var(--text)':'var(--danger)';
 
     renderPrevisao();
   } catch(e) { console.error(e); renderReceitas([]); renderDespesas([]); renderPrevisao(); }
 }
 
+// cache for filtering
+let receitasCache = [];
+let despesasCache = [];
+
 function renderReceitas(receitas) {
+  receitasCache = receitas;
+  _renderReceitasData(receitas);
+}
+
+function _renderReceitasData(receitas) {
   const table=document.getElementById('rec-table');
+  const mobileEl=document.getElementById('rec-cards-mobile');
   if(receitas.length===0){
-    table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Profissional</span><span>Tipo</span><span>Vencimento</span><span>Valor</span><span>Status</span></div><div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhuma receita cadastrada para este mês.</div>`;
+    if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px"><span>Profissional</span><span>Tipo</span><span>Vencimento</span><span>Valor</span><span>Status</span><span>WhatsApp</span></div><div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhuma receita cadastrada.</div>`;
+    if(mobileEl) mobileEl.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhuma receita cadastrada.</div>';
     return;
   }
-  table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Profissional</span><span>Tipo</span><span>Vencimento</span><span>Valor</span><span>Status</span></div>`+
-    receitas.map(r=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
-      <span style="font-weight:500">${r.profissional||'—'}</span>
-      <span style="color:var(--text-light)">${r.tipo||'—'}</span>
-      <span>${r.vencimento?formatDate(r.vencimento):'—'}</span>
-      <span style="font-weight:600">${formatMoney(r.valor)}</span>
-      <span><span class="badge ${r.status==='Pago'?'badge-success':'badge-warning'} status-click" onclick="toggleStatusRec(this,'${r.id}')">${r.status||'Pendente'}</span></span>
-    </div>`).join('');
+  const hoje = new Date().toISOString().split('T')[0];
+  if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px"><span>Profissional</span><span>Tipo</span><span>Vencimento</span><span>Valor</span><span>Status</span><span>WhatsApp</span></div>`+
+    receitas.map(r=>{
+      const prof = profissionaisCache.find(p=>p.id===r.profId);
+      const tel = prof?.telefone?.replace(/\D/g,'')||'';
+      const msg = encodeURIComponent(`Olá, ${r.profissional}! Lembramos que o pagamento da sua locação na Áthos vence hoje, ${r.vencimento?formatDate(r.vencimento):''}. Valor: ${formatMoney(r.valor)}. Obrigada!`);
+      const wppLink = tel ? `https://wa.me/55${tel}?text=${msg}` : '';
+      return `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px">
+        <span style="font-weight:500">${r.profissional||'—'}</span>
+        <span style="color:var(--text-light)">${r.tipo||'—'}</span>
+        <span>${r.vencimento?formatDate(r.vencimento):'—'}</span>
+        <span style="font-weight:600">${formatMoney(r.valor)}</span>
+        <span><span class="badge ${r.status==='Pago'?'badge-success':'badge-warning'} status-click" onclick="toggleStatusRec(this,'${r.id}')">${r.status||'Pendente'}</span></span>
+        <span>${wppLink&&r.status!=='Pago'?`<a href="${wppLink}" target="_blank" class="wpp-btn">📱 Avisar</a>`:'—'}</span>
+      </div>`;}).join('');
+  if(mobileEl) mobileEl.innerHTML = receitas.map(r=>{
+    const prof = profissionaisCache.find(p=>p.id===r.profId);
+    const tel = prof?.telefone?.replace(/\D/g,'')||'';
+    const msg = encodeURIComponent(`Olá, ${r.profissional}! O pagamento da sua locação na Áthos vence hoje. Valor: ${formatMoney(r.valor)}.`);
+    const wppLink = tel ? `https://wa.me/55${tel}?text=${msg}` : '';
+    return `<div class="fin-card-item" data-id="${r.id}" data-tipo="rec" data-status="${r.status||'Pendente'}">
+      <div class="swipe-action ${r.status==='Pago'?'warning':'success'}">${r.status==='Pago'?'Pendente':'Pago ✓'}</div>
+      <div class="fin-card-item-top">
+        <div class="fin-card-item-name">${r.profissional||'—'}</div>
+        <div class="fin-card-item-value" style="color:var(--success)">${formatMoney(r.valor)}</div>
+      </div>
+      <div class="fin-card-item-meta">
+        <span class="badge ${r.status==='Pago'?'badge-success':'badge-warning'}" onclick="toggleStatusRecById('${r.id}',this)" style="cursor:pointer">${r.status||'Pendente'}</span>
+        <span>${r.tipo||'—'}</span>
+        ${r.vencimento?`<span>📅 ${formatDate(r.vencimento)}</span>`:''}
+        ${wppLink&&r.status!=='Pago'?`<a href="${wppLink}" target="_blank" class="wpp-btn">📱 Avisar</a>`:''}
+      </div>
+    </div>`;}).join('');
+  initSwipe();
 }
 
 function renderDespesas(despesas) {
+  despesasCache = despesas;
+  _renderDespesasData(despesas);
+}
+
+function _renderDespesasData(despesas) {
   const table=document.getElementById('desp-table');
+  const mobileEl=document.getElementById('desp-cards-mobile');
   if(despesas.length===0){
-    table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Vencimento</span><span>Valor</span><span>Ações</span></div><div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhuma despesa cadastrada.</div>`;
+    if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Vencimento</span><span>Valor</span><span>Status</span></div><div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhuma despesa cadastrada.</div>`;
+    if(mobileEl) mobileEl.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhuma despesa cadastrada.</div>';
     return;
   }
-  table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Vencimento</span><span>Valor</span><span>Status</span></div>`+
+  if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Vencimento</span><span>Valor</span><span>Status</span></div>`+
     despesas.map(d=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
-      <span style="font-weight:500;cursor:pointer;text-decoration:underline;color:var(--gold)" onclick="editarDespesa('${d.id}')">${d.descricao||'—'}</span>
+      <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="editarDespesa('${d.id}')">${d.descricao||'—'}${d.parcela?` <span class="badge badge-neutral" style="font-size:.6rem">${d.parcela}</span>`:''}</span>
       <span><span class="badge ${d.categoria==='Fixo'?'badge-neutral':d.categoria==='Variável'?'badge-warning':'badge-danger'}">${d.categoria||'—'}</span></span>
       <span>${d.vencimento?formatDate(d.vencimento):'—'}</span>
       <span style="font-weight:600;color:var(--danger)">${formatMoney(d.valor)}</span>
       <span><span class="badge ${d.status==='Pago'?'badge-success':'badge-warning'} status-click" onclick="toggleStatusDesp(this,'${d.id}')">${d.status||'Pendente'}</span></span>
     </div>`).join('');
+  if(mobileEl) mobileEl.innerHTML = despesas.map(d=>`
+    <div class="fin-card-item" data-id="${d.id}" data-tipo="desp" data-status="${d.status||'Pendente'}">
+      <div class="swipe-action ${d.status==='Pago'?'warning':'success'}">${d.status==='Pago'?'Pendente':'Pago ✓'}</div>
+      <div class="fin-card-item-top">
+        <div class="fin-card-item-name">${d.descricao||'—'}${d.parcela?` <span class="badge badge-neutral" style="font-size:.6rem">${d.parcela}</span>`:''}</div>
+        <div class="fin-card-item-value" style="color:var(--danger)">${formatMoney(d.valor)}</div>
+      </div>
+      <div class="fin-card-item-meta">
+        <span class="badge ${d.status==='Pago'?'badge-success':'badge-warning'}" onclick="toggleStatusDespById('${d.id}',this)" style="cursor:pointer">${d.status||'Pendente'}</span>
+        <span class="badge ${d.categoria==='Fixo'?'badge-neutral':d.categoria==='Variável'?'badge-warning':'badge-danger'}">${d.categoria||'—'}</span>
+        ${d.subcategoria?`<span>${d.subcategoria}</span>`:''}
+        ${d.vencimento?`<span>📅 ${formatDate(d.vencimento)}</span>`:''}
+      </div>
+    </div>`).join('');
+  initSwipe();
 }
 
 function renderPrevisao() {
@@ -1941,6 +2124,7 @@ async function loadPlanos() {
     const grid=document.getElementById('planos-pacotes-list');
     const cards=planos.map(p=>`
       <div class="plano-card">
+        <button class="plano-del-btn" onclick="event.stopPropagation();excluirPlano('${p.id}')">×</button>
         <div class="plano-tipo">Pacote Mensal</div>
         <div class="plano-nome">${p.nome||'—'}</div>
         <div class="plano-desc">${p.horas||0}h/mês — cobrança recorrente</div>
@@ -2338,6 +2522,153 @@ async function gerarRelatFiltrado() {
     document.getElementById('relat-filtrado-resultado').style.display = 'block';
     showToast(`${todos.length} registros encontrados.`,'success');
   } catch(e) { showToast('Erro ao gerar relatório.','error'); console.error(e); }
+}
+
+// ── DARK MODE ──
+function toggleDarkMode() {
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  document.getElementById('dark-btn').textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('athos-dark', isDark ? '1' : '0');
+}
+// Restore dark mode
+if(localStorage.getItem('athos-dark') === '1') {
+  document.body.classList.add('dark');
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('dark-btn');
+    if(btn) btn.textContent = '☀️';
+  });
+}
+
+// ── SWIPE TO PAY ──
+function initSwipe() {
+  document.querySelectorAll('.fin-card-item').forEach(card => {
+    let startX = 0;
+    card.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, {passive:true});
+    card.addEventListener('touchmove', e => {
+      const dx = startX - e.touches[0].clientX;
+      if(dx > 30) card.classList.add('swiped-right');
+      else card.classList.remove('swiped-right');
+    }, {passive:true});
+    card.addEventListener('touchend', async () => {
+      if(card.classList.contains('swiped-right')) {
+        card.classList.remove('swiped-right');
+        const id = card.dataset.id;
+        const tipo = card.dataset.tipo;
+        const status = card.dataset.status;
+        const novoStatus = status === 'Pago' ? 'Pendente' : 'Pago';
+        try {
+          const col = tipo === 'rec' ? 'receitas' : 'despesas';
+          await db.collection(col).doc(id).update({status: novoStatus});
+          card.dataset.status = novoStatus;
+          showToast(`Marcado como ${novoStatus}!`, 'success');
+          loadFinanceiro();
+        } catch(e) { showToast('Erro ao atualizar.', 'error'); }
+      }
+    });
+  });
+}
+
+// ── QUICK FILTERS ──
+function filtrarRec(tipo, el) {
+  document.querySelectorAll('#fin-rec .qf-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const hoje = new Date().toISOString().split('T')[0];
+  const mesAtual = new Date().getMonth();
+  let filtrados = receitasCache;
+  if(tipo === 'pendente') filtrados = receitasCache.filter(r => r.status !== 'Pago');
+  else if(tipo === 'pago') filtrados = receitasCache.filter(r => r.status === 'Pago');
+  else if(tipo === 'vencido') filtrados = receitasCache.filter(r => r.status !== 'Pago' && r.vencimento && r.vencimento < hoje);
+  else if(tipo === 'mes') filtrados = receitasCache.filter(r => r.vencimento && new Date(r.vencimento+'T12:00:00').getMonth() === mesAtual);
+  _renderReceitasData(filtrados);
+}
+
+function filtrarDesp(tipo, el) {
+  document.querySelectorAll('#fin-desp .qf-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const hoje = new Date().toISOString().split('T')[0];
+  const mesAtual = new Date().getMonth();
+  let filtrados = despesasCache;
+  if(tipo === 'pendente') filtrados = despesasCache.filter(d => d.status !== 'Pago');
+  else if(tipo === 'pago') filtrados = despesasCache.filter(d => d.status === 'Pago');
+  else if(tipo === 'vencido') filtrados = despesasCache.filter(d => d.status !== 'Pago' && d.vencimento && d.vencimento < hoje);
+  else if(tipo === 'mes') filtrados = despesasCache.filter(d => d.vencimento && new Date(d.vencimento+'T12:00:00').getMonth() === mesAtual);
+  _renderDespesasData(filtrados);
+}
+
+// ── SEARCH ──
+function buscarRec(q) {
+  const filtrados = q ? receitasCache.filter(r => (r.profissional||'').toLowerCase().includes(q.toLowerCase())) : receitasCache;
+  _renderReceitasData(filtrados);
+}
+
+function buscarDesp(q) {
+  const filtrados = q ? despesasCache.filter(d => (d.descricao||'').toLowerCase().includes(q.toLowerCase())) : despesasCache;
+  _renderDespesasData(filtrados);
+}
+
+// ── TOGGLE STATUS BY ID (mobile cards) ──
+async function toggleStatusRecById(id, el) {
+  const novoStatus = el.textContent.trim() === 'Pago' ? 'Pendente' : 'Pago';
+  try {
+    await db.collection('receitas').doc(id).update({status: novoStatus});
+    el.textContent = novoStatus;
+    el.className = `badge ${novoStatus==='Pago'?'badge-success':'badge-warning'}`;
+    showToast(`Status: ${novoStatus}`, 'success');
+  } catch(e) { showToast('Erro.', 'error'); }
+}
+
+async function toggleStatusDespById(id, el) {
+  const novoStatus = el.textContent.trim() === 'Pago' ? 'Pendente' : 'Pago';
+  try {
+    await db.collection('despesas').doc(id).update({status: novoStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+    el.textContent = novoStatus;
+    el.className = `badge ${novoStatus==='Pago'?'badge-success':'badge-warning'}`;
+    showToast(`Status: ${novoStatus}`, 'success');
+  } catch(e) { showToast('Erro.', 'error'); }
+}
+
+// ── STICKY SUMMARY UPDATE ──
+function updateStickySummary(totalRec, totalDesp) {
+  const saldo = totalRec - totalDesp;
+  const sr = document.getElementById('sticky-rec');
+  const sd = document.getElementById('sticky-desp');
+  const ss = document.getElementById('sticky-saldo');
+  if(sr) sr.textContent = formatMoney(totalRec);
+  if(sd) sd.textContent = formatMoney(totalDesp);
+  if(ss) { ss.textContent = formatMoney(saldo); ss.style.color = saldo >= 0 ? 'var(--success)' : 'var(--danger)'; }
+}
+
+// ── EXCLUIR PLANO ──
+async function excluirPlano(id) {
+  if(!confirm('Excluir este plano? Esta ação não pode ser desfeita.')) return;
+  try {
+    await db.collection('planos').doc(id).delete();
+    showToast('Plano excluído!', 'success');
+    loadPlanos();
+  } catch(e) { showToast('Erro ao excluir plano.', 'error'); console.error(e); }
+}
+
+// ── ALERTA VÍNCULO 6 MESES ──
+function checkVinculoAlertas(profs) {
+  const hoje = new Date();
+  const alertas = [];
+  profs.forEach(p => {
+    if(!p.contratoInicio || p.status !== 'Ativo') return;
+    const inicio = new Date(p.contratoInicio + 'T12:00:00');
+    const mesesVinculo = (hoje - inicio) / (1000 * 60 * 60 * 24 * 30.44);
+    // Alertar a cada 6 meses no primeiro ano, depois a cada 6 meses
+    const proximoAlerta = Math.ceil(mesesVinculo / 6) * 6;
+    const diasParaAlerta = Math.round((proximoAlerta * 30.44) - (hoje - inicio) / (1000 * 60 * 60 * 24));
+    if(diasParaAlerta >= 0 && diasParaAlerta <= 7) {
+      alertas.push({
+        icon: '📅',
+        title: `Vínculo de ${Math.floor(mesesVinculo)} meses completos em breve`,
+        sub: `${p.nome} — iniciou em ${formatDate(p.contratoInicio)}`
+      });
+    }
+  });
+  return alertas;
 }
 
 // Enter key no login
