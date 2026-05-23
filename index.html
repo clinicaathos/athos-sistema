@@ -30,7 +30,8 @@
   --shadow-lg:0 10px 30px rgba(0,0,0,.12);
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;}
+html{overflow-x:hidden;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;overflow-x:hidden;}
 
 /* ── LOADING ── */
 #loading-screen{position:fixed;inset:0;background:var(--white);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2000;gap:1rem;}
@@ -380,7 +381,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%);}
   .sidebar.mobile-open{transform:translateX(0);}
-  .main{margin-left:0;}
+  .main{margin-left:0;width:100%;max-width:100vw;overflow-x:hidden;}
   .hamburger{display:flex;}
   .stats-grid{grid-template-columns:1fr 1fr;}
   .dash-grid{grid-template-columns:1fr;}
@@ -389,44 +390,46 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   .prev-grid{grid-template-columns:1fr;}
   .form-row{grid-template-columns:1fr;}
   .week-days{display:none;}
-  .content{padding:1rem;}
-  .agenda-controls{padding:.75rem 1rem;flex-direction:column;align-items:flex-start;}
+  .content{padding:.875rem;width:100%;box-sizing:border-box;overflow-x:hidden;}
+  .topbar{padding:0 .875rem;}
+  .agenda-controls{padding:.75rem .875rem;flex-direction:column;align-items:flex-start;}
   .prof-grid{grid-template-columns:1fr;}
   .indicadores-grid{grid-template-columns:1fr 1fr;}
-  .stats-grid{grid-template-columns:1fr 1fr;}
+  .sec-header{flex-direction:column;align-items:flex-start;}
+  .fin-stats .fin-card{min-width:0;}
+  .card{min-width:0;word-break:break-word;}
+  .stat-card{min-width:0;}
+  /* Fix all grids overflowing */
+  .fin-stats{display:flex;flex-direction:column;}
   /* Agenda mobile */
-  .agenda-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .agenda-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;}
   .ag-cols{min-width:320px;grid-template-columns:70px 1fr 1fr;}
   .turno-bar-header{min-width:320px;grid-template-columns:70px 1fr 1fr;}
   .hora-row{min-width:320px;grid-template-columns:70px 1fr 1fr;}
-  .hora-label{padding:0 .5rem;font-size:.65rem;}
-  .hora-cell{min-height:44px;padding:2px;}
-  .bb-name{font-size:.7rem;}
-  .bb-spec{font-size:.6rem;}
-  .bb-type{font-size:.56rem;}
   /* Week view mobile */
   .week-grid{overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .wg-head{min-width:500px;grid-template-columns:60px repeat(6,1fr);}
   .wg-turno-label{min-width:500px;grid-template-columns:60px repeat(6,1fr);}
   .wg-row{min-width:500px;grid-template-columns:60px repeat(6,1fr);}
   /* Modal mobile */
-  .modal{width:100%;max-width:100%;border-radius:14px 14px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:85vh;margin:0;padding:1.25rem 1rem;}
+  .modal{width:100%;max-width:100%;border-radius:14px 14px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:88vh;margin:0;padding:1.25rem 1rem;}
   .modal-overlay{align-items:flex-end;padding:0;}
-  .modal-sm{width:100%;max-width:100%;}
-  .modal-lg{width:100%;max-width:100%;}
-  /* Fin tabs mobile */
-  .fin-tabs{overflow-x:auto;flex-wrap:nowrap;}
+  .modal-sm,.modal-lg{width:100%;max-width:100%;}
+  /* Fin tabs */
+  .fin-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;}
   .fin-tab{white-space:nowrap;font-size:.72rem;padding:.5rem .75rem;}
-  /* Sala occ mobile */
+  /* Sala occ */
   .sala-occ{flex-direction:column;}
-  .sala-occ-card{min-width:unset;}
-  /* View switcher mobile */
-  .view-switcher{flex-shrink:0;}
+  .sala-occ-card{min-width:unset;width:100%;}
+  /* View switcher */
   .view-btn{padding:5px 10px;font-size:.72rem;}
-  /* Data table mobile */
-  .dt-head,.dt-row{font-size:.75rem;padding:.6rem .75rem;}
-  /* Agenda controls mobile */
-  .agenda-controls>div:last-child{width:100%;justify-content:space-between;}
+  /* Data table scroll */
+  .fin-table-wrap,.data-table{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;}
+  /* Shortcuts */
+  .dash-shortcuts{display:grid;grid-template-columns:1fr 1fr;}
+  .dash-shortcut{min-width:0;}
+  /* Fin sticky */
+  .fin-sticky-summary{padding:.5rem .875rem;}
 }
 @media(max-width:480px){
   .stats-grid{grid-template-columns:1fr;}
@@ -469,6 +472,9 @@ body.dark .tag{background:#111827;border-color:#374151;}
 .fin-card-item-name{font-size:.84rem;font-weight:600;color:var(--text);flex:1;padding-right:.5rem;}
 .fin-card-item-value{font-size:.88rem;font-weight:700;}
 .fin-card-item-meta{display:flex;gap:.5rem;align-items:center;font-size:.72rem;color:var(--text-light);flex-wrap:wrap;margin-top:4px;}
+.fin-card-item-actions{display:flex;align-items:center;gap:.375rem;margin-top:.5rem;}
+.fin-del-btn{width:28px;height:28px;border-radius:6px;border:1px solid #fecaca;background:var(--danger-bg);color:var(--danger);font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.fin-del-btn:hover{background:var(--danger);color:#fff;}
 .swipe-action{position:absolute;right:0;top:0;bottom:0;width:72px;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;pointer-events:none;opacity:0;transition:opacity .15s;border-radius:0 10px 10px 0;}
 .swipe-action.success{background:var(--success);color:#fff;}
 .swipe-action.warning{background:var(--warning);color:#fff;}
@@ -1006,7 +1012,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             </div>
             <div class="cfg-row"><div><div class="cfg-label">Alertas de inadimplência</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
             <div class="cfg-row"><div><div class="cfg-label">Alertas de aniversário</div><div class="cfg-sub">Notificar no dia</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
-            <div class="cfg-row"><div><div class="cfg-label">Alertas de vínculo anual</div><div class="cfg-sub">A cada 12 meses</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+            <div class="cfg-row"><div><div class="cfg-label">Alertas de vínculo anual</div><div class="cfg-sub">1º ano: a cada 6 meses · Seguintes: a cada 12 meses</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
           </div>
           <div class="card">
             <div class="cfg-title">Integrações</div>
@@ -1130,9 +1136,9 @@ body.dark .tag{background:#111827;border-color:#374151;}
     <div class="form-group">
       <label class="form-label">Vencimento da Locação</label>
       <select class="form-select" id="prof-venc-locacao">
-        <option value="5">5 dias antes</option>
-        <option value="15" selected>15 dias antes</option>
-        <option value="30">30 dias antes</option>
+        <option value="5">5</option>
+        <option value="15" selected>15</option>
+        <option value="30">30</option>
       </select>
     </div>
     <div class="form-group"><label class="form-label">Observações</label><textarea class="form-textarea" id="prof-obs" placeholder="Observações gerais sobre o profissional..."></textarea></div>
@@ -1382,6 +1388,7 @@ async function initApp() {
   initRelatorios();
   loadSubcats();
   renovarHorasMensais();
+  verificarAlertasVencimento();
 }
 
 // ══ CONFIG ══
@@ -1810,6 +1817,9 @@ function _renderReceitasData(receitas) {
         ${r.vencimento?`<span>📅 ${formatDate(r.vencimento)}</span>`:''}
         ${wppLink&&r.status!=='Pago'?`<a href="${wppLink}" target="_blank" class="wpp-btn">📱 Avisar</a>`:''}
       </div>
+      <div class="fin-card-item-actions">
+        <button class="fin-del-btn" onclick="excluirLancamento('${r.id}','receitas')">🗑️</button>
+      </div>
     </div>`;}).join('');
   initSwipe();
 }
@@ -1847,6 +1857,9 @@ function _renderDespesasData(despesas) {
         <span class="badge ${d.categoria==='Fixo'?'badge-neutral':d.categoria==='Variável'?'badge-warning':'badge-danger'}">${d.categoria||'—'}</span>
         ${d.subcategoria?`<span>${d.subcategoria}</span>`:''}
         ${d.vencimento?`<span>📅 ${formatDate(d.vencimento)}</span>`:''}
+      </div>
+      <div class="fin-card-item-actions">
+        <button class="fin-del-btn" onclick="excluirLancamento('${d.id}','despesas')">🗑️</button>
       </div>
     </div>`).join('');
   initSwipe();
@@ -2649,26 +2662,75 @@ async function excluirPlano(id) {
   } catch(e) { showToast('Erro ao excluir plano.', 'error'); console.error(e); }
 }
 
-// ── ALERTA VÍNCULO 6 MESES ──
+// ── EXCLUIR LANÇAMENTO (mobile) ──
+async function excluirLancamento(id, colecao) {
+  if(!confirm('Excluir este lançamento? Esta ação não pode ser desfeita.')) return;
+  try {
+    await db.collection(colecao).doc(id).delete();
+    showToast('Lançamento excluído!', 'success');
+    loadFinanceiro();
+  } catch(e) { showToast('Erro ao excluir.', 'error'); console.error(e); }
+}
+
+// ── ALERTA VÍNCULO 6m/12m ──
 function checkVinculoAlertas(profs) {
   const hoje = new Date();
   const alertas = [];
   profs.forEach(p => {
     if(!p.contratoInicio || p.status !== 'Ativo') return;
     const inicio = new Date(p.contratoInicio + 'T12:00:00');
-    const mesesVinculo = (hoje - inicio) / (1000 * 60 * 60 * 24 * 30.44);
-    // Alertar a cada 6 meses no primeiro ano, depois a cada 6 meses
-    const proximoAlerta = Math.ceil(mesesVinculo / 6) * 6;
-    const diasParaAlerta = Math.round((proximoAlerta * 30.44) - (hoje - inicio) / (1000 * 60 * 60 * 24));
-    if(diasParaAlerta >= 0 && diasParaAlerta <= 7) {
-      alertas.push({
-        icon: '📅',
-        title: `Vínculo de ${Math.floor(mesesVinculo)} meses completos em breve`,
-        sub: `${p.nome} — iniciou em ${formatDate(p.contratoInicio)}`
-      });
+    const diasVinculo = Math.floor((hoje - inicio) / (1000 * 60 * 60 * 24));
+    const mesesVinculo = diasVinculo / 30.44;
+
+    // 1º ano: alertar aos 6 meses e aos 12 meses
+    // Anos seguintes: alertar a cada 12 meses
+    let proximosAlertas = [];
+    if(mesesVinculo < 12) {
+      proximosAlertas = [6, 12];
+    } else {
+      const ultimoMultiplo = Math.floor(mesesVinculo / 12) * 12;
+      proximosAlertas = [ultimoMultiplo + 12];
     }
+
+    proximosAlertas.forEach(meses => {
+      const diasParaAlerta = Math.round((meses * 30.44) - diasVinculo);
+      if(diasParaAlerta >= 0 && diasParaAlerta <= 7) {
+        const anos = meses >= 12 ? `${meses/12} ano${meses/12>1?'s':''}` : `${meses} meses`;
+        alertas.push({
+          icon: '📅',
+          title: `Vínculo de ${anos} em ${diasParaAlerta === 0 ? 'hoje' : diasParaAlerta + ' dias'}`,
+          sub: p.nome
+        });
+      }
+    });
   });
   return alertas;
+}
+
+// ── ALERTAS DE VENCIMENTO REAIS (Firebase) ──
+async function verificarAlertasVencimento() {
+  const hoje = new Date();
+  const configDoc = await db.collection('config').doc('geral').get();
+  const config = configDoc.exists ? configDoc.data() : {};
+  const dias = config.alertaDias || ['30','15','5'];
+
+  try {
+    const snap = await db.collection('profissionais')
+      .where('status','==','Ativo').get();
+    
+    snap.docs.forEach(doc => {
+      const p = doc.data();
+      if(!p.contratoFim) return;
+      const fim = new Date(p.contratoFim + 'T12:00:00');
+      const diffDias = Math.floor((fim - hoje) / (1000 * 60 * 60 * 24));
+      
+      // Verificar se está dentro dos dias configurados
+      if(dias.includes(String(diffDias)) || diffDias <= 0) {
+        console.log(`Alerta: contrato de ${p.nome} vence em ${diffDias} dias`);
+        // Aqui futuramente dispara e-mail
+      }
+    });
+  } catch(e) { console.error('Erro ao verificar alertas:', e); }
 }
 
 // Enter key no login
