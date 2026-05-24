@@ -472,6 +472,9 @@ body.dark .tag{background:#111827;border-color:#374151;}
 .fin-card-item-name{font-size:.84rem;font-weight:600;color:var(--text);flex:1;padding-right:.5rem;}
 .fin-card-item-value{font-size:.88rem;font-weight:700;}
 .fin-card-item-meta{display:flex;gap:.5rem;align-items:center;font-size:.72rem;color:var(--text-light);flex-wrap:wrap;margin-top:4px;}
+.fin-card-item-actions{display:flex;align-items:center;gap:.375rem;margin-top:.5rem;}
+.fin-del-btn{width:28px;height:28px;border-radius:6px;border:1px solid #fecaca;background:var(--danger-bg);color:var(--danger);font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.fin-del-btn:hover{background:var(--danger);color:#fff;}
 .swipe-action{position:absolute;right:0;top:0;bottom:0;width:72px;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;pointer-events:none;opacity:0;transition:opacity .15s;border-radius:0 10px 10px 0;}
 .swipe-action.success{background:var(--success);color:#fff;}
 .swipe-action.warning{background:var(--warning);color:#fff;}
@@ -1009,7 +1012,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             </div>
             <div class="cfg-row"><div><div class="cfg-label">Alertas de inadimplência</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
             <div class="cfg-row"><div><div class="cfg-label">Alertas de aniversário</div><div class="cfg-sub">Notificar no dia</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
-            <div class="cfg-row"><div><div class="cfg-label">Alertas de vínculo anual</div><div class="cfg-sub">A cada 12 meses</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+            <div class="cfg-row"><div><div class="cfg-label">Alertas de vínculo anual</div><div class="cfg-sub">1º ano: a cada 6 meses · Seguintes: a cada 12 meses</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
           </div>
           <div class="card">
             <div class="cfg-title">Integrações</div>
@@ -1133,9 +1136,9 @@ body.dark .tag{background:#111827;border-color:#374151;}
     <div class="form-group">
       <label class="form-label">Vencimento da Locação</label>
       <select class="form-select" id="prof-venc-locacao">
-        <option value="5">5 dias antes</option>
-        <option value="15" selected>15 dias antes</option>
-        <option value="30">30 dias antes</option>
+        <option value="5">5</option>
+        <option value="15" selected>15</option>
+        <option value="30">30</option>
       </select>
     </div>
     <div class="form-group"><label class="form-label">Observações</label><textarea class="form-textarea" id="prof-obs" placeholder="Observações gerais sobre o profissional..."></textarea></div>
@@ -1217,10 +1220,29 @@ body.dark .tag{background:#111827;border-color:#374151;}
         <option value="12">12x</option>
       </select>
     </div>
+    <div id="parcela-valor-wrap" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Valor de cada parcela (R$)</label>
+        <input class="form-input" id="despesa-valor-parcela" placeholder="0,00" type="text">
+        <div style="font-size:.7rem;color:var(--text-lighter);margin-top:4px">Informe o valor de cada parcela individualmente.</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Recorrência</label>
+      <select class="form-select" id="despesa-recorrencia">
+        <option value="nenhuma">Não recorrente</option>
+        <option value="mensal">Mensal</option>
+        <option value="bimestral">Bimestral</option>
+        <option value="trimestral">Trimestral</option>
+        <option value="semestral">Semestral</option>
+        <option value="anual">Anual</option>
+      </select>
+    </div>
     <div id="parcelas-info" style="display:none;background:var(--info-bg);border:1px solid #bfdbfe;border-radius:8px;padding:.7rem .875rem;font-size:.78rem;color:var(--info);margin-bottom:.875rem">
       📅 As parcelas serão pré-lançadas automaticamente nos meses seguintes, aguardando confirmação.
     </div>
     <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem">Histórico de alterações registrado automaticamente.</div>
+    <div class="form-group"><label class="form-label">Observação</label><textarea class="form-textarea" id="despesa-obs" placeholder="Informações adicionais sobre este lançamento..." style="min-height:60px"></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-danger btn-sm" id="despesa-excluir-btn" style="display:none" onclick="excluirDespesa()">Excluir</button>
       <button class="btn btn-secondary" onclick="closeModal('nova-despesa')">Cancelar</button>
@@ -1254,6 +1276,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
       💰 Valor final com desconto: <strong id="receita-valor-final">R$ 0,00</strong>
     </div>
     <div class="form-group"><label class="form-label">Vencimento</label><input class="form-input" type="date" id="receita-venc"></div>
+    <div class="form-group"><label class="form-label">Observação</label><textarea class="form-textarea" id="receita-obs" placeholder="Informações adicionais..." style="min-height:60px"></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('nova-receita')">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarReceita()">Lançar</button>
@@ -1385,6 +1408,7 @@ async function initApp() {
   initRelatorios();
   loadSubcats();
   renovarHorasMensais();
+  verificarAlertasVencimento();
 }
 
 // ══ CONFIG ══
@@ -1601,6 +1625,7 @@ function verProfissional(id) {
     ${p.rua?`<div style="background:#f9fafb;border-radius:7px;padding:.7rem;border:1px solid var(--border);margin-bottom:1rem"><div style="font-size:.65rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Endereço</div><div style="font-size:.82rem">${p.rua}, ${p.numero||''} — ${p.bairro||''} — ${p.cidade||''} · CEP ${p.cep||''}</div></div>`:''}
     ${p.obs?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:.7rem;margin-bottom:1rem;font-size:.82rem"><strong>Observações:</strong> ${p.obs}</div>`:''}
     <div class="modal-actions">
+      <button class="btn btn-danger" onclick="excluirProfissional('${id}')">Excluir</button>
       <button class="btn btn-secondary" onclick="closeModal('ver-prof')">Fechar</button>
       <button class="btn btn-primary" onclick="closeModal('ver-prof');editarProfissional('${id}')">Editar Cadastro</button>
     </div>`;
@@ -1782,19 +1807,20 @@ function _renderReceitasData(receitas) {
     return;
   }
   const hoje = new Date().toISOString().split('T')[0];
-  if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px"><span>Profissional</span><span>Tipo</span><span>Vencimento</span><span>Valor</span><span>Status</span><span>WhatsApp</span></div>`+
+  if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px 40px"><span>Profissional</span><span>Tipo</span><span>Vencimento</span><span>Valor</span><span>Status</span><span>WhatsApp</span><span></span></div>`+
     receitas.map(r=>{
       const prof = profissionaisCache.find(p=>p.id===r.profId);
       const tel = prof?.telefone?.replace(/\D/g,'')||'';
       const msg = encodeURIComponent(`Olá, ${r.profissional}! Lembramos que o pagamento da sua locação na Áthos vence hoje, ${r.vencimento?formatDate(r.vencimento):''}. Valor: ${formatMoney(r.valor)}. Obrigada!`);
       const wppLink = tel ? `https://wa.me/55${tel}?text=${msg}` : '';
-      return `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px">
-        <span style="font-weight:500">${r.profissional||'—'}</span>
+      return `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px 40px">
+        <span style="font-weight:500">${r.profissional||'—'}${r.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">${r.obs}</span>`:''}</span>
         <span style="color:var(--text-light)">${r.tipo||'—'}</span>
         <span>${r.vencimento?formatDate(r.vencimento):'—'}</span>
         <span style="font-weight:600">${formatMoney(r.valor)}</span>
         <span><span class="badge ${r.status==='Pago'?'badge-success':'badge-warning'} status-click" onclick="toggleStatusRec(this,'${r.id}')">${r.status||'Pendente'}</span></span>
         <span>${wppLink&&r.status!=='Pago'?`<a href="${wppLink}" target="_blank" class="wpp-btn">📱 Avisar</a>`:'—'}</span>
+        <span><button class="fin-del-btn" style="opacity:1" onclick="excluirLancamento('${r.id}','receitas')">🗑️</button></span>
       </div>`;}).join('');
   if(mobileEl) mobileEl.innerHTML = receitas.map(r=>{
     const prof = profissionaisCache.find(p=>p.id===r.profId);
@@ -1813,6 +1839,9 @@ function _renderReceitasData(receitas) {
         ${r.vencimento?`<span>📅 ${formatDate(r.vencimento)}</span>`:''}
         ${wppLink&&r.status!=='Pago'?`<a href="${wppLink}" target="_blank" class="wpp-btn">📱 Avisar</a>`:''}
       </div>
+      <div class="fin-card-item-actions">
+        <button class="fin-del-btn" onclick="excluirLancamento('${r.id}','receitas')">🗑️</button>
+      </div>
     </div>`;}).join('');
   initSwipe();
 }
@@ -1830,13 +1859,14 @@ function _renderDespesasData(despesas) {
     if(mobileEl) mobileEl.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhuma despesa cadastrada.</div>';
     return;
   }
-  if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Vencimento</span><span>Valor</span><span>Status</span></div>`+
-    despesas.map(d=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
-      <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="editarDespesa('${d.id}')">${d.descricao||'—'}${d.parcela?` <span class="badge badge-neutral" style="font-size:.6rem">${d.parcela}</span>`:''}</span>
-      <span><span class="badge ${d.categoria==='Fixo'?'badge-neutral':d.categoria==='Variável'?'badge-warning':'badge-danger'}">${d.categoria||'—'}</span></span>
+  if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 40px"><span>Descrição</span><span>Categoria</span><span>Vencimento</span><span>Valor</span><span>Status</span><span></span></div>`+
+    despesas.map(d=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 40px">
+      <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="editarDespesa('${d.id}')">${d.descricao||'—'}${d.parcela?` <span class="badge badge-neutral" style="font-size:.6rem">${d.parcela}</span>`:''}${d.recorrencia&&d.recorrencia!=='nenhuma'?` <span class="badge badge-info" style="font-size:.6rem">🔄 ${d.recorrencia}</span>`:''}</span>
+      <span><span class="badge ${d.categoria==='Fixo'?'badge-neutral':d.categoria==='Variável'?'badge-warning':'badge-danger'}">${d.categoria||'—'}</span>${d.subcategoria?`<br><span style="font-size:.68rem;color:var(--text-lighter)">${d.subcategoria}</span>`:''}</span>
       <span>${d.vencimento?formatDate(d.vencimento):'—'}</span>
       <span style="font-weight:600;color:var(--danger)">${formatMoney(d.valor)}</span>
       <span><span class="badge ${d.status==='Pago'?'badge-success':'badge-warning'} status-click" onclick="toggleStatusDesp(this,'${d.id}')">${d.status||'Pendente'}</span></span>
+      <span><button class="fin-del-btn" style="opacity:1" onclick="excluirLancamento('${d.id}','despesas')">🗑️</button></span>
     </div>`).join('');
   if(mobileEl) mobileEl.innerHTML = despesas.map(d=>`
     <div class="fin-card-item" data-id="${d.id}" data-tipo="desp" data-status="${d.status||'Pendente'}">
@@ -1850,6 +1880,9 @@ function _renderDespesasData(despesas) {
         <span class="badge ${d.categoria==='Fixo'?'badge-neutral':d.categoria==='Variável'?'badge-warning':'badge-danger'}">${d.categoria||'—'}</span>
         ${d.subcategoria?`<span>${d.subcategoria}</span>`:''}
         ${d.vencimento?`<span>📅 ${formatDate(d.vencimento)}</span>`:''}
+      </div>
+      <div class="fin-card-item-actions">
+        <button class="fin-del-btn" onclick="excluirLancamento('${d.id}','despesas')">🗑️</button>
       </div>
     </div>`).join('');
   initSwipe();
@@ -1909,24 +1942,37 @@ async function toggleStatusDesp(el,id) {
 async function salvarDespesa() {
   const id = document.getElementById('despesa-edit-id').value;
   const numParcelas = parseInt(document.getElementById('despesa-parcelas').value) || 1;
+  const valorInput = document.getElementById('despesa-valor').value;
+  const valorParcelaInput = document.getElementById('despesa-valor-parcela')?.value;
   const data = {
     descricao: document.getElementById('despesa-desc').value,
     categoria: document.getElementById('despesa-cat').value,
-    subcategoria: document.getElementById('despesa-subcat').value,
-    valor: document.getElementById('despesa-valor').value,
+    subcategoria: document.getElementById('despesa-subcat')?.value || '',
+    valor: valorInput,
     vencimento: document.getElementById('despesa-venc').value,
+    recorrencia: document.getElementById('despesa-recorrencia')?.value || 'nenhuma',
+    obs: document.getElementById('despesa-obs')?.value || '',
     status: 'Pendente',
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   if(!data.descricao){showToast('Descrição é obrigatória.','error');return;}
+  if(!data.valor){showToast('Valor é obrigatório.','error');return;}
   try {
     if(id) {
-      data.historico = firebase.firestore.FieldValue.arrayUnion({editadoEm:new Date().toISOString(),por:auth.currentUser?.email||'admin'});
+      data.historico = firebase.firestore.FieldValue.arrayUnion({
+        editadoEm: new Date().toISOString(),
+        por: auth.currentUser?.email||'admin'
+      });
       await db.collection('despesas').doc(id).update(data);
       showToast('Despesa atualizada!','success');
     } else if(numParcelas > 1) {
-      await salvarDespesaComParcelas(data, numParcelas);
-      showToast(`${numParcelas} parcelas lançadas com vencimentos automáticos!`,'success');
+      // Use informed per-installment value
+      const vlrParcela = valorParcelaInput && valorParcelaInput.trim() ? valorParcelaInput : valorInput;
+      await salvarDespesaComParcelas({...data, valor: vlrParcela}, numParcelas);
+      showToast(`${numParcelas} parcelas lançadas!`,'success');
+    } else if(data.recorrencia && data.recorrencia !== 'nenhuma') {
+      await lancarRecorrente(data, 'despesas');
+      showToast('Despesa recorrente lançada!','success');
     } else {
       data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
       await db.collection('despesas').add(data);
@@ -1948,8 +1994,11 @@ function editarDespesa(id) {
       const d=doc.data();
       document.getElementById('despesa-desc').value=d.descricao||'';
       document.getElementById('despesa-cat').value=d.categoria||'Fixo';
+      if(document.getElementById('despesa-subcat')) document.getElementById('despesa-subcat').value=d.subcategoria||'';
       document.getElementById('despesa-valor').value=d.valor||'';
       document.getElementById('despesa-venc').value=d.vencimento||'';
+      if(document.getElementById('despesa-obs')) document.getElementById('despesa-obs').value=d.obs||'';
+      if(document.getElementById('despesa-recorrencia')) document.getElementById('despesa-recorrencia').value=d.recorrencia||'nenhuma';
     }
   });
   openModal('nova-despesa');
@@ -2278,8 +2327,25 @@ function formatDate(str) {
   return d.toLocaleDateString('pt-BR');
 }
 
+function parseMoney(str) {
+  if(!str) return 0;
+  // Handle Brazilian format: 1.234,56 or 1234,56 or 1234.56
+  const s = String(str).trim();
+  // Remove currency symbol and spaces
+  const clean = s.replace(/[R$\s]/g, '');
+  // If has both dot and comma, dot is thousands separator
+  if(clean.includes('.') && clean.includes(',')) {
+    return parseFloat(clean.replace(/\./g,'').replace(',','.')) || 0;
+  }
+  // If only comma, it's decimal separator
+  if(clean.includes(',')) {
+    return parseFloat(clean.replace(',','.')) || 0;
+  }
+  return parseFloat(clean) || 0;
+}
+
 function formatMoney(v) {
-  const num=parseFloat(v)||0;
+  const num = typeof v === 'string' ? parseMoney(v) : (parseFloat(v)||0);
   return num.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 }
 
@@ -2332,23 +2398,26 @@ async function salvarReceita() {
   const profId = document.getElementById('receita-prof').value;
   const valor = document.getElementById('receita-valor').value;
   const desconto = document.getElementById('receita-desconto').value || '0';
-  const valorFinal = parseFloat(valor.replace(',','.')) * (1 - parseFloat(desconto)/100);
+  const valorNum = parseMoney(valor);
+  const valorFinal = valorNum * (1 - parseFloat(desconto)/100);
   const data = {
     profissional: profId ? (profissionaisCache.find(p=>p.id===profId)?.nome||profId) : '—',
     profId,
     categoria: document.getElementById('receita-cat').value,
     tipo: document.getElementById('receita-tipo').value,
-    subcategoria: document.getElementById('receita-subcat').value,
+    subcategoria: document.getElementById('receita-subcat')?.value || '',
     valor: valor,
     desconto: desconto,
     valorFinal: isNaN(valorFinal) ? valor : valorFinal.toFixed(2),
     vencimento: document.getElementById('receita-venc').value,
+    obs: document.getElementById('receita-obs')?.value || '',
     status: 'Pendente',
     mes: new Date().getMonth(),
     ano: new Date().getFullYear(),
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   if(!data.profissional || data.profissional === '—') { showToast('Selecione um profissional.','error'); return; }
+  if(!valor) { showToast('Valor é obrigatório.','error'); return; }
   try {
     await db.collection('receitas').add(data);
     closeModal('nova-receita');
@@ -2652,26 +2721,169 @@ async function excluirPlano(id) {
   } catch(e) { showToast('Erro ao excluir plano.', 'error'); console.error(e); }
 }
 
-// ── ALERTA VÍNCULO 6 MESES ──
+// ── EXCLUIR PROFISSIONAL ──
+async function excluirProfissional(id) {
+  if(!id) return;
+  if(!confirm('Excluir este profissional? Os dados históricos serão preservados nos relatórios, mas o cadastro será removido.')) return;
+  try {
+    await db.collection('profissionais').doc(id).delete();
+    closeModal('ver-prof');
+    showToast('Profissional excluído.','success');
+    loadProfissionais();
+  } catch(e) { showToast('Erro ao excluir profissional.','error'); console.error(e); }
+}
+
+// ── TOGGLE PARCELAS ──
+function toggleParcelas(sel) {
+  const info = document.getElementById('parcelas-info');
+  const valorWrap = document.getElementById('parcela-valor-wrap');
+  const isParceled = sel.value > 1;
+  if(info) info.style.display = isParceled ? 'block' : 'none';
+  if(valorWrap) valorWrap.style.display = isParceled ? 'block' : 'none';
+}
+
+// Enter key no login
+document.getElementById('login-senha').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-senha').focus();});
+// ── LANÇAMENTO RECORRENTE ──
+async function lancarRecorrente(data, colecao) {
+  const mesesMap = {mensal:1,bimestral:2,trimestral:3,semestral:6,anual:12};
+  const intervalo = mesesMap[data.recorrencia] || 1;
+  const qtd = Math.floor(12 / intervalo);
+  const batch = db.batch();
+  const baseDate = new Date(data.vencimento + 'T12:00:00');
+  for(let i = 0; i < qtd; i++) {
+    const venc = new Date(baseDate);
+    venc.setMonth(venc.getMonth() + (i * intervalo));
+    const ref = db.collection(colecao).doc();
+    batch.set(ref, {
+      ...data,
+      vencimento: venc.toISOString().split('T')[0],
+      status: 'Pendente',
+      recorrenciaNum: i + 1,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+  await batch.commit();
+}
+
+// ── RELATÓRIO FILTRADO COM DATA REAL ──
+async function gerarRelatFiltrado() {
+  const profFiltro = document.getElementById('filtro-prof').value;
+  const catFiltro = document.getElementById('filtro-cat').value;
+  const subcatFiltro = document.getElementById('filtro-subcat').value;
+  const tipoFiltro = document.getElementById('filtro-tipo').value;
+  const dataInicio = document.getElementById('filtro-data-inicio').value;
+  const dataFim = document.getElementById('filtro-data-fim').value;
+  try {
+    let receitas = [], despesas = [];
+    if(tipoFiltro !== 'Apenas Despesas') {
+      let q = db.collection('receitas');
+      if(dataInicio) q = q.where('vencimento','>=',dataInicio);
+      if(dataFim) q = q.where('vencimento','<=',dataFim);
+      const snap = await q.get();
+      receitas = snap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Receita'}));
+    }
+    if(tipoFiltro !== 'Apenas Receitas') {
+      let q = db.collection('despesas');
+      if(dataInicio) q = q.where('vencimento','>=',dataInicio);
+      if(dataFim) q = q.where('vencimento','<=',dataFim);
+      const snap = await q.get();
+      despesas = snap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Despesa'}));
+    }
+    let todos = [...receitas,...despesas];
+    if(profFiltro) todos = todos.filter(x=>x.profId===profFiltro);
+    if(catFiltro) todos = todos.filter(x=>x.categoria===catFiltro);
+    if(subcatFiltro) todos = todos.filter(x=>x.subcategoria===subcatFiltro);
+    const totalRec = receitas.filter(x=>todos.includes(x)).reduce((s,x)=>s+(parseMoney(x.valor)),0);
+    const totalDesp = despesas.filter(x=>todos.includes(x)).reduce((s,x)=>s+(parseMoney(x.valor)),0);
+    document.getElementById('filtrado-indicadores').innerHTML = `
+      <div class="ind-card"><div class="ind-label">Receitas</div><div class="ind-value" style="color:var(--success)">${formatMoney(totalRec)}</div><div class="ind-delta">${receitas.length} lançamentos</div></div>
+      <div class="ind-card"><div class="ind-label">Despesas</div><div class="ind-value" style="color:var(--danger)">${formatMoney(totalDesp)}</div><div class="ind-delta">${despesas.length} lançamentos</div></div>
+      <div class="ind-card"><div class="ind-label">Saldo</div><div class="ind-value">${formatMoney(totalRec-totalDesp)}</div><div class="ind-delta ${totalRec-totalDesp>=0?'pos':'neg'}">${totalRec-totalDesp>=0?'positivo':'negativo'}</div></div>
+      <div class="ind-card"><div class="ind-label">Total</div><div class="ind-value">${todos.length}</div><div class="ind-delta">registros</div></div>`;
+    const tabela = document.getElementById('filtrado-tabela');
+    tabela.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span></div>` +
+      (todos.length===0?'<div style="padding:1rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum resultado para o período selecionado.</div>':
+      todos.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+        <span style="font-weight:500">${x.descricao||x.profissional||'—'} <span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span></span>
+        <span>${x.categoria||'—'}</span><span>${x.subcategoria||'—'}</span>
+        <span>${x.vencimento?formatDate(x.vencimento):'—'}</span>
+        <span style="font-weight:600;color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</span>
+      </div>`).join(''));
+    document.getElementById('relat-filtrado-resultado').style.display='block';
+    showToast(`${todos.length} registros encontrados.`,'success');
+  } catch(e) { showToast('Erro ao gerar relatório.','error'); console.error(e); }
+}
+
+async function excluirLancamento(id, colecao) {
+  if(!confirm('Excluir este lançamento? Esta ação não pode ser desfeita.')) return;
+  try {
+    await db.collection(colecao).doc(id).delete();
+    showToast('Lançamento excluído!', 'success');
+    loadFinanceiro();
+  } catch(e) { showToast('Erro ao excluir.', 'error'); console.error(e); }
+}
+
+// ── ALERTA VÍNCULO 6m/12m ──
 function checkVinculoAlertas(profs) {
   const hoje = new Date();
   const alertas = [];
   profs.forEach(p => {
     if(!p.contratoInicio || p.status !== 'Ativo') return;
     const inicio = new Date(p.contratoInicio + 'T12:00:00');
-    const mesesVinculo = (hoje - inicio) / (1000 * 60 * 60 * 24 * 30.44);
-    // Alertar a cada 6 meses no primeiro ano, depois a cada 6 meses
-    const proximoAlerta = Math.ceil(mesesVinculo / 6) * 6;
-    const diasParaAlerta = Math.round((proximoAlerta * 30.44) - (hoje - inicio) / (1000 * 60 * 60 * 24));
-    if(diasParaAlerta >= 0 && diasParaAlerta <= 7) {
-      alertas.push({
-        icon: '📅',
-        title: `Vínculo de ${Math.floor(mesesVinculo)} meses completos em breve`,
-        sub: `${p.nome} — iniciou em ${formatDate(p.contratoInicio)}`
-      });
+    const diasVinculo = Math.floor((hoje - inicio) / (1000 * 60 * 60 * 24));
+    const mesesVinculo = diasVinculo / 30.44;
+
+    // 1º ano: alertar aos 6 meses e aos 12 meses
+    // Anos seguintes: alertar a cada 12 meses
+    let proximosAlertas = [];
+    if(mesesVinculo < 12) {
+      proximosAlertas = [6, 12];
+    } else {
+      const ultimoMultiplo = Math.floor(mesesVinculo / 12) * 12;
+      proximosAlertas = [ultimoMultiplo + 12];
     }
+
+    proximosAlertas.forEach(meses => {
+      const diasParaAlerta = Math.round((meses * 30.44) - diasVinculo);
+      if(diasParaAlerta >= 0 && diasParaAlerta <= 7) {
+        const anos = meses >= 12 ? `${meses/12} ano${meses/12>1?'s':''}` : `${meses} meses`;
+        alertas.push({
+          icon: '📅',
+          title: `Vínculo de ${anos} em ${diasParaAlerta === 0 ? 'hoje' : diasParaAlerta + ' dias'}`,
+          sub: p.nome
+        });
+      }
+    });
   });
   return alertas;
+}
+
+// ── ALERTAS DE VENCIMENTO REAIS (Firebase) ──
+async function verificarAlertasVencimento() {
+  const hoje = new Date();
+  const configDoc = await db.collection('config').doc('geral').get();
+  const config = configDoc.exists ? configDoc.data() : {};
+  const dias = config.alertaDias || ['30','15','5'];
+
+  try {
+    const snap = await db.collection('profissionais')
+      .where('status','==','Ativo').get();
+    
+    snap.docs.forEach(doc => {
+      const p = doc.data();
+      if(!p.contratoFim) return;
+      const fim = new Date(p.contratoFim + 'T12:00:00');
+      const diffDias = Math.floor((fim - hoje) / (1000 * 60 * 60 * 24));
+      
+      // Verificar se está dentro dos dias configurados
+      if(dias.includes(String(diffDias)) || diffDias <= 0) {
+        console.log(`Alerta: contrato de ${p.nome} vence em ${diffDias} dias`);
+        // Aqui futuramente dispara e-mail
+      }
+    });
+  } catch(e) { console.error('Erro ao verificar alertas:', e); }
 }
 
 // Enter key no login
