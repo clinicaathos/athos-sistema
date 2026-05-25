@@ -1464,8 +1464,8 @@ let currentDespesaEdit = null;
 
 async function initApp() {
   await loadConfig();
+  await loadProfissionais(); // aguardar para popular cache antes do dashboard
   loadDashboard();
-  loadProfissionais();
   loadFinanceiro();
   initAgenda();
   loadPlanos();
@@ -1843,37 +1843,45 @@ function loadDashboard() {
     const turnos = [{k:'manha',n:'Manhã'},{k:'tarde',n:'Tarde'},{k:'noite',n:'Noite'}];
     function getTurnoKey(ini) {
       if(!ini) return '';
-      const h=parseInt(ini.split(':')[0]),m=parseInt(ini.split(':')[1]||'0'),t=h*60+m;
-      if(t<13*60) return 'manha';
-      if(t<17*60+30) return 'tarde';
+      const [h,m] = ini.split(':').map(Number);
+      const t = h*60+(m||0);
+      if(t < 13*60) return 'manha';
+      if(t < 17*60+30) return 'tarde';
       return 'noite';
     }
-    let totalSlots=0, ocupados=0;
-    const miniItems = [];
+    function getSalaKey(sala) {
+      if(!sala) return 's1';
+      const s = sala.toLowerCase().trim();
+      // Áthos II deve vir antes para não confundir com Áthos I
+      if(s.includes('ii') || s.includes('2') || s === s2.toLowerCase()) return 's2';
+      return 's1';
+    }
+    let miniItems = [];
     hoje_loc.forEach(l=>{
-      const tk=getTurnoKey(l.inicio);
-      const tn=turnos.find(t=>t.k===tk)?.n||'';
-      const prof=profissionaisCache.find(p=>p.id===l.profId)?.nome||l.profId||'?';
-      const sala=(l.sala||'').toLowerCase().includes('1')||((l.sala||'').toLowerCase().includes('i')&&!(l.sala||'').toLowerCase().includes('ii'))?s1:s2;
-      miniItems.push(`<div class="mini-item"><span class="mini-time">${tn}</span><span class="mini-room">${sala}</span><span class="mini-name">${prof}</span></div>`);
+      const tn = turnos.find(t=>t.k===getTurnoKey(l.inicio))?.n||'—';
+      const sala = getSalaKey(l.sala);
+      const salaLabel = sala==='s1' ? s1 : s2;
+      const prof = profissionaisCache.find(p=>p.id===l.profId)?.nome || l.profId || '?';
+      miniItems.push(`<div class="mini-item"><span class="mini-time">${tn}</span><span class="mini-room">${salaLabel}</span><span class="mini-name">${prof}</span></div>`);
     });
-    // Calcular turnos — 3 turnos × 2 salas = 6 slots
-    totalSlots=6; ocupados=Math.min(hoje_loc.length,6);
-    document.getElementById('dash-turnos').textContent=`${ocupados} / ${totalSlots}`;
-    document.getElementById('dash-turnos-sub').textContent=`${totalSlots-ocupados} turno(s) disponível(is)`;
+    const ocupados = Math.min(hoje_loc.length, 6);
+    document.getElementById('dash-turnos').textContent=`${ocupados} / 6`;
+    document.getElementById('dash-turnos-sub').textContent=`${6-ocupados} turno(s) disponível(is)`;
+    const badgeEl = document.getElementById('dash-hoje-count');
+    if(badgeEl) badgeEl.textContent=`${ocupados} turno${ocupados!==1?'s':''}`;
     document.getElementById('dash-hoje-list').innerHTML=miniItems.length?miniItems.join(''):`<div class="mini-item"><span class="mini-time">—</span><span class="mini-room">—</span><span class="mini-name">Nenhuma locação hoje</span></div>`;
 
-    // Barras de ocupação do mês no dashboard
-    const manha_s1=all.filter(l=>getTurnoKey(l.inicio)==='manha'&&((l.sala||'').toLowerCase().includes('1')||((l.sala||'').includes('I')&&!(l.sala||'').includes('II')))).length;
-    const tarde_s1=all.filter(l=>getTurnoKey(l.inicio)==='tarde'&&((l.sala||'').toLowerCase().includes('1')||((l.sala||'').includes('I')&&!(l.sala||'').includes('II')))).length;
-    const noite_s1=all.filter(l=>getTurnoKey(l.inicio)==='noite'&&((l.sala||'').toLowerCase().includes('1')||((l.sala||'').includes('I')&&!(l.sala||'').includes('II')))).length;
-    const manha_s2=all.filter(l=>getTurnoKey(l.inicio)==='manha'&&!(l.sala||'').includes('I')&&(l.sala||'').includes('2')).length;
-    const tarde_s2=all.filter(l=>getTurnoKey(l.inicio)==='tarde'&&!(l.sala||'').includes('I')&&(l.sala||'').includes('2')).length;
-    const noite_s2=all.filter(l=>getTurnoKey(l.inicio)==='noite'&&!(l.sala||'').includes('I')&&(l.sala||'').includes('2')).length;
+    // Barras de ocupação — total de locações por turno/sala (não só hoje)
+    const occ = {manha_s1:0,tarde_s1:0,noite_s1:0,manha_s2:0,tarde_s2:0,noite_s2:0};
+    all.forEach(l=>{
+      const tk=getTurnoKey(l.inicio);
+      const sk=getSalaKey(l.sala);
+      if(tk && sk) occ[`${tk}_${sk}`]=(occ[`${tk}_${sk}`]||0)+1;
+    });
     const max=5;
     const pct=(n)=>Math.min(100,Math.round(n/max*100))+'%';
     document.querySelectorAll('.turno-bar-wrap').forEach((el,i)=>{
-      const vals=[manha_s1,tarde_s1,noite_s1,manha_s2,tarde_s2,noite_s2];
+      const vals=[occ.manha_s1,occ.tarde_s1,occ.noite_s1,occ.manha_s2,occ.tarde_s2,occ.noite_s2];
       const v=vals[i]||0;
       const fill=el.querySelector('.turno-bar-fill');
       const cnt=el.querySelector('.turno-bar-count');
@@ -2245,18 +2253,23 @@ function renderAgendaDia() {
     // Montar mapa: turno+sala → locação
     function getTurno(inicio) {
       if(!inicio) return '';
-      const h = parseInt(inicio.split(':')[0]);
-      const m = parseInt((inicio.split(':')[1]||'0'));
-      const tot = h*60+m;
+      const [h,m] = inicio.split(':').map(Number);
+      const tot = h*60+(m||0);
       if(tot < 13*60) return 'manha';
       if(tot < 17*60+30) return 'tarde';
       return 'noite';
+    }
+    function getSk(sala) {
+      if(!sala) return 's1';
+      const s = sala.toLowerCase().trim();
+      if(s.includes('ii') || s.includes('2') || s === (appConfig.sala2||'áthos ii').toLowerCase()) return 's2';
+      return 's1';
     }
 
     const mapa = {};
     locacoesDia.forEach(l => {
       const t = getTurno(l.inicio);
-      const salaKey = (l.sala||'').toLowerCase().includes('1') || (l.sala||'').toLowerCase().includes('i') && !(l.sala||'').toLowerCase().includes('ii') ? 's1' : 's2';
+      const salaKey = getSk(l.sala);
       mapa[`${t}_${salaKey}`] = l;
     });
 
