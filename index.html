@@ -513,6 +513,25 @@ body.dark .tag{background:#111827;border-color:#374151;}
 /* ── WHATSAPP BTN ── */
 .wpp-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;background:#25d366;color:#fff;font-size:.65rem;font-weight:600;cursor:pointer;border:none;font-family:'Inter',sans-serif;transition:opacity .15s;text-decoration:none;white-space:nowrap;}
 .wpp-btn:hover{opacity:.85;}
+@media print {
+  body { font-size: 11pt; color: #000; background: #fff; }
+  .nav-sidebar, .top-bar, .fin-tabs, .quick-filters, .modal-overlay,
+  .btn, .qf-btn, .fin-del-btn, .wpp-btn, .status-click,
+  #banner-alertas-venc, .bday-alert, .toast-container { display: none !important; }
+  .page { display: block !important; padding: 0 !important; }
+  .app-layout { display: block !important; }
+  #page-relatorios { display: block !important; }
+  .relat-tab-content { display: block !important; }
+  .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+  .chart-wrap { break-inside: avoid; page-break-inside: avoid; max-width: 100%; }
+  canvas { max-width: 100% !important; height: auto !important; }
+  #filtrado-charts-wrap { grid-template-columns: 1fr 1fr !important; gap: .5rem !important; }
+  .indicadores-grid { grid-template-columns: repeat(4, 1fr) !important; }
+  .data-table { font-size: 9pt; }
+  .dt-row, .dt-head { break-inside: avoid; }
+  h1, h2, .cfg-title { page-break-after: avoid; }
+  @page { margin: 15mm; size: A4 portrait; }
+}
 </style>
 </head>
 <body>
@@ -1280,15 +1299,14 @@ body.dark .tag{background:#111827;border-color:#374151;}
       📅 O valor informado será lançado em cada parcela.
     </div>
     <div class="form-group">
-      <label class="form-label">Recorrência</label>
-      <select class="form-select" id="despesa-recorrencia">
-        <option value="nenhuma">Não recorrente</option>
-        <option value="mensal">Mensal</option>
-        <option value="bimestral">Bimestral</option>
-        <option value="trimestral">Trimestral</option>
-        <option value="semestral">Semestral</option>
-        <option value="anual">Anual</option>
-      </select>
+      <label class="form-label">Repetição</label>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span style="font-size:.82rem;color:var(--text-light)">Repetir em</span>
+        <input class="form-input" type="number" id="despesa-recorrencia-qtd" min="1" max="120" value="1" style="width:72px;text-align:center">
+        <span style="font-size:.82rem;color:var(--text-light)">parcela(s) mensais</span>
+      </div>
+      <div style="font-size:.7rem;color:var(--text-lighter);margin-top:4px">1 = sem repetição · Ex: 12 = lança os próximos 12 meses</div>
+      <input type="hidden" id="despesa-recorrencia" value="nenhuma">
     </div>
     <div id="parcelas-info" style="display:none;background:var(--info-bg);border:1px solid #bfdbfe;border-radius:8px;padding:.7rem .875rem;font-size:.78rem;color:var(--info);margin-bottom:.875rem">
       📅 As parcelas serão pré-lançadas automaticamente nos meses seguintes com o mesmo valor.
@@ -1339,6 +1357,15 @@ body.dark .tag{background:#111827;border-color:#374151;}
       💰 Valor final com desconto: <strong id="receita-valor-final">R$ 0,00</strong>
     </div>
     <div class="form-group"><label class="form-label">Vencimento</label><input class="form-input" type="date" id="receita-venc"></div>
+    <div class="form-group">
+      <label class="form-label">Repetição</label>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span style="font-size:.82rem;color:var(--text-light)">Repetir em</span>
+        <input class="form-input" type="number" id="receita-recorrencia-qtd" min="1" max="120" value="1" style="width:72px;text-align:center">
+        <span style="font-size:.82rem;color:var(--text-light)">parcela(s) mensais</span>
+      </div>
+      <div style="font-size:.7rem;color:var(--text-lighter);margin-top:4px">1 = sem repetição · Ex: 12 = lança os próximos 12 meses</div>
+    </div>
     <div class="form-group"><label class="form-label">Observação</label><textarea class="form-textarea" id="receita-obs" placeholder="Informações adicionais..." style="min-height:60px"></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-danger btn-sm" id="receita-excluir-btn" style="display:none" onclick="excluirReceita()">Excluir</button>
@@ -1565,7 +1592,14 @@ function renderProfissionais(profs, filtro='todos') {
 
   grid.innerHTML = filtered.map(p => {
     const isBday = p.nascimento && new Date(p.nascimento).toDateString().slice(4,10) === hoje.toDateString().slice(4,10);
-    const vencendo = p.contratoFim && (new Date(p.contratoFim)-hoje)/(1000*60*60*24) <= 30 && (new Date(p.contratoFim)-hoje)/(1000*60*60*24) >= 0;
+    const diffDias = p.contratoFim ? Math.floor((new Date(p.contratoFim+'T12:00:00')-hoje)/(1000*60*60*24)) : null;
+    const vencido = diffDias !== null && diffDias < 0;
+    const vencendo = diffDias !== null && diffDias >= 0 && diffDias <= 2;
+    const alertaBadge = vencido
+      ? `<span style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border-radius:50%;width:18px;height:18px;font-size:.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff" title="Contrato vencido">!</span>`
+      : vencendo
+      ? `<span style="position:absolute;top:-6px;right:-6px;background:#f59e0b;color:#fff;border-radius:50%;width:18px;height:18px;font-size:.6rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff" title="Contrato vencendo">!</span>`
+      : '';
     const statusBadge = p.status==='Ativo' ? 'badge-success' : 'badge-neutral';
     const initials = p.nome ? p.nome.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase() : '?';
     const vinculoTag = p.vinculoFormal==='Com vínculo' ?
@@ -1583,24 +1617,27 @@ function renderProfissionais(profs, filtro='todos') {
 
     return `<div class="prof-card" onclick="verProfissional('${p.id}')">
       <div class="prof-top">
-        <div class="prof-av">${initials}</div>
+        <div style="position:relative;display:inline-block">
+          <div class="prof-av">${initials}</div>
+          ${alertaBadge}
+        </div>
         <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
           <span class="badge ${statusBadge}">${p.status||'Ativo'}</span>
-          ${vencendo?'<span class="badge badge-warning">Vencendo</span>':''}
+          ${vencido?'<span class="badge badge-danger">⚠ Vencido</span>':vencendo?'<span class="badge badge-warning">Vencendo</span>':''}
           ${isBday?'<span>🎂</span>':''}
         </div>
       </div>
       <div class="prof-name">${p.nome||'—'}${isBday?' 🎂':''}</div>
       <div class="prof-spec">${p.especialidade||''}${p.conselho?' · '+p.conselho+' '+p.registro:''}</div>
       ${p.vinculo?`<div class="prof-info">📋 ${p.vinculo}</div>`:''}
-      ${p.contratoFim?`<div class="prof-info" style="${vencendo?'color:var(--warning)':''}">📅 ${vencendo?'⚠️ ':''}Contrato até ${formatDate(p.contratoFim)}</div>`:''}
+      ${p.contratoFim?`<div class="prof-info" style="${vencido?'color:var(--danger);font-weight:600':vencendo?'color:var(--warning)':''}">📅 ${vencido?'🔴 VENCIDO — ':vencendo?'⚠️ ':''}Contrato ${vencido?'em':'até'} ${formatDate(p.contratoFim)}</div>`:''}
       ${p.rua?`<div class="prof-info">📍 ${p.rua}, ${p.numero||''} — ${p.cidade||''}</div>`:''}
       ${horasBar}
       <div class="prof-tags">
         ${vinculoTag}
         ${p.abordagem?`<span class="tag">${p.abordagem}</span>`:''}
         ${p.publicoAlvo?`<span class="tag">${p.publicoAlvo}</span>`:''}
-        ${vencendo?`<button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="event.stopPropagation();abrirRenovar('${p.id}')">Renovar</button>`:''}
+        ${(vencido||vencendo)?`<button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="event.stopPropagation();abrirRenovar('${p.id}')">Renovar</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1765,12 +1802,21 @@ function updateDashboardProfs() {
   const ativos = profissionaisCache.filter(p=>p.status==='Ativo').length;
   document.getElementById('dash-profs').textContent = ativos;
   const hoje = new Date();
+
+  // Vencidos ou vencendo em até 2 dias
   const vencendo = profissionaisCache.filter(p=>{
     if(!p.contratoFim) return false;
-    const diff=(new Date(p.contratoFim)-hoje)/(1000*60*60*24);
-    return diff>=0&&diff<=30;
+    const diff=(new Date(p.contratoFim+'T12:00:00')-hoje)/(1000*60*60*24);
+    return diff<=2; // inclui negativos (vencidos)
   });
-  document.getElementById('dash-profs-sub').textContent = vencendo.length>0?`⚠ ${vencendo.length} contrato${vencendo.length>1?'s':''} vencendo`:`${ativos} ativo${ativos!==1?'s':''}`;
+  const vencidos = vencendo.filter(p=>(new Date(p.contratoFim+'T12:00:00')-hoje)<0);
+
+  if(vencidos.length>0)
+    document.getElementById('dash-profs-sub').textContent=`🔴 ${vencidos.length} contrato${vencidos.length>1?'s':''} vencido${vencidos.length>1?'s':''}`;
+  else if(vencendo.length>0)
+    document.getElementById('dash-profs-sub').textContent=`⚠ ${vencendo.length} contrato${vencendo.length>1?'s':''} vencendo`;
+  else
+    document.getElementById('dash-profs-sub').textContent=`${ativos} ativo${ativos!==1?'s':''}`;
 
   // Birthday check
   const bdayProfs = profissionaisCache.filter(p=>{
@@ -1783,14 +1829,14 @@ function updateDashboardProfs() {
     bdayBanner.innerHTML=`<div class="bday-alert">🎂 <div><strong>Aniversário hoje:</strong> ${bdayProfs.map(p=>p.nome).join(', ')} — Lembre de parabenizar!</div></div>`;
   } else { bdayBanner.innerHTML=''; }
 
-  // Alertas
+  // Alertas — inclui vencidos
   const alertas=[];
   bdayProfs.forEach(p=>alertas.push({icon:'🎂',title:`Aniversário hoje`,sub:p.nome}));
   vencendo.forEach(p=>{
-    const diff=Math.floor((new Date(p.contratoFim)-hoje)/(1000*60*60*24));
-    alertas.push({icon:'⚠️',title:`Contrato vence em ${diff} dia${diff!==1?'s':''}`,sub:p.nome,action:`abrirRenovar('${p.id}')`});
+    const diff=Math.floor((new Date(p.contratoFim+'T12:00:00')-hoje)/(1000*60*60*24));
+    const label=diff<0?`Contrato VENCIDO há ${Math.abs(diff)} dia(s)`:diff===0?'Contrato vence HOJE':`Contrato vence em ${diff} dia(s)`;
+    alertas.push({icon:'⚠️',title:label,sub:p.nome,action:`abrirRenovar('${p.id}')`});
   });
-  // Vínculo 6 meses
   const vinculoAlertas = checkVinculoAlertas(profissionaisCache);
   vinculoAlertas.forEach(a => alertas.push(a));
 
@@ -1898,34 +1944,34 @@ async function loadFinanceiro() {
   document.getElementById('fin-mes-label').textContent=`Financeiro — ${meses[hoje.getMonth()]} ${hoje.getFullYear()}`;
 
   try {
-    // Receitas — apenas pendentes/futuras (passadas e pagas vão para Movimentação)
     const hoje2 = new Date().toISOString().split('T')[0];
-    const recSnap=await db.collection('receitas').where('mes','==',hoje.getMonth()).where('ano','==',hoje.getFullYear()).get();
+
+    // Resumo do topo: buscar TODOS os pagos (sem filtro de mês)
+    const [recTodosSnap, despTodosSnap] = await Promise.all([
+      db.collection('receitas').where('status','==','Pago').get(),
+      db.collection('despesas').where('status','==','Pago').get()
+    ]);
+    const totalRecPago = recTodosSnap.docs.reduce((s,d)=>s+(parseFloat(d.data().valor)||0),0);
+    const totalDespPago = despTodosSnap.docs.reduce((s,d)=>s+(parseFloat(d.data().valor)||0),0);
+    const saldo = totalRecPago - totalDespPago;
+    document.getElementById('fin-receita-total').textContent = formatMoney(totalRecPago);
+    document.getElementById('fin-despesas-total').textContent = formatMoney(totalDespPago);
+    document.getElementById('fin-saldo').textContent = formatMoney(saldo);
+    document.getElementById('fin-saldo-sub').textContent = (saldo>=0?'resultado positivo':'resultado negativo')+' (somente pagos)';
+    document.getElementById('fin-saldo').style.color = saldo>=0?'var(--success)':'var(--danger)';
+    updateStickySummary(totalRecPago, totalDespPago);
+
+    // Tabelas: pendentes/futuros
+    const recSnap=await db.collection('receitas').get();
     const todasReceitas=recSnap.docs.map(d=>({id:d.id,...d.data()}));
     const receitas=todasReceitas.filter(r=>r.status!=='Pago' || (r.vencimento && r.vencimento >= hoje2));
     renderReceitas(receitas);
 
-    // Despesas — apenas pendentes/futuras
     const despSnap=await db.collection('despesas').get();
     const todasDespesas=despSnap.docs.map(d=>({id:d.id,...d.data()}));
     const despesas=todasDespesas.filter(d=>d.status!=='Pago' || (d.vencimento && d.vencimento >= hoje2));
     renderDespesas(despesas);
-
-    // Totalizador Contas a Pagar — pendentes
     _updateDespTotalizador(despesas);
-
-    // Totais — saldo mensal considera apenas Pagos
-    const totalRec=receitas.reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
-    const totalDesp=despesas.reduce((s,d)=>s+(parseFloat(d.valor)||0),0);
-    const totalRecPago=receitas.filter(r=>r.status==='Pago').reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
-    const totalDespPago=despesas.filter(d=>d.status==='Pago').reduce((s,d)=>s+(parseFloat(d.valor)||0),0);
-    const saldo=totalRecPago-totalDespPago;
-    document.getElementById('fin-receita-total').textContent=formatMoney(totalRec);
-    document.getElementById('fin-despesas-total').textContent=formatMoney(totalDesp);
-    document.getElementById('fin-saldo').textContent=formatMoney(saldo);
-    document.getElementById('fin-saldo-sub').textContent=(saldo>=0?'resultado positivo':'resultado negativo')+' (somente pagos)';
-    updateStickySummary(totalRec, totalDesp);
-    document.getElementById('fin-saldo').style.color=saldo>=0?'var(--text)':'var(--danger)';
 
     renderPrevisao();
   } catch(e) { console.error(e); renderReceitas([]); renderDespesas([]); renderPrevisao(); }
@@ -1995,15 +2041,17 @@ function renderDespesas(despesas) {
 }
 
 function _renderDespesasData(despesas) {
+  // Garantir ordem cronológica também no mobile
+  const sorted = [...despesas].sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||''));
   const table=document.getElementById('desp-table');
   const mobileEl=document.getElementById('desp-cards-mobile');
-  if(despesas.length===0){
+  if(sorted.length===0){
     if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Vencimento</span><span>Valor</span><span>Status</span></div><div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhuma despesa cadastrada.</div>`;
     if(mobileEl) mobileEl.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhuma despesa cadastrada.</div>';
     return;
   }
   if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 40px"><span></span><span>Descrição</span><span>Categoria</span><span>Vencimento</span><span>Valor</span><span>Status</span><span></span></div>`+
-    despesas.map(d=>`<div class="dt-row" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 40px">
+    sorted.map(d=>`<div class="dt-row" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 40px">
       <span><input type="checkbox" class="desp-sel-cb" data-id="${d.id}" onchange="updateLoteBtn('desp')"></span>
       <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="editarDespesa('${d.id}')">${d.descricao||'—'}${d.parcela?` <span class="badge badge-neutral" style="font-size:.6rem">${d.parcela}</span>`:''}${d.recorrencia&&d.recorrencia!=='nenhuma'?` <span class="badge badge-info" style="font-size:.6rem">🔄 ${d.recorrencia}</span>`:''}</span>
       <span><span class="badge ${d.categoria==='Fixo'?'badge-neutral':d.categoria==='Variável'?'badge-warning':'badge-danger'}">${d.categoria||'—'}</span>${d.subcategoria?`<br><span style="font-size:.68rem;color:var(--text-lighter)">${d.subcategoria}</span>`:''}</span>
@@ -2012,7 +2060,7 @@ function _renderDespesasData(despesas) {
       <span><span class="badge ${d.status==='Pago'?'badge-success':'badge-warning'} status-click" onclick="toggleStatusDesp(this,'${d.id}')">${d.status||'Pendente'}</span></span>
       <span><button class="fin-del-btn" style="opacity:1" onclick="excluirLancamento('${d.id}','despesas')">🗑️</button></span>
     </div>`).join('');
-  if(mobileEl) mobileEl.innerHTML = despesas.map(d=>`
+  if(mobileEl) mobileEl.innerHTML = sorted.map(d=>`
     <div class="fin-card-item" data-id="${d.id}" data-tipo="desp" data-status="${d.status||'Pendente'}">
       <div class="swipe-action ${d.status==='Pago'?'warning':'success'}">${d.status==='Pago'?'Pendente':'Pago ✓'}</div>
       <div class="fin-card-item-top">
@@ -2026,41 +2074,56 @@ function _renderDespesasData(despesas) {
         ${d.vencimento?`<span>📅 ${formatDate(d.vencimento)}</span>`:''}
       </div>
       <div class="fin-card-item-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editarDespesa('${d.id}')">✏️ Editar</button>
         <button class="fin-del-btn" onclick="excluirLancamento('${d.id}','despesas')">🗑️</button>
       </div>
     </div>`).join('');
   initSwipe();
 }
 
-function renderPrevisao() {
+async function renderPrevisao() {
   const profs=profissionaisCache.filter(p=>p.status==='Ativo');
-  let recPrev=0;
-  const linhasRec=profs.map(p=>{
-    let v=0;
-    if(p.vinculo==='Turno Fixo'&&appConfig.precoTurno) v=parseFloat(appConfig.precoTurno.replace(/[^\d,]/g,'').replace(',','.'))||0;
-    if(p.vinculo==='Pacote de Horas'&&appConfig.preco10h) v=parseFloat(appConfig.preco10h.replace(/[^\d,]/g,'').replace(',','.'))||0;
-    recPrev+=v;
-    const venc=p.contratoFim&&(new Date(p.contratoFim)-new Date())<30*24*60*60*1000;
-    return `<div class="prev-row"><span${venc?' style="color:var(--danger)"':''} class="prev-row-label">${p.nome||'—'}${venc?' ⚠':''}  — ${p.vinculo||'—'}</span><span class="prev-row-value" style="color:${v>0?'var(--success)':'var(--text-lighter)'}">${v>0?formatMoney(v):'variável'}</span></div>`;
-  }).join('');
-
-  const despPrev=2830; // custos fixos padrão
-  const saldoPrev=recPrev-despPrev;
-
   const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const proxMes=meses[(new Date().getMonth()+1)%12];
 
-  document.getElementById('prev-cards').innerHTML=`
-    <div class="prev-card"><div class="prev-label">Receita Prevista — ${proxMes}</div><div class="prev-value" style="color:var(--success)">${formatMoney(recPrev)}</div><div class="prev-sub">baseado nos contratos ativos</div></div>
-    <div class="prev-card"><div class="prev-label">Despesas Previstas — ${proxMes}</div><div class="prev-value" style="color:var(--danger)">${formatMoney(despPrev)}</div><div class="prev-sub">custos fixos recorrentes</div></div>
-    <div class="prev-card"><div class="prev-label">Saldo Projetado</div><div class="prev-value" style="color:${saldoPrev>=0?'var(--text)':'var(--danger)'}">${formatMoney(saldoPrev)}</div><div class="prev-sub" style="color:${saldoPrev>=0?'var(--success)':'var(--danger)'}">estimativa ${saldoPrev>=0?'positiva':'negativa'}</div></div>
-    ${profs.some(p=>p.contratoFim&&(new Date(p.contratoFim)-new Date())<30*24*60*60*1000)?`<div class="prev-card" style="background:var(--warning-bg);border-color:#fde68a"><div class="prev-label" style="color:var(--warning)">⚠ Atenção</div><div style="font-size:.82rem;color:var(--warning);font-weight:500;margin-top:4px">Há contratos vencendo. Renove para garantir a receita projetada.</div></div>`:''}`;
+  // Receita prevista baseada nos contratos
+  let recPrev=0;
+  const linhasRec=profs.map(p=>{
+    let v=0;
+    const s1val=parseFloat((appConfig.precoTurnoS1||'').replace(/[^\d,]/g,'').replace(',','.'))||0;
+    const s2val=parseFloat((appConfig.precoTurnoS2||'').replace(/[^\d,]/g,'').replace(',','.'))||0;
+    if(p.vinculo==='Turno Fixo') v=s1val||s2val;
+    if(p.vinculo==='Pacote de Horas'&&appConfig.preco10h) v=parseFloat(appConfig.preco10h.replace(/[^\d,]/g,'').replace(',','.'))||0;
+    recPrev+=v;
+    const diff=p.contratoFim?Math.floor((new Date(p.contratoFim+'T12:00:00')-new Date())/(1000*60*60*24)):99;
+    const venc=diff<=2;
+    return `<div class="prev-row"><span${venc?' style="color:var(--danger)"':''} class="prev-row-label">${p.nome||'—'}${venc?' ⚠':''} — ${p.vinculo||'—'}</span><span class="prev-row-value" style="color:${v>0?'var(--success)':'var(--text-lighter)'}">${v>0?formatMoney(v):'variável'}</span></div>`;
+  }).join('');
 
-  document.getElementById('prev-receitas').innerHTML=linhasRec||'<div style="font-size:.82rem;color:var(--text-lighter)">Sem profissionais ativos</div>';
-  document.getElementById('prev-despesas').innerHTML=`
-    <div class="prev-row"><span class="prev-row-label">Aluguel do imóvel</span><span class="prev-row-value" style="color:var(--danger)">R$ 2.000</span></div>
-    <div class="prev-row"><span class="prev-row-label">Internet + Condomínio</span><span class="prev-row-value" style="color:var(--danger)">R$ 450</span></div>
-    <div class="prev-row"><span class="prev-row-label">Energia elétrica (estimativa)</span><span class="prev-row-value" style="color:var(--danger)">R$ 380</span></div>`;
+  // Despesas fixas reais do Firebase (categoria Fixo)
+  try {
+    const despSnap = await db.collection('despesas').where('categoria','==','Fixo').get();
+    const fixas = despSnap.docs.map(d=>d.data());
+    // Agrupar por descrição (evitar duplicatas de parcelamentos)
+    const agrup = {};
+    fixas.forEach(d=>{ const k=d.descricao||'—'; if(!agrup[k]||parseFloat(d.valor)>parseFloat(agrup[k].valor)) agrup[k]=d; });
+    const despPrev = Object.values(agrup).reduce((s,d)=>s+(parseFloat(d.valor)||0),0);
+    const saldoPrev = recPrev - despPrev;
+
+    document.getElementById('prev-cards').innerHTML=`
+      <div class="prev-card"><div class="prev-label">Receita Prevista — ${proxMes}</div><div class="prev-value" style="color:var(--success)">${formatMoney(recPrev)}</div><div class="prev-sub">baseado nos contratos ativos</div></div>
+      <div class="prev-card"><div class="prev-label">Despesas Fixas Previstas — ${proxMes}</div><div class="prev-value" style="color:var(--danger)">${formatMoney(despPrev)}</div><div class="prev-sub">baseado em despesas fixas cadastradas</div></div>
+      <div class="prev-card"><div class="prev-label">Saldo Projetado</div><div class="prev-value" style="color:${saldoPrev>=0?'var(--success)':'var(--danger)'}">${formatMoney(saldoPrev)}</div><div class="prev-sub" style="color:${saldoPrev>=0?'var(--success)':'var(--danger)'}">estimativa ${saldoPrev>=0?'positiva':'negativa'}</div></div>
+      ${profs.some(p=>p.contratoFim&&Math.floor((new Date(p.contratoFim+'T12:00:00')-new Date())/(1000*60*60*24))<=2)?`<div class="prev-card" style="background:var(--warning-bg);border-color:#fde68a"><div class="prev-label" style="color:var(--warning)">⚠ Atenção</div><div style="font-size:.82rem;color:var(--warning);font-weight:500;margin-top:4px">Há contratos vencidos ou vencendo. Renove para garantir a receita projetada.</div></div>`:''}`;
+
+    document.getElementById('prev-receitas').innerHTML=linhasRec||'<div style="font-size:.82rem;color:var(--text-lighter)">Sem profissionais ativos</div>';
+    document.getElementById('prev-despesas').innerHTML=Object.values(agrup).length>0
+      ? Object.values(agrup).map(d=>`<div class="prev-row"><span class="prev-row-label">${d.descricao||'—'}${d.subcategoria?` <span style="font-size:.68rem;color:var(--text-lighter)">· ${d.subcategoria}</span>`:''}</span><span class="prev-row-value" style="color:var(--danger)">${formatMoney(d.valor)}</span></div>`).join('')
+      : '<div style="font-size:.82rem;color:var(--text-lighter)">Nenhuma despesa fixa cadastrada.</div>';
+  } catch(e) {
+    console.error('Erro ao buscar despesas fixas:', e);
+    document.getElementById('prev-despesas').innerHTML='<div style="font-size:.82rem;color:var(--text-lighter)">Erro ao carregar despesas fixas.</div>';
+  }
 }
 
 async function toggleStatusRec(el,id) {
@@ -2086,6 +2149,7 @@ async function toggleStatusDesp(el,id) {
 async function salvarDespesa() {
   const id = document.getElementById('despesa-edit-id').value;
   const numParcelas = parseInt(document.getElementById('despesa-parcelas').value) || 1;
+  const recorrenciaQtd = parseInt(document.getElementById('despesa-recorrencia-qtd')?.value) || 1;
   const valorInput = document.getElementById('despesa-valor').value;
   const data = {
     descricao: document.getElementById('despesa-desc').value,
@@ -2111,9 +2175,10 @@ async function salvarDespesa() {
     } else if(numParcelas > 1) {
       await salvarDespesaComParcelas({...data}, numParcelas);
       showToast(`${numParcelas} parcelas lançadas!`,'success');
-    } else if(data.recorrencia && data.recorrencia !== 'nenhuma') {
-      await lancarRecorrente(data, 'despesas');
-      showToast('Despesa recorrente lançada!','success');
+    } else if(recorrenciaQtd > 1) {
+      // Repetir em X meses
+      await lancarRecorrentePorQtd(data, recorrenciaQtd, 'despesas');
+      showToast(`${recorrenciaQtd} lançamentos criados!`,'success');
     } else {
       data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
       await db.collection('despesas').add(data);
@@ -2320,23 +2385,93 @@ function editarLocacao(id) {
 }
 
 function renderAgendaSemana() {
+  const s1 = appConfig.sala1||'Áthos I';
+  const s2 = appConfig.sala2||'Áthos II';
   const turnos=[
-    {nome:'🌅 Manhã',range:appConfig.hrManha||'08h às 12h',label:'Manhã'},
-    {nome:'☀️ Tarde',range:appConfig.hrTarde||'13h às 17h',label:'Tarde'},
-    {nome:'🌙 Noite',range:appConfig.hrNoite||'17h30 às 21h30',label:'Noite'}
+    {nome:'🌅 Manhã',range:appConfig.hrManha||'08h às 12h',key:'manha'},
+    {nome:'☀️ Tarde',range:appConfig.hrTarde||'13h às 17h',key:'tarde'},
+    {nome:'🌙 Noite',range:appConfig.hrNoite||'17h30 às 21h30',key:'noite'}
   ];
-  document.getElementById('agenda-semana-body').innerHTML=turnos.map(t=>`
-    <div class="wg-turno-sec">
-      <div class="wg-turno-label">
-        <div class="wg-turno-name">${t.nome} <span>${t.range}</span></div>
-        ${[0,1,2,3,4,5].map(()=>'<div class="wg-turno-fill"></div>').join('')}
-      </div>
-      ${['Sala 1','Sala 2'].map(sala=>`
-      <div class="wg-row">
-        <div class="wg-time">${sala}</div>
-        ${[0,1,2,3,4,5].map(d=>`<div class="wg-cell${d===1?' wg-today':''}" onclick="openModal('nova-locacao')"><button class="wg-add">+</button></div>`).join('')}
-      </div>`).join('')}
-    </div>`).join('');
+  const diaSemana=(currentAgendaDate.getDay()+6)%7;
+  const monday=new Date(currentAgendaDate);
+  monday.setDate(monday.getDate()-diaSemana);
+  const diasSemana=Array.from({length:6},(_,i)=>{
+    const d=new Date(monday); d.setDate(d.getDate()+i);
+    return d;
+  });
+  const diasStr = diasSemana.map(d=>d.toISOString().split('T')[0]);
+  const hoje = new Date().toISOString().split('T')[0];
+
+  function getTurnoKey(ini) {
+    if(!ini) return '';
+    const [h,m]=ini.split(':').map(Number), t=h*60+(m||0);
+    if(t<13*60) return 'manha';
+    if(t<17*60+30) return 'tarde';
+    return 'noite';
+  }
+  function getSk(sala) {
+    if(!sala) return 's1';
+    const s=sala.toLowerCase().trim();
+    if(s.includes('ii')||s.includes('2')) return 's2';
+    return 's1';
+  }
+
+  // Render skeleton primeiro
+  const headerDias = `<div class="wg-head-dias" style="display:grid;grid-template-columns:80px repeat(6,1fr);background:#f3f4f6;border-bottom:1px solid var(--border);min-width:600px">
+    <div style="padding:.35rem .5rem;font-size:.62rem;font-weight:700;color:var(--gold)">Turno</div>
+    ${diasSemana.map((d,i)=>{
+      const isH=diasStr[i]===hoje;
+      return `<div style="padding:.35rem .5rem;font-size:.65rem;font-weight:${isH?'700':'500'};color:${isH?'var(--gold)':'var(--text-light)'};text-align:center">${d.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric'})}</div>`;
+    }).join('')}
+  </div>`;
+
+  db.collection('locacoes').get().then(snap=>{
+    const all = snap.docs.map(d=>({id:d.id,...d.data()}));
+    // Filtrar locações que sobrepõem a semana
+    const semLocacoes = all.filter(l=>{
+      if(!l.dataInicio) return false;
+      const fim = l.dataFim||l.dataInicio;
+      return l.dataInicio <= diasStr[5] && fim >= diasStr[0];
+    });
+
+    // Mapa: turno_sala_dataStr → locação
+    const mapa = {};
+    semLocacoes.forEach(l=>{
+      const tk=getTurnoKey(l.inicio);
+      const sk=getSk(l.sala);
+      const ini=l.dataInicio, fim=l.dataFim||l.dataInicio;
+      diasStr.forEach(ds=>{
+        if(ds>=ini&&ds<=fim) mapa[`${tk}_${sk}_${ds}`]=l;
+      });
+    });
+
+    const body = turnos.map(t=>`
+      <div class="wg-turno-sec">
+        <div class="wg-turno-label">
+          <div class="wg-turno-name">${t.nome} <span>${t.range}</span></div>
+          ${diasStr.map(()=>'<div class="wg-turno-fill"></div>').join('')}
+        </div>
+        ${[{k:'s1',n:s1},{k:'s2',n:s2}].map(sala=>`
+        <div class="wg-row">
+          <div class="wg-time">${sala.n}</div>
+          ${diasStr.map((ds,di)=>{
+            const loc=mapa[`${t.key}_${sala.k}_${ds}`];
+            const isH=ds===hoje;
+            if(loc){
+              const prof=profissionaisCache.find(p=>p.id===loc.profId)?.nome||loc.profId||'?';
+              return `<div class="wg-cell${isH?' wg-today':''}" style="background:${loc.cor||'var(--gold)'};opacity:.85;cursor:pointer" onclick="editarLocacao('${loc.id}')">
+                <span style="font-size:.65rem;font-weight:600;color:#fff;padding:2px 4px">${prof}</span>
+              </div>`;
+            }
+            return `<div class="wg-cell${isH?' wg-today':''}" onclick="openModal('nova-locacao')"><button class="wg-add">+</button></div>`;
+          }).join('')}
+        </div>`).join('')}
+      </div>`).join('');
+
+    document.getElementById('agenda-semana-body').innerHTML = headerDias + body;
+  }).catch(()=>{
+    document.getElementById('agenda-semana-body').innerHTML='<div style="padding:1rem;color:var(--text-lighter);font-size:.82rem">Erro ao carregar agenda semanal.</div>';
+  });
 }
 
 function renderAgendaMes() {
@@ -2346,21 +2481,52 @@ function renderAgendaMes() {
   const primeiroDia=new Date(ano,mes,1);
   const ultimoDia=new Date(ano,mes+1,0);
   const inicio=(primeiroDia.getDay());
-  let html='';
-  // Dias do mês anterior
-  for(let i=0;i<inicio;i++){
-    const d=new Date(ano,mes,-(inicio-i-1));
-    html+=`<div class="month-day other-month"><div class="month-day-num">${d.getDate()}</div></div>`;
-  }
-  // Dias do mês
-  for(let d=1;d<=ultimoDia.getDate();d++){
-    const data=new Date(ano,mes,d);
-    const isToday=data.toDateString()===hoje.toDateString();
-    html+=`<div class="month-day${isToday?' today-day':''}" onclick="selectMonthDay('${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}')">
-      <div class="month-day-num">${d}${isToday?' ●':''}</div>
-    </div>`;
-  }
-  document.getElementById('agenda-mes-body').innerHTML=html;
+
+  db.collection('locacoes').get().then(snap=>{
+    const all=snap.docs.map(d=>({id:d.id,...d.data()}));
+    // Mapa: dataStr → count de locações
+    const ocupMap={};
+    all.forEach(l=>{
+      if(!l.dataInicio) return;
+      const ini=new Date(l.dataInicio+'T12:00:00');
+      const fim=new Date((l.dataFim||l.dataInicio)+'T12:00:00');
+      for(let d=new Date(ini);d<=fim;d.setDate(d.getDate()+1)){
+        if(d.getMonth()===mes&&d.getFullYear()===ano){
+          const k=d.toISOString().split('T')[0];
+          ocupMap[k]=(ocupMap[k]||0)+1;
+        }
+      }
+    });
+
+    let html='';
+    for(let i=0;i<inicio;i++){
+      const d=new Date(ano,mes,-(inicio-i-1));
+      html+=`<div class="month-day other-month"><div class="month-day-num">${d.getDate()}</div></div>`;
+    }
+    for(let d=1;d<=ultimoDia.getDate();d++){
+      const data=new Date(ano,mes,d);
+      const isToday=data.toDateString()===hoje.toDateString();
+      const ds=`${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const cnt=ocupMap[ds]||0;
+      const dots=cnt>0?`<div style="display:flex;gap:2px;justify-content:center;margin-top:2px">${Array.from({length:Math.min(cnt,6)},()=>'<span style="width:5px;height:5px;border-radius:50%;background:var(--gold);display:inline-block"></span>').join('')}</div>`:'';
+      html+=`<div class="month-day${isToday?' today-day':''}" onclick="selectMonthDay('${ds}')">
+        <div class="month-day-num">${d}${isToday?' ●':''}</div>
+        ${dots}
+      </div>`;
+    }
+    document.getElementById('agenda-mes-body').innerHTML=html;
+  }).catch(()=>{
+    // fallback sem Firebase
+    let html='';
+    for(let i=0;i<inicio;i++){const d=new Date(ano,mes,-(inicio-i-1));html+=`<div class="month-day other-month"><div class="month-day-num">${d.getDate()}</div></div>`;}
+    for(let d=1;d<=ultimoDia.getDate();d++){
+      const data=new Date(ano,mes,d);
+      const isToday=data.toDateString()===new Date().toDateString();
+      const ds=`${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      html+=`<div class="month-day${isToday?' today-day':''}" onclick="selectMonthDay('${ds}')"><div class="month-day-num">${d}${isToday?' ●':''}</div></div>`;
+    }
+    document.getElementById('agenda-mes-body').innerHTML=html;
+  });
 }
 
 function selectMonthDay(dateStr) {
@@ -2698,13 +2864,14 @@ function _renderMovData(lista) {
     if(mobileEl) mobileEl.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhum lançamento realizado.</div>';
     return;
   }
-  table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Data</span><span>Valor</span></div>` +
-    lista.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
-      <span style="font-weight:500">${x.profissional||x.descricao||'—'}${x.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">📝 ${x.obs}</span>`:''}</span>
+  table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 40px"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Data</span><span>Valor</span><span></span></div>` +
+    lista.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 40px">
+      <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="${x._tipo==='Receita'?`editarReceita('${x.id}')`:`editarDespesa('${x.id}')`}">${x.profissional||x.descricao||'—'}${x.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">📝 ${x.obs}</span>`:''}</span>
       <span><span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span></span>
       <span style="color:var(--text-light)">${x.categoria||x.tipo||'—'}</span>
       <span>${x.vencimento?formatDate(x.vencimento):'—'}</span>
       <span style="font-weight:600;color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</span>
+      <span><button class="fin-del-btn" style="opacity:1" onclick="excluirLancamento('${x.id}','${x._tipo==='Receita'?'receitas':'despesas'}')">🗑️</button></span>
     </div>`).join('');
   if(mobileEl) mobileEl.innerHTML = lista.map(x=>`
     <div class="fin-card-item" style="pointer-events:auto">
@@ -2851,15 +3018,15 @@ async function salvarReceita() {
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   if(!valor) { showToast('Valor é obrigatório.','error'); return; }
+  const recorrenciaQtd = parseInt(document.getElementById('receita-recorrencia-qtd')?.value) || 1;
   try {
     if(editId) {
-      // Edição: substitui o original sem criar duplicata
-      data.historico = firebase.firestore.FieldValue.arrayUnion({
-        editadoEm: new Date().toISOString(),
-        por: auth.currentUser?.email||'admin'
-      });
+      data.historico = firebase.firestore.FieldValue.arrayUnion({editadoEm: new Date().toISOString(), por: auth.currentUser?.email||'admin'});
       await db.collection('receitas').doc(editId).update(data);
       showToast('Receita atualizada!','success');
+    } else if(recorrenciaQtd > 1) {
+      await lancarRecorrentePorQtd(data, recorrenciaQtd, 'receitas');
+      showToast(`${recorrenciaQtd} lançamentos criados!`,'success');
     } else {
       data.status = 'Pendente';
       data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
@@ -3071,42 +3238,72 @@ async function gerarRelatFiltrado() {
       <div class="ind-card"><div class="ind-label">Saldo filtrado</div><div class="ind-value">${formatMoney(totalRec-totalDesp)}</div><div class="ind-delta ${totalRec-totalDesp>=0?'pos':'neg'}">${totalRec-totalDesp>=0?'positivo':'negativo'}</div></div>
       <div class="ind-card"><div class="ind-label">Total de registros</div><div class="ind-value">${todos.length}</div></div>`;
 
-    // ── Compilar por categoria ──
+    // ── Compilar por categoria + subcategoria ──
     const catMap = {};
+    const CATS_ORDEM = ['Fixa','Variável','Extra','Sem categoria'];
     todos.forEach(x => {
       const cat = (x.categoria||x.tipo||'Sem categoria');
-      if(!catMap[cat]) catMap[cat] = {receita:0, despesa:0, itens:0};
+      const sub = x.subcategoria||'—';
+      if(!catMap[cat]) catMap[cat] = {receita:0, despesa:0, itens:0, subs:{}};
       if(x._tipo==='Receita') catMap[cat].receita += parseFloat(x.valor)||0;
       else catMap[cat].despesa += parseFloat(x.valor)||0;
       catMap[cat].itens++;
+      if(!catMap[cat].subs[sub]) catMap[cat].subs[sub]={receita:0,despesa:0,itens:0};
+      if(x._tipo==='Receita') catMap[cat].subs[sub].receita+=parseFloat(x.valor)||0;
+      else catMap[cat].subs[sub].despesa+=parseFloat(x.valor)||0;
+      catMap[cat].subs[sub].itens++;
     });
-    const catHtml = Object.entries(catMap).map(([cat, v]) => `
-      <div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
-        <span style="font-weight:500">${cat}</span>
+
+    // Ordenar categorias
+    const catOrdenadas = [...new Set([...CATS_ORDEM, ...Object.keys(catMap)])].filter(c=>catMap[c]);
+    let catHtml='';
+    let totalRecCat=0, totalDespCat=0;
+    catOrdenadas.forEach(cat=>{
+      const v=catMap[cat];
+      totalRecCat+=v.receita; totalDespCat+=v.despesa;
+      catHtml+=`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:var(--bg);font-weight:700;border-top:2px solid var(--border)">
+        <span style="color:var(--gold)">📁 ${cat}</span>
         <span style="color:var(--success)">${v.receita>0?formatMoney(v.receita):'—'}</span>
         <span style="color:var(--danger)">${v.despesa>0?formatMoney(v.despesa):'—'}</span>
         <span style="color:var(--text-light)">${v.itens} item(s)</span>
-      </div>`).join('');
-    document.getElementById('filtrado-categorias').innerHTML = `
-      <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr"><span>Categoria</span><span>Receita</span><span>Despesa</span><span>Qtd</span></div>
-      ${catHtml||'<div style="padding:.75rem;font-size:.82rem;color:var(--text-lighter)">Sem dados</div>'}`;
+      </div>`;
+      // Subcategorias
+      Object.entries(v.subs).forEach(([sub,sv])=>{
+        catHtml+=`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr;padding-left:1.5rem">
+          <span style="color:var(--text-light);font-size:.78rem">└ ${sub}</span>
+          <span style="color:var(--success);font-size:.78rem">${sv.receita>0?formatMoney(sv.receita):'—'}</span>
+          <span style="color:var(--danger);font-size:.78rem">${sv.despesa>0?formatMoney(sv.despesa):'—'}</span>
+          <span style="color:var(--text-lighter);font-size:.78rem">${sv.itens}</span>
+        </div>`;
+      });
+    });
+    // Linha de total
+    catHtml+=`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:#f0fdf4;border-top:2px solid var(--success);font-weight:700">
+      <span>TOTAL GERAL</span>
+      <span style="color:var(--success)">${formatMoney(totalRecCat)}</span>
+      <span style="color:var(--danger)">${formatMoney(totalDespCat)}</span>
+      <span style="color:${totalRecCat-totalDespCat>=0?'var(--success)':'var(--danger)'}">${formatMoney(totalRecCat-totalDespCat)}</span>
+    </div>`;
+
+    const catHead = '<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr"><span>Categoria / Subcategoria</span><span>Receita</span><span>Despesa</span><span>Qtd / Saldo</span></div>';
+    document.getElementById('filtrado-categorias').innerHTML = catHead + (catHtml||'<div style="padding:.75rem;font-size:.82rem;color:var(--text-lighter)">Sem dados</div>');
 
     // ── Gráficos do filtrado ──
     setTimeout(()=>{
       try {
         destroyChart('chart-filtrado-bar');
         destroyChart('chart-filtrado-pizza');
-        const catLabels = Object.keys(catMap);
+        const catLabels = catOrdenadas;
         chartInstances['chart-filtrado-bar'] = new Chart(document.getElementById('chart-filtrado-bar'),{
           type:'bar',
           data:{labels:catLabels,datasets:[
-            {label:'Receita',data:catLabels.map(c=>catMap[c].receita),backgroundColor:'rgba(34,197,94,.7)',borderRadius:4},
-            {label:'Despesa',data:catLabels.map(c=>catMap[c].despesa),backgroundColor:'rgba(220,38,38,.5)',borderRadius:4}
+            {label:'Receita',data:catLabels.map(c=>catMap[c]?.receita||0),backgroundColor:'rgba(34,197,94,.7)',borderRadius:4},
+            {label:'Despesa',data:catLabels.map(c=>catMap[c]?.despesa||0),backgroundColor:'rgba(220,38,38,.5)',borderRadius:4}
           ]},
           options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}
         });
         const pizzaCores=['rgba(34,197,94,.8)','rgba(220,38,38,.5)','rgba(160,120,80,.8)','rgba(109,90,172,.8)','rgba(234,179,8,.8)'];
-        const allVals = catLabels.map(c=>catMap[c].receita+catMap[c].despesa);
+        const allVals = catLabels.map(c=>(catMap[c]?.receita||0)+(catMap[c]?.despesa||0));
         chartInstances['chart-filtrado-pizza'] = new Chart(document.getElementById('chart-filtrado-pizza'),{
           type:'doughnut',
           data:{labels:catLabels,datasets:[{data:allVals,backgroundColor:pizzaCores.slice(0,catLabels.length),borderWidth:2,borderColor:'#fff'}]},
@@ -3116,15 +3313,25 @@ async function gerarRelatFiltrado() {
     },200);
 
     const tabela = document.getElementById('filtrado-tabela');
-    tabela.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span></div>` +
-      (todos.length === 0 ? '<div style="padding:1rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum resultado encontrado.</div>' :
-      todos.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
-        <span style="font-weight:500">${x.descricao||x.profissional||'—'} <span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span>${x.parcela?` <span class="badge badge-neutral" style="font-size:.6rem">${x.parcela}</span>`:''}${x.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">📝 ${x.obs}</span>`:''}</span>
-        <span>${x.categoria||'—'}</span>
-        <span>${x.subcategoria||'—'}</span>
-        <span>${x.vencimento?formatDate(x.vencimento):'—'}</span>
-        <span style="font-weight:600;color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</span>
-      </div>`).join(''));
+    if(todos.length === 0) {
+      tabela.innerHTML = '<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span></div><div style="padding:1rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum resultado encontrado.</div>';
+    } else {
+      const head = '<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span></div>';
+      const rows = todos.map(x=>{
+        const parcelaTag = x.parcela ? ' <span class="badge badge-neutral" style="font-size:.6rem">'+x.parcela+'</span>' : '';
+        const obsTag = x.obs ? '<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">📝 '+x.obs+'</span>' : '';
+        const tipoBadge = '<span class="badge '+(x._tipo==='Receita'?'badge-success':'badge-danger')+'" style="font-size:.6rem">'+x._tipo+'</span>';
+        const cor = x._tipo==='Receita'?'var(--success)':'var(--danger)';
+        return '<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">'
+          +'<span style="font-weight:500">'+(x.descricao||x.profissional||'—')+' '+tipoBadge+parcelaTag+obsTag+'</span>'
+          +'<span>'+(x.categoria||'—')+'</span>'
+          +'<span>'+(x.subcategoria||'—')+'</span>'
+          +'<span>'+(x.vencimento?formatDate(x.vencimento):'—')+'</span>'
+          +'<span style="font-weight:600;color:'+cor+'">'+formatMoney(x.valor)+'</span>'
+          +'</div>';
+      }).join('');
+      tabela.innerHTML = head + rows;
+    }
 
     document.getElementById('relat-filtrado-resultado').style.display = 'block';
     showToast(`${todos.length} registros encontrados.`,'success');
@@ -3375,7 +3582,28 @@ async function excluirLancamento(id, colecao) {
   } catch(e) { showToast('Erro ao excluir.', 'error'); console.error(e); }
 }
 
-// ── LANÇAMENTO RECORRENTE ──
+// ── LANÇAMENTO RECORRENTE POR QUANTIDADE ──
+async function lancarRecorrentePorQtd(data, qtd, colecao) {
+  const batch = db.batch();
+  const baseDate = new Date((data.vencimento||new Date().toISOString().split('T')[0]) + 'T12:00:00');
+  for(let i = 0; i < qtd; i++) {
+    const venc = new Date(baseDate);
+    venc.setMonth(venc.getMonth() + i);
+    const ref = db.collection(colecao).doc();
+    batch.set(ref, {
+      ...data,
+      vencimento: venc.toISOString().split('T')[0],
+      status: 'Pendente',
+      parcela: qtd > 1 ? `${i+1}/${qtd}` : undefined,
+      recorrenciaNum: i + 1,
+      totalRecorrencias: qtd,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+  await batch.commit();
+}
+
+// ── LANÇAMENTO RECORRENTE (legado) ──
 async function lancarRecorrente(data, colecao) {
   const mesesMap = {mensal:1,bimestral:2,trimestral:3,semestral:6,anual:12};
   const intervalo = mesesMap[data.recorrencia] || 1;
@@ -3430,42 +3658,48 @@ function checkVinculoAlertas(profs) {
 
 // ── ALERTAS DE VENCIMENTO REAIS (Firebase) ──
 async function verificarAlertasVencimento() {
-  const hoje = new Date();
-  const configDoc = await db.collection('config').doc('geral').get();
-  const config = configDoc.exists ? configDoc.data() : {};
-  const diasAlerta = parseInt(config.alertaDias?.[0] || '2');
-
   try {
+    const hoje = new Date();
+    const hojeStr = hoje.toISOString().split('T')[0];
     const snap = await db.collection('profissionais').where('status','==','Ativo').get();
     const alertas = [];
+
     snap.docs.forEach(doc => {
       const p = doc.data();
       if(!p.contratoFim) return;
       const fim = new Date(p.contratoFim + 'T12:00:00');
       const diffDias = Math.floor((fim - hoje) / (1000 * 60 * 60 * 24));
-      if(diffDias >= 0 && diffDias <= diasAlerta) {
-        alertas.push({nome: p.nome, dias: diffDias, vencimento: p.contratoFim});
+
+      // Vencido (diffDias < 0) ou vencendo em até 2 dias
+      if(diffDias <= 2) {
+        const label = diffDias < 0
+          ? `Contrato VENCIDO há ${Math.abs(diffDias)} dia(s)`
+          : diffDias === 0 ? 'Contrato vence HOJE'
+          : `Contrato vence em ${diffDias} dia(s)`;
+        alertas.push({nome: p.nome, dias: diffDias, vencimento: p.contratoFim, label});
       }
     });
 
     if(alertas.length > 0) {
       const existing = document.getElementById('banner-alertas-venc');
-      if(!existing) {
-        const banner = document.createElement('div');
-        banner.id = 'banner-alertas-venc';
-        banner.style.cssText = 'position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:1500;background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:.75rem 1.25rem;max-width:480px;width:90%;box-shadow:0 4px 16px rgba(0,0,0,.1)';
-        banner.innerHTML = `<div style="display:flex;align-items:flex-start;gap:.75rem">
-          <span style="font-size:1.2rem">⚠️</span>
-          <div style="flex:1">
-            <div style="font-size:.82rem;font-weight:700;color:#92400e;margin-bottom:4px">Contrato(s) vencendo em breve</div>
-            ${alertas.map(a=>`<div style="font-size:.75rem;color:#78350f">• ${a.nome} — vence em ${a.dias===0?'hoje':a.dias+' dia(s)'} (${formatDate(a.vencimento)})</div>`).join('')}
-          </div>
-          <button onclick="document.getElementById('banner-alertas-venc').remove()" style="background:none;border:none;cursor:pointer;font-size:1rem;color:#92400e;padding:0">✕</button>
-        </div>`;
-        document.body.appendChild(banner);
-        setTimeout(()=>{ if(banner.parentNode) banner.remove(); }, 10000);
-      }
+      if(existing) existing.remove();
+      const banner = document.createElement('div');
+      banner.id = 'banner-alertas-venc';
+      banner.style.cssText = 'position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:1500;background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:.75rem 1.25rem;max-width:500px;width:92%;box-shadow:0 4px 16px rgba(0,0,0,.12)';
+      banner.innerHTML = `<div style="display:flex;align-items:flex-start;gap:.75rem">
+        <span style="font-size:1.2rem">⚠️</span>
+        <div style="flex:1">
+          <div style="font-size:.82rem;font-weight:700;color:#92400e;margin-bottom:4px">Contrato(s) com atenção necessária</div>
+          ${alertas.map(a=>`<div style="font-size:.75rem;color:#78350f;margin-bottom:2px">• <strong>${a.nome}</strong> — ${a.label} (${formatDate(a.vencimento)})</div>`).join('')}
+        </div>
+        <button onclick="document.getElementById('banner-alertas-venc').remove()" style="background:none;border:none;cursor:pointer;font-size:1rem;color:#92400e;padding:0;flex-shrink:0">✕</button>
+      </div>`;
+      document.body.appendChild(banner);
+      setTimeout(()=>{ if(banner.parentNode) banner.remove(); }, 15000);
     }
+
+    // Atualizar balão no dash se updateDashboardProfs já rodou
+    if(typeof updateDashboardProfs === 'function') updateDashboardProfs();
   } catch(e) { console.error('Erro ao verificar alertas:', e); }
 }
 
