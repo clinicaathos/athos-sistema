@@ -789,16 +789,23 @@ body.dark .tag{background:#111827;border-color:#374151;}
           <div class="fin-tabs" style="padding:0 1.25rem">
             <div class="fin-tab active" onclick="showFinTab('rec',this)">Contas a Receber</div>
             <div class="fin-tab" onclick="showFinTab('desp',this)">Contas a Pagar</div>
+            <div class="fin-tab" onclick="showFinTab('mov',this)">📋 Movimentação</div>
             <div class="fin-tab" onclick="showFinTab('prev',this)">📊 Previsão próx. mês</div>
           </div>
           <div class="fin-content active" id="fin-rec" style="padding:0 1.25rem 1.25rem">
-            <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem;margin-top:.25rem">💡 Clique no status para alterar · No celular, deslize para pagar</div>
+            <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem;margin-top:.25rem">💡 Clique no nome para editar · Clique no status para alterar · No celular, deslize para pagar</div>
             <div class="quick-filters">
               <button class="qf-btn active" onclick="filtrarRec('todos',this)">Todos</button>
               <button class="qf-btn" onclick="filtrarRec('pendente',this)">Pendentes</button>
               <button class="qf-btn" onclick="filtrarRec('pago',this)">Pagos</button>
               <button class="qf-btn" onclick="filtrarRec('vencido',this)">Vencidos</button>
               <button class="qf-btn" onclick="filtrarRec('mes',this)">Este mês</button>
+              <button class="qf-btn" id="rec-lote-btn" style="display:none;background:var(--danger-bg);color:var(--danger);border:1px solid #fecaca" onclick="excluirLoteRec()">🗑️ Excluir selecionados</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem">
+              <label style="font-size:.72rem;color:var(--text-lighter);display:flex;align-items:center;gap:4px;cursor:pointer">
+                <input type="checkbox" id="rec-sel-all" onchange="toggleSelAll('rec',this)"> Selecionar todos
+              </label>
             </div>
             <div class="fin-search">
               <span class="fin-search-icon">🔍</span>
@@ -811,13 +818,19 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div class="fin-cards-mobile" id="rec-cards-mobile"></div>
           </div>
           <div class="fin-content" id="fin-desp" style="padding:0 1.25rem 1.25rem">
-            <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem;margin-top:.25rem">💡 Clique no status para alterar · No celular, deslize para pagar</div>
+            <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem;margin-top:.25rem">💡 Clique na descrição para editar · Clique no status para alterar · No celular, deslize para pagar</div>
             <div class="quick-filters">
               <button class="qf-btn active" onclick="filtrarDesp('todos',this)">Todos</button>
               <button class="qf-btn" onclick="filtrarDesp('pendente',this)">Pendentes</button>
               <button class="qf-btn" onclick="filtrarDesp('pago',this)">Pagos</button>
               <button class="qf-btn" onclick="filtrarDesp('vencido',this)">Vencidos</button>
               <button class="qf-btn" onclick="filtrarDesp('mes',this)">Este mês</button>
+              <button class="qf-btn" id="desp-lote-btn" style="display:none;background:var(--danger-bg);color:var(--danger);border:1px solid #fecaca" onclick="excluirLoteDesp()">🗑️ Excluir selecionados</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem">
+              <label style="font-size:.72rem;color:var(--text-lighter);display:flex;align-items:center;gap:4px;cursor:pointer">
+                <input type="checkbox" id="desp-sel-all" onchange="toggleSelAll('desp',this)"> Selecionar todos
+              </label>
             </div>
             <div class="fin-search">
               <span class="fin-search-icon">🔍</span>
@@ -828,6 +841,22 @@ body.dark .tag{background:#111827;border-color:#374151;}
               <div style="padding:1rem;font-size:.82rem;color:var(--text-lighter)">Carregando...</div>
             </div>
             <div class="fin-cards-mobile" id="desp-cards-mobile"></div>
+          </div>
+          <div class="fin-content" id="fin-mov" style="padding:0 1.25rem 1.25rem">
+            <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem;margin-top:.25rem">📋 Lançamentos já realizados (pagos ou com vencimento passado), em ordem cronológica.</div>
+            <div class="fin-search">
+              <span class="fin-search-icon">🔍</span>
+              <input class="fin-search-input" type="text" placeholder="Buscar..." oninput="buscarMov(this.value)">
+            </div>
+            <div class="quick-filters">
+              <button class="qf-btn active" onclick="filtrarMov('todos',this)">Todos</button>
+              <button class="qf-btn" onclick="filtrarMov('receitas',this)">Receitas</button>
+              <button class="qf-btn" onclick="filtrarMov('despesas',this)">Despesas</button>
+            </div>
+            <div class="data-table fin-table-desktop" id="mov-table">
+              <div style="padding:1rem;font-size:.82rem;color:var(--text-lighter)">Clique na aba para carregar...</div>
+            </div>
+            <div class="fin-cards-mobile" id="mov-cards-mobile"></div>
           </div>
           <div class="fin-content" id="fin-prev" style="padding:0 1.25rem 1.25rem">
             <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.875rem;margin-top:.25rem">📊 Projeção automática baseada nos contratos e despesas fixas cadastrados</div>
@@ -1220,12 +1249,8 @@ body.dark .tag{background:#111827;border-color:#374151;}
         <option value="12">12x</option>
       </select>
     </div>
-    <div id="parcela-valor-wrap" style="display:none">
-      <div class="form-group">
-        <label class="form-label">Valor de cada parcela (R$)</label>
-        <input class="form-input" id="despesa-valor-parcela" placeholder="0,00" type="text">
-        <div style="font-size:.7rem;color:var(--text-lighter);margin-top:4px">Informe o valor de cada parcela individualmente.</div>
-      </div>
+    <div id="parcela-info-wrap" style="display:none;background:var(--info-bg);border:1px solid #bfdbfe;border-radius:8px;padding:.6rem .875rem;font-size:.78rem;color:var(--info);margin-bottom:.875rem">
+      📅 O valor informado será lançado em cada parcela.
     </div>
     <div class="form-group">
       <label class="form-label">Recorrência</label>
@@ -1239,7 +1264,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
       </select>
     </div>
     <div id="parcelas-info" style="display:none;background:var(--info-bg);border:1px solid #bfdbfe;border-radius:8px;padding:.7rem .875rem;font-size:.78rem;color:var(--info);margin-bottom:.875rem">
-      📅 As parcelas serão pré-lançadas automaticamente nos meses seguintes, aguardando confirmação.
+      📅 As parcelas serão pré-lançadas automaticamente nos meses seguintes com o mesmo valor.
     </div>
     <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem">Histórico de alterações registrado automaticamente.</div>
     <div class="form-group"><label class="form-label">Observação</label><textarea class="form-textarea" id="despesa-obs" placeholder="Informações adicionais sobre este lançamento..." style="min-height:60px"></textarea></div>
@@ -1254,8 +1279,19 @@ body.dark .tag{background:#111827;border-color:#374151;}
 <!-- Nova Receita -->
 <div class="modal-overlay" id="modal-nova-receita" onclick="closeModalBg(event,'nova-receita')">
   <div class="modal modal-sm">
-    <div class="modal-title">Lançar Receita</div>
-    <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="receita-prof"><option value="">Selecionar...</option></select></div>
+    <div class="modal-title" id="receita-modal-title">Lançar Receita</div>
+    <input type="hidden" id="receita-edit-id">
+    <div class="form-group">
+      <label class="form-label">Profissional</label>
+      <select class="form-select" id="receita-prof" onchange="toggleReceitaProfLivre(this)">
+        <option value="">Selecionar...</option>
+        <option value="__livre__">— Nome livre (sem vínculo) —</option>
+      </select>
+    </div>
+    <div class="form-group" id="receita-prof-livre-wrap" style="display:none">
+      <label class="form-label">Nome (livre)</label>
+      <input class="form-input" id="receita-prof-livre" placeholder="Ex: Receita avulsa, Outro...">
+    </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Categoria</label>
@@ -1265,7 +1301,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
           <option>Extra</option>
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="receita-tipo"><option>Turno Fixo</option><option>Pacote de Horas</option><option>Hora Avulsa</option></select></div>
+      <div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="receita-tipo"><option>Turno Fixo</option><option>Pacote de Horas</option><option>Hora Avulsa</option><option>Não se aplica</option></select></div>
     </div>
     <div class="form-group"><label class="form-label">Subcategoria</label><select class="form-select" id="receita-subcat"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
@@ -1278,6 +1314,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
     <div class="form-group"><label class="form-label">Vencimento</label><input class="form-input" type="date" id="receita-venc"></div>
     <div class="form-group"><label class="form-label">Observação</label><textarea class="form-textarea" id="receita-obs" placeholder="Informações adicionais..." style="min-height:60px"></textarea></div>
     <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="receita-excluir-btn" style="display:none" onclick="excluirReceita()">Excluir</button>
       <button class="btn btn-secondary" onclick="closeModal('nova-receita')">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarReceita()">Lançar</button>
     </div>
@@ -1552,7 +1589,8 @@ function updateProfSelect() {
   const sel = document.getElementById('loc-prof');
   if(sel) sel.innerHTML = opts;
   const recSel = document.getElementById('receita-prof');
-  if(recSel) recSel.innerHTML = opts;
+  if(recSel) recSel.innerHTML = '<option value="">Selecionar...</option><option value="__livre__">— Nome livre (sem vínculo) —</option>' +
+    profissionaisCache.filter(p=>p.status==='Ativo').map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
   const filtroSel = document.getElementById('filtro-prof');
   if(filtroSel) filtroSel.innerHTML = '<option value="">Todos os profissionais</option>' +
     profissionaisCache.map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
@@ -1764,24 +1802,29 @@ async function loadFinanceiro() {
   document.getElementById('fin-mes-label').textContent=`Financeiro — ${meses[hoje.getMonth()]} ${hoje.getFullYear()}`;
 
   try {
-    // Receitas
+    // Receitas — apenas pendentes/futuras (passadas e pagas vão para Movimentação)
+    const hoje2 = new Date().toISOString().split('T')[0];
     const recSnap=await db.collection('receitas').where('mes','==',hoje.getMonth()).where('ano','==',hoje.getFullYear()).get();
-    const receitas=recSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const todasReceitas=recSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const receitas=todasReceitas.filter(r=>r.status!=='Pago' || (r.vencimento && r.vencimento >= hoje2));
     renderReceitas(receitas);
 
-    // Despesas
+    // Despesas — apenas pendentes/futuras
     const despSnap=await db.collection('despesas').get();
-    const despesas=despSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const todasDespesas=despSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const despesas=todasDespesas.filter(d=>d.status!=='Pago' || (d.vencimento && d.vencimento >= hoje2));
     renderDespesas(despesas);
 
-    // Totais
+    // Totais — saldo mensal considera apenas Pagos
     const totalRec=receitas.reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
     const totalDesp=despesas.reduce((s,d)=>s+(parseFloat(d.valor)||0),0);
-    const saldo=totalRec-totalDesp;
+    const totalRecPago=receitas.filter(r=>r.status==='Pago').reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
+    const totalDespPago=despesas.filter(d=>d.status==='Pago').reduce((s,d)=>s+(parseFloat(d.valor)||0),0);
+    const saldo=totalRecPago-totalDespPago;
     document.getElementById('fin-receita-total').textContent=formatMoney(totalRec);
     document.getElementById('fin-despesas-total').textContent=formatMoney(totalDesp);
     document.getElementById('fin-saldo').textContent=formatMoney(saldo);
-    document.getElementById('fin-saldo-sub').textContent=saldo>=0?'resultado positivo':'resultado negativo';
+    document.getElementById('fin-saldo-sub').textContent=(saldo>=0?'resultado positivo':'resultado negativo')+' (somente pagos)';
     updateStickySummary(totalRec, totalDesp);
     document.getElementById('fin-saldo').style.color=saldo>=0?'var(--text)':'var(--danger)';
 
@@ -1807,14 +1850,15 @@ function _renderReceitasData(receitas) {
     return;
   }
   const hoje = new Date().toISOString().split('T')[0];
-  if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px 40px"><span>Profissional</span><span>Tipo</span><span>Vencimento</span><span>Valor</span><span>Status</span><span>WhatsApp</span><span></span></div>`+
+  if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 80px 40px"><span></span><span>Profissional</span><span>Tipo</span><span>Vencimento</span><span>Valor</span><span>Status</span><span>WhatsApp</span><span></span></div>`+
     receitas.map(r=>{
       const prof = profissionaisCache.find(p=>p.id===r.profId);
       const tel = prof?.telefone?.replace(/\D/g,'')||'';
       const msg = encodeURIComponent(`Olá, ${r.profissional}! Lembramos que o pagamento da sua locação na Áthos vence hoje, ${r.vencimento?formatDate(r.vencimento):''}. Valor: ${formatMoney(r.valor)}. Obrigada!`);
       const wppLink = tel ? `https://wa.me/55${tel}?text=${msg}` : '';
-      return `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px 40px">
-        <span style="font-weight:500">${r.profissional||'—'}${r.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">${r.obs}</span>`:''}</span>
+      return `<div class="dt-row" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 80px 40px">
+        <span><input type="checkbox" class="rec-sel-cb" data-id="${r.id}" onchange="updateLoteBtn('rec')"></span>
+        <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="editarReceita('${r.id}')">${r.profissional||'—'}${r.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">📝 ${r.obs}</span>`:''}</span>
         <span style="color:var(--text-light)">${r.tipo||'—'}</span>
         <span>${r.vencimento?formatDate(r.vencimento):'—'}</span>
         <span style="font-weight:600">${formatMoney(r.valor)}</span>
@@ -1859,8 +1903,9 @@ function _renderDespesasData(despesas) {
     if(mobileEl) mobileEl.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhuma despesa cadastrada.</div>';
     return;
   }
-  if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 40px"><span>Descrição</span><span>Categoria</span><span>Vencimento</span><span>Valor</span><span>Status</span><span></span></div>`+
-    despesas.map(d=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 40px">
+  if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 40px"><span></span><span>Descrição</span><span>Categoria</span><span>Vencimento</span><span>Valor</span><span>Status</span><span></span></div>`+
+    despesas.map(d=>`<div class="dt-row" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 40px">
+      <span><input type="checkbox" class="desp-sel-cb" data-id="${d.id}" onchange="updateLoteBtn('desp')"></span>
       <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="editarDespesa('${d.id}')">${d.descricao||'—'}${d.parcela?` <span class="badge badge-neutral" style="font-size:.6rem">${d.parcela}</span>`:''}${d.recorrencia&&d.recorrencia!=='nenhuma'?` <span class="badge badge-info" style="font-size:.6rem">🔄 ${d.recorrencia}</span>`:''}</span>
       <span><span class="badge ${d.categoria==='Fixo'?'badge-neutral':d.categoria==='Variável'?'badge-warning':'badge-danger'}">${d.categoria||'—'}</span>${d.subcategoria?`<br><span style="font-size:.68rem;color:var(--text-lighter)">${d.subcategoria}</span>`:''}</span>
       <span>${d.vencimento?formatDate(d.vencimento):'—'}</span>
@@ -1943,7 +1988,6 @@ async function salvarDespesa() {
   const id = document.getElementById('despesa-edit-id').value;
   const numParcelas = parseInt(document.getElementById('despesa-parcelas').value) || 1;
   const valorInput = document.getElementById('despesa-valor').value;
-  const valorParcelaInput = document.getElementById('despesa-valor-parcela')?.value;
   const data = {
     descricao: document.getElementById('despesa-desc').value,
     categoria: document.getElementById('despesa-cat').value,
@@ -1966,9 +2010,7 @@ async function salvarDespesa() {
       await db.collection('despesas').doc(id).update(data);
       showToast('Despesa atualizada!','success');
     } else if(numParcelas > 1) {
-      // Use informed per-installment value
-      const vlrParcela = valorParcelaInput && valorParcelaInput.trim() ? valorParcelaInput : valorInput;
-      await salvarDespesaComParcelas({...data, valor: vlrParcela}, numParcelas);
+      await salvarDespesaComParcelas({...data}, numParcelas);
       showToast(`${numParcelas} parcelas lançadas!`,'success');
     } else if(data.recorrencia && data.recorrencia !== 'nenhuma') {
       await lancarRecorrente(data, 'despesas');
@@ -2294,6 +2336,32 @@ function openModal(id) {
     document.getElementById('despesa-excluir-btn').style.display='none';
     currentDespesaEdit=null;
   }
+  if(id==='nova-receita'){
+    const editId = document.getElementById('receita-edit-id');
+    const titulo = document.getElementById('receita-modal-title');
+    const excBtn = document.getElementById('receita-excluir-btn');
+    const livreWrap = document.getElementById('receita-prof-livre-wrap');
+    const livreInput = document.getElementById('receita-prof-livre');
+    // Só reseta se não for uma edição iniciada por editarReceita()
+    if(editId && !editId.value) {
+      if(titulo) titulo.textContent='Lançar Receita';
+      if(excBtn) excBtn.style.display='none';
+      if(livreWrap) livreWrap.style.display='none';
+      if(livreInput) livreInput.value='';
+      const profSel = document.getElementById('receita-prof');
+      if(profSel) profSel.value='';
+      const valEl = document.getElementById('receita-valor');
+      if(valEl) valEl.value='';
+      const descEl = document.getElementById('receita-desconto');
+      if(descEl) descEl.value='0';
+      const obsEl = document.getElementById('receita-obs');
+      if(obsEl) obsEl.value='';
+      const vencEl = document.getElementById('receita-venc');
+      if(vencEl) vencEl.value='';
+      const wrapFinal = document.getElementById('receita-valor-final-wrap');
+      if(wrapFinal) wrapFinal.style.display='none';
+    }
+  }
   document.getElementById('modal-'+id).classList.add('open');
 }
 
@@ -2305,6 +2373,74 @@ function showFinTab(t,el) {
   document.querySelectorAll('.fin-content').forEach(x=>x.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('fin-'+t).classList.add('active');
+  if(t === 'mov') loadMovimentacao();
+}
+
+// ── ABA MOVIMENTAÇÃO FINANCEIRA ──
+let movCache = [];
+
+async function loadMovimentacao() {
+  try {
+    const hoje = new Date().toISOString().split('T')[0];
+    // Receitas pagas ou vencidas
+    const recSnap = await db.collection('receitas').get();
+    const receitas = recSnap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Receita'}))
+      .filter(r => r.status==='Pago' || (r.vencimento && r.vencimento <= hoje));
+
+    // Despesas pagas ou vencidas
+    const despSnap = await db.collection('despesas').get();
+    const despesas = despSnap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Despesa'}))
+      .filter(d => d.status==='Pago' || (d.vencimento && d.vencimento <= hoje));
+
+    // Combinar e ordenar cronologicamente
+    movCache = [...receitas, ...despesas].sort((a,b) => (a.vencimento||'').localeCompare(b.vencimento||''));
+    _renderMovData(movCache);
+  } catch(e) { showToast('Erro ao carregar movimentação.','error'); console.error(e); }
+}
+
+function _renderMovData(lista) {
+  const table = document.getElementById('mov-table');
+  const mobileEl = document.getElementById('mov-cards-mobile');
+  if(!table) return;
+  if(lista.length === 0) {
+    table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Data</span><span>Valor</span></div><div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum lançamento realizado.</div>`;
+    if(mobileEl) mobileEl.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhum lançamento realizado.</div>';
+    return;
+  }
+  table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Data</span><span>Valor</span></div>` +
+    lista.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+      <span style="font-weight:500">${x.profissional||x.descricao||'—'}${x.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">📝 ${x.obs}</span>`:''}</span>
+      <span><span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span></span>
+      <span style="color:var(--text-light)">${x.categoria||x.tipo||'—'}</span>
+      <span>${x.vencimento?formatDate(x.vencimento):'—'}</span>
+      <span style="font-weight:600;color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</span>
+    </div>`).join('');
+  if(mobileEl) mobileEl.innerHTML = lista.map(x=>`
+    <div class="fin-card-item" style="pointer-events:auto">
+      <div class="fin-card-item-top">
+        <div class="fin-card-item-name">${x.profissional||x.descricao||'—'} <span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span></div>
+        <div class="fin-card-item-value" style="color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</div>
+      </div>
+      <div class="fin-card-item-meta">
+        <span>${x.categoria||x.tipo||'—'}</span>
+        ${x.vencimento?`<span>📅 ${formatDate(x.vencimento)}</span>`:''}
+        ${x.obs?`<span title="${x.obs}">📝 ${x.obs.substring(0,30)}${x.obs.length>30?'...':''}</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function filtrarMov(tipo, el) {
+  document.querySelectorAll('#fin-mov .qf-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  let filtrados = movCache;
+  if(tipo === 'receitas') filtrados = movCache.filter(x=>x._tipo==='Receita');
+  else if(tipo === 'despesas') filtrados = movCache.filter(x=>x._tipo==='Despesa');
+  _renderMovData(filtrados);
+}
+
+function buscarMov(q) {
+  const filtrados = q ? movCache.filter(x => (x.profissional||x.descricao||'').toLowerCase().includes(q.toLowerCase())) : movCache;
+  _renderMovData(filtrados);
 }
 
 function selectColor(el) {
@@ -2387,22 +2523,30 @@ function calcDescontoReceita() {
   }
 }
 
-// ── PARCELAS ──
-function toggleParcelas(sel) {
-  const info = document.getElementById('parcelas-info');
-  info.style.display = sel.value > 1 ? 'block' : 'none';
+// ── RECEITA — NOME LIVRE ──
+function toggleReceitaProfLivre(sel) {
+  const wrap = document.getElementById('receita-prof-livre-wrap');
+  if(wrap) wrap.style.display = sel.value === '__livre__' ? 'block' : 'none';
 }
 
 // ── SALVAR RECEITA ──
 async function salvarReceita() {
+  const editId = document.getElementById('receita-edit-id')?.value || '';
   const profId = document.getElementById('receita-prof').value;
+  const isLivre = profId === '__livre__';
+  const nomeProf = isLivre
+    ? (document.getElementById('receita-prof-livre')?.value?.trim() || 'Receita avulsa')
+    : (profId ? (profissionaisCache.find(p=>p.id===profId)?.nome||profId) : '');
+
+  if(!isLivre && !profId) { showToast('Selecione um profissional ou "Nome livre".','error'); return; }
+
   const valor = document.getElementById('receita-valor').value;
   const desconto = document.getElementById('receita-desconto').value || '0';
   const valorNum = parseMoney(valor);
   const valorFinal = valorNum * (1 - parseFloat(desconto)/100);
   const data = {
-    profissional: profId ? (profissionaisCache.find(p=>p.id===profId)?.nome||profId) : '—',
-    profId,
+    profissional: nomeProf,
+    profId: isLivre ? '' : profId,
     categoria: document.getElementById('receita-cat').value,
     tipo: document.getElementById('receita-tipo').value,
     subcategoria: document.getElementById('receita-subcat')?.value || '',
@@ -2411,19 +2555,74 @@ async function salvarReceita() {
     valorFinal: isNaN(valorFinal) ? valor : valorFinal.toFixed(2),
     vencimento: document.getElementById('receita-venc').value,
     obs: document.getElementById('receita-obs')?.value || '',
-    status: 'Pendente',
     mes: new Date().getMonth(),
     ano: new Date().getFullYear(),
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
-  if(!data.profissional || data.profissional === '—') { showToast('Selecione um profissional.','error'); return; }
   if(!valor) { showToast('Valor é obrigatório.','error'); return; }
   try {
-    await db.collection('receitas').add(data);
+    if(editId) {
+      // Edição: substitui o original sem criar duplicata
+      data.historico = firebase.firestore.FieldValue.arrayUnion({
+        editadoEm: new Date().toISOString(),
+        por: auth.currentUser?.email||'admin'
+      });
+      await db.collection('receitas').doc(editId).update(data);
+      showToast('Receita atualizada!','success');
+    } else {
+      data.status = 'Pendente';
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('receitas').add(data);
+      showToast('Receita lançada!','success');
+    }
     closeModal('nova-receita');
-    showToast('Receita lançada!','success');
     loadFinanceiro();
-  } catch(e) { showToast('Erro ao lançar receita.','error'); console.error(e); }
+  } catch(e) { showToast('Erro ao salvar receita.','error'); console.error(e); }
+}
+
+function editarReceita(id) {
+  // Define o id ANTES de openModal para que o reset não apague os campos
+  const editIdEl = document.getElementById('receita-edit-id');
+  if(editIdEl) editIdEl.value = id;
+  document.getElementById('receita-modal-title').textContent = 'Editar Receita';
+  document.getElementById('receita-excluir-btn').style.display = 'inline-flex';
+  openModal('nova-receita');
+  db.collection('receitas').doc(id).get().then(doc => {
+    if(doc.exists) {
+      const r = doc.data();
+      const sel = document.getElementById('receita-prof');
+      const profExiste = profissionaisCache.find(p=>p.id===r.profId);
+      if(!profExiste && r.profissional) {
+        sel.value = '__livre__';
+        toggleReceitaProfLivre(sel);
+        const livre = document.getElementById('receita-prof-livre');
+        if(livre) livre.value = r.profissional;
+      } else {
+        sel.value = r.profId || '';
+        toggleReceitaProfLivre(sel);
+      }
+      document.getElementById('receita-cat').value = r.categoria || 'Fixa';
+      document.getElementById('receita-tipo').value = r.tipo || 'Turno Fixo';
+      if(document.getElementById('receita-subcat')) document.getElementById('receita-subcat').value = r.subcategoria || '';
+      document.getElementById('receita-valor').value = r.valor || '';
+      document.getElementById('receita-desconto').value = r.desconto || '0';
+      document.getElementById('receita-venc').value = r.vencimento || '';
+      if(document.getElementById('receita-obs')) document.getElementById('receita-obs').value = r.obs || '';
+    }
+  });
+}
+
+let currentReceitaEdit = null;
+async function excluirReceita() {
+  const id = document.getElementById('receita-edit-id')?.value;
+  if(!id) return;
+  if(!confirm('Excluir esta receita?')) return;
+  try {
+    await db.collection('receitas').doc(id).delete();
+    closeModal('nova-receita');
+    showToast('Receita excluída.','success');
+    loadFinanceiro();
+  } catch(e) { showToast('Erro ao excluir.','error'); }
 }
 
 // ── SUBCATEGORIAS ──
@@ -2522,7 +2721,8 @@ async function renovarHorasMensais() {
 async function salvarDespesaComParcelas(data, numParcelas) {
   const batch = db.batch();
   const baseDate = new Date(data.vencimento + 'T12:00:00');
-  const valorParcela = (parseFloat(data.valor.replace(',','.')) / numParcelas).toFixed(2);
+  // Usa o valor informado diretamente — cada parcela = esse valor
+  const valorParcela = data.valor;
 
   for(let i = 0; i < numParcelas; i++) {
     const vencParcela = new Date(baseDate);
@@ -2584,7 +2784,7 @@ async function gerarRelatFiltrado() {
     tabela.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span></div>` +
       (todos.length === 0 ? '<div style="padding:1rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum resultado encontrado.</div>' :
       todos.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
-        <span style="font-weight:500">${x.descricao||x.profissional||'—'} <span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span>${x.parcela?` <span class="badge badge-neutral" style="font-size:.6rem">${x.parcela}</span>`:''}</span>
+        <span style="font-weight:500">${x.descricao||x.profissional||'—'} <span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span>${x.parcela?` <span class="badge badge-neutral" style="font-size:.6rem">${x.parcela}</span>`:''}${x.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">📝 ${x.obs}</span>`:''}</span>
         <span>${x.categoria||'—'}</span>
         <span>${x.subcategoria||'—'}</span>
         <span>${x.vencimento?formatDate(x.vencimento):'—'}</span>
@@ -2711,7 +2911,43 @@ function updateStickySummary(totalRec, totalDesp) {
   if(ss) { ss.textContent = formatMoney(saldo); ss.style.color = saldo >= 0 ? 'var(--success)' : 'var(--danger)'; }
 }
 
-// ── EXCLUIR PLANO ──
+// ── EXCLUSÃO EM LOTE ──
+function updateLoteBtn(tipo) {
+  const cbs = document.querySelectorAll(`.${tipo}-sel-cb:checked`);
+  const btn = document.getElementById(`${tipo}-lote-btn`);
+  if(btn) btn.style.display = cbs.length > 0 ? 'inline-flex' : 'none';
+}
+
+function toggleSelAll(tipo, master) {
+  document.querySelectorAll(`.${tipo}-sel-cb`).forEach(cb => { cb.checked = master.checked; });
+  updateLoteBtn(tipo);
+}
+
+async function excluirLoteRec() {
+  const ids = [...document.querySelectorAll('.rec-sel-cb:checked')].map(cb => cb.dataset.id);
+  if(ids.length === 0) return;
+  if(!confirm(`Excluir ${ids.length} receita(s) selecionada(s)?`)) return;
+  try {
+    const batch = db.batch();
+    ids.forEach(id => batch.delete(db.collection('receitas').doc(id)));
+    await batch.commit();
+    showToast(`${ids.length} receita(s) excluída(s)!`, 'success');
+    loadFinanceiro();
+  } catch(e) { showToast('Erro ao excluir.', 'error'); }
+}
+
+async function excluirLoteDesp() {
+  const ids = [...document.querySelectorAll('.desp-sel-cb:checked')].map(cb => cb.dataset.id);
+  if(ids.length === 0) return;
+  if(!confirm(`Excluir ${ids.length} despesa(s) selecionada(s)?`)) return;
+  try {
+    const batch = db.batch();
+    ids.forEach(id => batch.delete(db.collection('despesas').doc(id)));
+    await batch.commit();
+    showToast(`${ids.length} despesa(s) excluída(s)!`, 'success');
+    loadFinanceiro();
+  } catch(e) { showToast('Erro ao excluir.', 'error'); }
+}
 async function excluirPlano(id) {
   if(!confirm('Excluir este plano? Esta ação não pode ser desfeita.')) return;
   try {
@@ -2736,15 +2972,20 @@ async function excluirProfissional(id) {
 // ── TOGGLE PARCELAS ──
 function toggleParcelas(sel) {
   const info = document.getElementById('parcelas-info');
-  const valorWrap = document.getElementById('parcela-valor-wrap');
-  const isParceled = sel.value > 1;
+  const isParceled = parseInt(sel.value) > 1;
   if(info) info.style.display = isParceled ? 'block' : 'none';
-  if(valorWrap) valorWrap.style.display = isParceled ? 'block' : 'none';
 }
 
-// Enter key no login
-document.getElementById('login-senha').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
-document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-senha').focus();});
+// ── EXCLUIR LANÇAMENTO ──
+async function excluirLancamento(id, colecao) {
+  if(!confirm('Excluir este lançamento? Esta ação não pode ser desfeita.')) return;
+  try {
+    await db.collection(colecao).doc(id).delete();
+    showToast('Lançamento excluído!', 'success');
+    loadFinanceiro();
+  } catch(e) { showToast('Erro ao excluir.', 'error'); console.error(e); }
+}
+
 // ── LANÇAMENTO RECORRENTE ──
 async function lancarRecorrente(data, colecao) {
   const mesesMap = {mensal:1,bimestral:2,trimestral:3,semestral:6,anual:12};
@@ -2767,64 +3008,6 @@ async function lancarRecorrente(data, colecao) {
   await batch.commit();
 }
 
-// ── RELATÓRIO FILTRADO COM DATA REAL ──
-async function gerarRelatFiltrado() {
-  const profFiltro = document.getElementById('filtro-prof').value;
-  const catFiltro = document.getElementById('filtro-cat').value;
-  const subcatFiltro = document.getElementById('filtro-subcat').value;
-  const tipoFiltro = document.getElementById('filtro-tipo').value;
-  const dataInicio = document.getElementById('filtro-data-inicio').value;
-  const dataFim = document.getElementById('filtro-data-fim').value;
-  try {
-    let receitas = [], despesas = [];
-    if(tipoFiltro !== 'Apenas Despesas') {
-      let q = db.collection('receitas');
-      if(dataInicio) q = q.where('vencimento','>=',dataInicio);
-      if(dataFim) q = q.where('vencimento','<=',dataFim);
-      const snap = await q.get();
-      receitas = snap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Receita'}));
-    }
-    if(tipoFiltro !== 'Apenas Receitas') {
-      let q = db.collection('despesas');
-      if(dataInicio) q = q.where('vencimento','>=',dataInicio);
-      if(dataFim) q = q.where('vencimento','<=',dataFim);
-      const snap = await q.get();
-      despesas = snap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Despesa'}));
-    }
-    let todos = [...receitas,...despesas];
-    if(profFiltro) todos = todos.filter(x=>x.profId===profFiltro);
-    if(catFiltro) todos = todos.filter(x=>x.categoria===catFiltro);
-    if(subcatFiltro) todos = todos.filter(x=>x.subcategoria===subcatFiltro);
-    const totalRec = receitas.filter(x=>todos.includes(x)).reduce((s,x)=>s+(parseMoney(x.valor)),0);
-    const totalDesp = despesas.filter(x=>todos.includes(x)).reduce((s,x)=>s+(parseMoney(x.valor)),0);
-    document.getElementById('filtrado-indicadores').innerHTML = `
-      <div class="ind-card"><div class="ind-label">Receitas</div><div class="ind-value" style="color:var(--success)">${formatMoney(totalRec)}</div><div class="ind-delta">${receitas.length} lançamentos</div></div>
-      <div class="ind-card"><div class="ind-label">Despesas</div><div class="ind-value" style="color:var(--danger)">${formatMoney(totalDesp)}</div><div class="ind-delta">${despesas.length} lançamentos</div></div>
-      <div class="ind-card"><div class="ind-label">Saldo</div><div class="ind-value">${formatMoney(totalRec-totalDesp)}</div><div class="ind-delta ${totalRec-totalDesp>=0?'pos':'neg'}">${totalRec-totalDesp>=0?'positivo':'negativo'}</div></div>
-      <div class="ind-card"><div class="ind-label">Total</div><div class="ind-value">${todos.length}</div><div class="ind-delta">registros</div></div>`;
-    const tabela = document.getElementById('filtrado-tabela');
-    tabela.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span></div>` +
-      (todos.length===0?'<div style="padding:1rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum resultado para o período selecionado.</div>':
-      todos.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
-        <span style="font-weight:500">${x.descricao||x.profissional||'—'} <span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span></span>
-        <span>${x.categoria||'—'}</span><span>${x.subcategoria||'—'}</span>
-        <span>${x.vencimento?formatDate(x.vencimento):'—'}</span>
-        <span style="font-weight:600;color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</span>
-      </div>`).join(''));
-    document.getElementById('relat-filtrado-resultado').style.display='block';
-    showToast(`${todos.length} registros encontrados.`,'success');
-  } catch(e) { showToast('Erro ao gerar relatório.','error'); console.error(e); }
-}
-
-async function excluirLancamento(id, colecao) {
-  if(!confirm('Excluir este lançamento? Esta ação não pode ser desfeita.')) return;
-  try {
-    await db.collection(colecao).doc(id).delete();
-    showToast('Lançamento excluído!', 'success');
-    loadFinanceiro();
-  } catch(e) { showToast('Erro ao excluir.', 'error'); console.error(e); }
-}
-
 // ── ALERTA VÍNCULO 6m/12m ──
 function checkVinculoAlertas(profs) {
   const hoje = new Date();
@@ -2834,9 +3017,6 @@ function checkVinculoAlertas(profs) {
     const inicio = new Date(p.contratoInicio + 'T12:00:00');
     const diasVinculo = Math.floor((hoje - inicio) / (1000 * 60 * 60 * 24));
     const mesesVinculo = diasVinculo / 30.44;
-
-    // 1º ano: alertar aos 6 meses e aos 12 meses
-    // Anos seguintes: alertar a cada 12 meses
     let proximosAlertas = [];
     if(mesesVinculo < 12) {
       proximosAlertas = [6, 12];
@@ -2844,7 +3024,6 @@ function checkVinculoAlertas(profs) {
       const ultimoMultiplo = Math.floor(mesesVinculo / 12) * 12;
       proximosAlertas = [ultimoMultiplo + 12];
     }
-
     proximosAlertas.forEach(meses => {
       const diasParaAlerta = Math.round((meses * 30.44) - diasVinculo);
       if(diasParaAlerta >= 0 && diasParaAlerta <= 7) {
@@ -2866,21 +3045,15 @@ async function verificarAlertasVencimento() {
   const configDoc = await db.collection('config').doc('geral').get();
   const config = configDoc.exists ? configDoc.data() : {};
   const dias = config.alertaDias || ['30','15','5'];
-
   try {
-    const snap = await db.collection('profissionais')
-      .where('status','==','Ativo').get();
-    
+    const snap = await db.collection('profissionais').where('status','==','Ativo').get();
     snap.docs.forEach(doc => {
       const p = doc.data();
       if(!p.contratoFim) return;
       const fim = new Date(p.contratoFim + 'T12:00:00');
       const diffDias = Math.floor((fim - hoje) / (1000 * 60 * 60 * 24));
-      
-      // Verificar se está dentro dos dias configurados
       if(dias.includes(String(diffDias)) || diffDias <= 0) {
         console.log(`Alerta: contrato de ${p.nome} vence em ${diffDias} dias`);
-        // Aqui futuramente dispara e-mail
       }
     });
   } catch(e) { console.error('Erro ao verificar alertas:', e); }
