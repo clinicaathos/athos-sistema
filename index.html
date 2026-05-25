@@ -766,7 +766,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
           <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Turno</span><span>Dias</span><span>Horário</span><span>Valor</span><span>Profissionais</span></div>
           <div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span style="font-weight:500">Turno Manhã</span><span>Seg–Sex</span><span id="turno-manha-hrs">08h–12h</span><span class="turno-valor-manha" style="color:var(--text-lighter);font-size:.76rem">a definir</span><span><span class="badge badge-neutral" id="turno-manha-count">0</span></span></div>
           <div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span style="font-weight:500">Turno Tarde</span><span>Seg–Sex</span><span id="turno-tarde-hrs">13h–17h</span><span class="turno-valor-tarde" style="color:var(--text-lighter);font-size:.76rem">a definir</span><span><span class="badge badge-neutral" id="turno-tarde-count">0</span></span></div>
-          <div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span style="font-weight:500">Turno Noite</span><span>Seg–Sex</span><span id="turno-noite-hrs">18h–22h</span><span class="turno-valor-noite" style="color:var(--text-lighter);font-size:.76rem">a definir</span><span><span class="badge badge-neutral" id="turno-noite-count">0</span></span></div>
+          <div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span style="font-weight:500">Turno Noite</span><span>Seg–Sex</span><span id="turno-noite-hrs">17h30–21h30</span><span class="turno-valor-noite" style="color:var(--text-lighter);font-size:.76rem">a definir</span><span><span class="badge badge-neutral" id="turno-noite-count">0</span></span></div>
         </div>
       </div>
 
@@ -822,15 +822,21 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div class="quick-filters">
               <button class="qf-btn active" onclick="filtrarDesp('todos',this)">Todos</button>
               <button class="qf-btn" onclick="filtrarDesp('pendente',this)">Pendentes</button>
-              <button class="qf-btn" onclick="filtrarDesp('pago',this)">Pagos</button>
               <button class="qf-btn" onclick="filtrarDesp('vencido',this)">Vencidos</button>
               <button class="qf-btn" onclick="filtrarDesp('mes',this)">Este mês</button>
               <button class="qf-btn" id="desp-lote-btn" style="display:none;background:var(--danger-bg);color:var(--danger);border:1px solid #fecaca" onclick="excluirLoteDesp()">🗑️ Excluir selecionados</button>
             </div>
-            <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem">
+            <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.5rem">
               <label style="font-size:.72rem;color:var(--text-lighter);display:flex;align-items:center;gap:4px;cursor:pointer">
                 <input type="checkbox" id="desp-sel-all" onchange="toggleSelAll('desp',this)"> Selecionar todos
               </label>
+              <div style="display:flex;align-items:center;gap:.4rem;margin-left:auto">
+                <span style="font-size:.72rem;color:var(--text-lighter)">De</span>
+                <input type="date" id="desp-filtro-ini" class="form-input" style="padding:4px 8px;font-size:.72rem;width:130px" onchange="aplicarFiltroDespData()">
+                <span style="font-size:.72rem;color:var(--text-lighter)">até</span>
+                <input type="date" id="desp-filtro-fim" class="form-input" style="padding:4px 8px;font-size:.72rem;width:130px" onchange="aplicarFiltroDespData()">
+                <button class="qf-btn" onclick="limparFiltroDespData()" style="font-size:.68rem">✕</button>
+              </div>
             </div>
             <div class="fin-search">
               <span class="fin-search-icon">🔍</span>
@@ -841,18 +847,27 @@ body.dark .tag{background:#111827;border-color:#374151;}
               <div style="padding:1rem;font-size:.82rem;color:var(--text-lighter)">Carregando...</div>
             </div>
             <div class="fin-cards-mobile" id="desp-cards-mobile"></div>
+            <div id="desp-totalizador" style="display:none;background:var(--warning-bg);border:1px solid #fde68a;border-radius:8px;padding:.6rem 1rem;margin-top:.75rem;font-size:.82rem;font-weight:600;color:#92400e"></div>
           </div>
           <div class="fin-content" id="fin-mov" style="padding:0 1.25rem 1.25rem">
             <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem;margin-top:.25rem">📋 Lançamentos já realizados (pagos ou com vencimento passado), em ordem cronológica.</div>
-            <div class="fin-search">
-              <span class="fin-search-icon">🔍</span>
-              <input class="fin-search-input" type="text" placeholder="Buscar..." oninput="buscarMov(this.value)">
+            <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem">
+              <div class="fin-search" style="flex:1;min-width:180px">
+                <span class="fin-search-icon">🔍</span>
+                <input class="fin-search-input" type="text" placeholder="Buscar..." oninput="buscarMov(this.value)">
+              </div>
+              <span style="font-size:.72rem;color:var(--text-lighter)">De</span>
+              <input type="date" id="mov-filtro-ini" class="form-input" style="padding:4px 8px;font-size:.72rem;width:130px" onchange="aplicarFiltroMovData()">
+              <span style="font-size:.72rem;color:var(--text-lighter)">até</span>
+              <input type="date" id="mov-filtro-fim" class="form-input" style="padding:4px 8px;font-size:.72rem;width:130px" onchange="aplicarFiltroMovData()">
+              <button class="qf-btn" onclick="limparFiltroMovData()" style="font-size:.68rem">✕</button>
             </div>
             <div class="quick-filters">
               <button class="qf-btn active" onclick="filtrarMov('todos',this)">Todos</button>
               <button class="qf-btn" onclick="filtrarMov('receitas',this)">Receitas</button>
               <button class="qf-btn" onclick="filtrarMov('despesas',this)">Despesas</button>
             </div>
+            <div id="mov-totalizador" style="display:none;background:var(--info-bg);border:1px solid #bfdbfe;border-radius:8px;padding:.6rem 1rem;margin-bottom:.5rem;font-size:.82rem;font-weight:600;color:var(--info)"></div>
             <div class="data-table fin-table-desktop" id="mov-table">
               <div style="padding:1rem;font-size:.82rem;color:var(--text-lighter)">Clique na aba para carregar...</div>
             </div>
@@ -989,6 +1004,14 @@ body.dark .tag{background:#111827;border-color:#374151;}
           </div>
           <div id="relat-filtrado-resultado" style="display:none">
             <div class="indicadores-grid" id="filtrado-indicadores"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem" id="filtrado-charts-wrap">
+              <div class="chart-wrap"><div class="chart-title">Receitas x Despesas</div><canvas id="chart-filtrado-bar" height="140"></canvas></div>
+              <div class="chart-wrap"><div class="chart-title">Distribuição por Categoria</div><canvas id="chart-filtrado-pizza" height="140"></canvas></div>
+            </div>
+            <div class="card" style="margin-bottom:1rem" id="filtrado-categorias-wrap">
+              <div class="cfg-title">Compilado por Categoria</div>
+              <div id="filtrado-categorias"></div>
+            </div>
             <div class="data-table" id="filtrado-tabela">
               <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
                 <span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span>
@@ -1012,8 +1035,13 @@ body.dark .tag{background:#111827;border-color:#374151;}
           </div>
           <div class="card">
             <div class="cfg-title">Tabela de Preços</div>
-            <div class="cfg-row"><div><div class="cfg-label">Turno Fixo (4h)</div><div class="cfg-sub">por turno/semana</div></div><input class="cfg-input" id="preco-turno" placeholder="R$ 0,00"></div>
-            <div class="cfg-row"><div><div class="cfg-label">Turno Duplo (8h)</div><div class="cfg-sub">equivalente a 2 turnos</div></div><input class="cfg-input" id="preco-turno8h" placeholder="R$ 0,00"></div>
+            <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.5rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Turno Fixo (4h) — por sala</div>
+            <div class="cfg-row"><div><div class="cfg-label">Áthos I — Turno 4h</div><div class="cfg-sub">por turno/semana</div></div><input class="cfg-input" id="preco-turno-s1" placeholder="R$ 0,00"></div>
+            <div class="cfg-row"><div><div class="cfg-label">Áthos II — Turno 4h</div><div class="cfg-sub">por turno/semana</div></div><input class="cfg-input" id="preco-turno-s2" placeholder="R$ 0,00"></div>
+            <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .5rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Turno Duplo (8h) — por sala</div>
+            <div class="cfg-row"><div><div class="cfg-label">Áthos I — Turno 8h</div><div class="cfg-sub">equivalente a 2 turnos</div></div><input class="cfg-input" id="preco-turno8h-s1" placeholder="R$ 0,00"></div>
+            <div class="cfg-row"><div><div class="cfg-label">Áthos II — Turno 8h</div><div class="cfg-sub">equivalente a 2 turnos</div></div><input class="cfg-input" id="preco-turno8h-s2" placeholder="R$ 0,00"></div>
+            <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .5rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Outros</div>
             <div class="cfg-row"><div><div class="cfg-label">Hora Avulsa</div></div><input class="cfg-input" id="preco-avulsa" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Pacote 5h / mês</div></div><input class="cfg-input" id="preco-5h" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Pacote 10h / mês</div></div><input class="cfg-input" id="preco-10h" placeholder="R$ 0,00"></div>
@@ -1034,10 +1062,9 @@ body.dark .tag{background:#111827;border-color:#374151;}
             </div>
             <div style="padding:.5rem 0;border-bottom:1px solid var(--border)">
               <div class="alert-days-row">
-                <input class="alert-day-input" type="number" value="30" min="1" id="alerta-d1"> dias
-                <input class="alert-day-input" type="number" value="15" min="1" id="alerta-d2"> dias
-                <input class="alert-day-input" type="number" value="5" min="1" id="alerta-d3"> dias
+                <input class="alert-day-input" type="number" value="2" min="1" id="alerta-d1"> dias antes
               </div>
+              <div style="font-size:.7rem;color:var(--text-lighter);margin-top:4px">Notificação exibida dentro do sistema 2 dias antes do vencimento.</div>
             </div>
             <div class="cfg-row"><div><div class="cfg-label">Alertas de inadimplência</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
             <div class="cfg-row"><div><div class="cfg-label">Alertas de aniversário</div><div class="cfg-sub">Notificar no dia</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
@@ -1473,10 +1500,15 @@ function applyConfig() {
   if(appConfig.hrManha) document.getElementById('hr-manha').value = appConfig.hrManha;
   if(appConfig.hrTarde) document.getElementById('hr-tarde').value = appConfig.hrTarde;
   if(appConfig.hrNoite) document.getElementById('hr-noite').value = appConfig.hrNoite;
-  if(appConfig.precoTurno) document.getElementById('preco-turno').value = appConfig.precoTurno;
+  else document.getElementById('hr-noite').value = '17h30 às 21h30';
+  if(appConfig.precoTurnoS1) document.getElementById('preco-turno-s1').value = appConfig.precoTurnoS1;
+  if(appConfig.precoTurnoS2) document.getElementById('preco-turno-s2').value = appConfig.precoTurnoS2;
+  if(appConfig.precoTurno8hS1) document.getElementById('preco-turno8h-s1').value = appConfig.precoTurno8hS1;
+  if(appConfig.precoTurno8hS2) document.getElementById('preco-turno8h-s2').value = appConfig.precoTurno8hS2;
+  // compat legado
+  if(appConfig.precoTurno && !appConfig.precoTurnoS1) { document.getElementById('preco-turno-s1').value = appConfig.precoTurno; document.getElementById('preco-turno-s2').value = appConfig.precoTurno; }
   if(appConfig.precoAvulsa) document.getElementById('preco-avulsa').value = appConfig.precoAvulsa;
   if(appConfig.preco10h) document.getElementById('preco-10h').value = appConfig.preco10h;
-  if(appConfig.preco20h) document.getElementById('preco-20h').value = appConfig.preco20h;
 }
 
 async function saveConfig() {
@@ -1486,15 +1518,13 @@ async function saveConfig() {
     hrManha: document.getElementById('hr-manha').value,
     hrTarde: document.getElementById('hr-tarde').value,
     hrNoite: document.getElementById('hr-noite').value,
-    precoTurno: document.getElementById('preco-turno').value,
+    precoTurnoS1: document.getElementById('preco-turno-s1').value,
+    precoTurnoS2: document.getElementById('preco-turno-s2').value,
+    precoTurno8hS1: document.getElementById('preco-turno8h-s1').value,
+    precoTurno8hS2: document.getElementById('preco-turno8h-s2').value,
     precoAvulsa: document.getElementById('preco-avulsa').value,
     preco10h: document.getElementById('preco-10h').value,
-    preco20h: document.getElementById('preco-20h').value,
-    alertaDias: [
-      document.getElementById('alerta-d1').value,
-      document.getElementById('alerta-d2').value,
-      document.getElementById('alerta-d3').value
-    ],
+    alertaDias: [document.getElementById('alerta-d1').value],
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   try {
@@ -1784,15 +1814,73 @@ function loadDashboard() {
   const hoje=new Date();
   const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   document.getElementById('dash-hoje-label').textContent=`Hoje — ${hoje.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'})}`;
-  // Stub data para receita
-  document.getElementById('dash-receita').textContent='R$ 8.400';
-  document.getElementById('dash-receita-sub').textContent='↑ 12% vs mês anterior';
-  document.getElementById('dash-turnos').textContent='5 / 6';
-  document.getElementById('dash-turnos-sub').textContent='1 turno disponível';
-  document.getElementById('dash-receber').textContent='R$ 1.200';
-  document.getElementById('dash-receber-sub').textContent='2 pagamentos pendentes';
-  document.getElementById('dash-hoje-list').innerHTML=`
-    <div class="mini-item"><span class="mini-time">Manhã</span><span class="mini-room">Sala 1</span><span class="mini-name">Carregando locações...</span></div>`;
+
+  const mesAtual = hoje.getMonth();
+  const anoAtual = hoje.getFullYear();
+  const hojeStr = hoje.toISOString().split('T')[0];
+
+  // Receitas do mês
+  db.collection('receitas').where('mes','==',mesAtual).where('ano','==',anoAtual).get().then(snap=>{
+    const receitas = snap.docs.map(d=>d.data());
+    const totalRec = receitas.reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
+    const recPago = receitas.filter(r=>r.status==='Pago').reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
+    const pendentes = receitas.filter(r=>r.status!=='Pago').length;
+    document.getElementById('dash-receita').textContent = formatMoney(totalRec);
+    document.getElementById('dash-receita-sub').textContent = `${formatMoney(recPago)} recebido · ${pendentes} pendente(s)`;
+    document.getElementById('dash-receber').textContent = formatMoney(receitas.filter(r=>r.status!=='Pago').reduce((s,r)=>s+(parseFloat(r.valor)||0),0));
+    document.getElementById('dash-receber-sub').textContent = `${pendentes} pagamento(s) pendente(s)`;
+  }).catch(()=>{});
+
+  // Locações de hoje
+  db.collection('locacoes').get().then(snap=>{
+    const all = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const hoje_loc = all.filter(l=>{
+      if(!l.dataInicio) return false;
+      return hojeStr >= l.dataInicio && hojeStr <= (l.dataFim||l.dataInicio);
+    });
+    const s1 = appConfig.sala1||'Áthos I';
+    const s2 = appConfig.sala2||'Áthos II';
+    const turnos = [{k:'manha',n:'Manhã'},{k:'tarde',n:'Tarde'},{k:'noite',n:'Noite'}];
+    function getTurnoKey(ini) {
+      if(!ini) return '';
+      const h=parseInt(ini.split(':')[0]),m=parseInt(ini.split(':')[1]||'0'),t=h*60+m;
+      if(t<13*60) return 'manha';
+      if(t<17*60+30) return 'tarde';
+      return 'noite';
+    }
+    let totalSlots=0, ocupados=0;
+    const miniItems = [];
+    hoje_loc.forEach(l=>{
+      const tk=getTurnoKey(l.inicio);
+      const tn=turnos.find(t=>t.k===tk)?.n||'';
+      const prof=profissionaisCache.find(p=>p.id===l.profId)?.nome||l.profId||'?';
+      const sala=(l.sala||'').toLowerCase().includes('1')||((l.sala||'').toLowerCase().includes('i')&&!(l.sala||'').toLowerCase().includes('ii'))?s1:s2;
+      miniItems.push(`<div class="mini-item"><span class="mini-time">${tn}</span><span class="mini-room">${sala}</span><span class="mini-name">${prof}</span></div>`);
+    });
+    // Calcular turnos — 3 turnos × 2 salas = 6 slots
+    totalSlots=6; ocupados=Math.min(hoje_loc.length,6);
+    document.getElementById('dash-turnos').textContent=`${ocupados} / ${totalSlots}`;
+    document.getElementById('dash-turnos-sub').textContent=`${totalSlots-ocupados} turno(s) disponível(is)`;
+    document.getElementById('dash-hoje-list').innerHTML=miniItems.length?miniItems.join(''):`<div class="mini-item"><span class="mini-time">—</span><span class="mini-room">—</span><span class="mini-name">Nenhuma locação hoje</span></div>`;
+
+    // Barras de ocupação do mês no dashboard
+    const manha_s1=all.filter(l=>getTurnoKey(l.inicio)==='manha'&&((l.sala||'').toLowerCase().includes('1')||((l.sala||'').includes('I')&&!(l.sala||'').includes('II')))).length;
+    const tarde_s1=all.filter(l=>getTurnoKey(l.inicio)==='tarde'&&((l.sala||'').toLowerCase().includes('1')||((l.sala||'').includes('I')&&!(l.sala||'').includes('II')))).length;
+    const noite_s1=all.filter(l=>getTurnoKey(l.inicio)==='noite'&&((l.sala||'').toLowerCase().includes('1')||((l.sala||'').includes('I')&&!(l.sala||'').includes('II')))).length;
+    const manha_s2=all.filter(l=>getTurnoKey(l.inicio)==='manha'&&!(l.sala||'').includes('I')&&(l.sala||'').includes('2')).length;
+    const tarde_s2=all.filter(l=>getTurnoKey(l.inicio)==='tarde'&&!(l.sala||'').includes('I')&&(l.sala||'').includes('2')).length;
+    const noite_s2=all.filter(l=>getTurnoKey(l.inicio)==='noite'&&!(l.sala||'').includes('I')&&(l.sala||'').includes('2')).length;
+    const max=5;
+    const pct=(n)=>Math.min(100,Math.round(n/max*100))+'%';
+    document.querySelectorAll('.turno-bar-wrap').forEach((el,i)=>{
+      const vals=[manha_s1,tarde_s1,noite_s1,manha_s2,tarde_s2,noite_s2];
+      const v=vals[i]||0;
+      const fill=el.querySelector('.turno-bar-fill');
+      const cnt=el.querySelector('.turno-bar-count');
+      if(fill) fill.style.width=pct(v);
+      if(cnt) cnt.textContent=`${v}/${max}`;
+    });
+  }).catch(()=>{});
 }
 
 // ══ FINANCEIRO ══
@@ -1814,6 +1902,9 @@ async function loadFinanceiro() {
     const todasDespesas=despSnap.docs.map(d=>({id:d.id,...d.data()}));
     const despesas=todasDespesas.filter(d=>d.status!=='Pago' || (d.vencimento && d.vencimento >= hoje2));
     renderDespesas(despesas);
+
+    // Totalizador Contas a Pagar — pendentes
+    _updateDespTotalizador(despesas);
 
     // Totais — saldo mensal considera apenas Pagos
     const totalRec=receitas.reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
@@ -1837,7 +1928,7 @@ let receitasCache = [];
 let despesasCache = [];
 
 function renderReceitas(receitas) {
-  receitasCache = receitas;
+  receitasCache = [...receitas].sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||''));
   _renderReceitasData(receitas);
 }
 
@@ -1891,7 +1982,7 @@ function _renderReceitasData(receitas) {
 }
 
 function renderDespesas(despesas) {
-  despesasCache = despesas;
+  despesasCache = [...despesas].sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||''));
   _renderDespesasData(despesas);
 }
 
@@ -2130,41 +2221,96 @@ function switchView(v,el) {
 }
 
 function renderAgendaDia() {
+  const hrManha = appConfig.hrManha || '08h às 12h';
+  const hrTarde = appConfig.hrTarde || '13h às 17h';
+  const hrNoite = appConfig.hrNoite || '17h30 às 21h30';
   const turnos=[
-    {nome:'🌅 Manhã',range:'08h–12h',horas:['08:00','09:00','10:00','11:00'],fechamento:'12:00'},
-    {nome:'☀️ Tarde',range:'13h–17h',horas:['13:00','14:00','15:00','16:00'],fechamento:'17:00'},
-    {nome:'🌙 Noite',range:'18h–22h',horas:['18:00','19:00','20:00','21:00'],fechamento:'22:00'}
+    {nome:'🌅 Manhã',range:hrManha,horas:['08:00','09:00','10:00','11:00'],fechamento:'12:00'},
+    {nome:'☀️ Tarde',range:hrTarde,horas:['13:00','14:00','15:00','16:00'],fechamento:'17:00'},
+    {nome:'🌙 Noite',range:hrNoite,horas:['17:30','18:30','19:30','20:30'],fechamento:'21:30'}
   ];
-  const s1=appConfig.sala1||'Sala 1';
-  const s2=appConfig.sala2||'Sala 2';
-  document.getElementById('sala-occ-badges').innerHTML=`
-    <div class="sala-occ-card"><div><div class="sala-occ-name">${s1}</div><div style="font-size:.73rem;color:var(--text-light)">Clique na agenda para adicionar locação</div></div><span class="badge badge-neutral" style="margin-left:auto">—</span></div>
-    <div class="sala-occ-card"><div><div class="sala-occ-name">${s2}</div><div style="font-size:.73rem;color:var(--text-light)">Clique na agenda para adicionar locação</div></div><span class="badge badge-neutral" style="margin-left:auto">—</span></div>`;
-  document.getElementById('agenda-dia-body').innerHTML=turnos.map(t=>`
-    <div class="turno-sec">
-      <div class="turno-bar-header">
-        <div class="turno-bar-cell">${t.nome} <span class="tr-range">${t.range}</span></div>
-        <div class="turno-filler"></div><div class="turno-filler"></div>
-      </div>
-      ${t.horas.map((h,i)=>`
-      <div class="hora-row">
-        <div class="hora-label">${h}</div>
-        <div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>
-        <div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>
-      </div>`).join('')}
-      <div class="hora-row" style="min-height:18px;border-bottom:2px solid #e9ecef">
-        <div class="hora-label" style="font-size:.68rem;padding-top:2px;color:var(--gold);font-weight:600">${t.fechamento}</div>
-        <div class="hora-cell" style="min-height:18px"></div>
-        <div class="hora-cell" style="min-height:18px"></div>
-      </div>
-    </div>`).join('');
+  const s1=appConfig.sala1||'Áthos I';
+  const s2=appConfig.sala2||'Áthos II';
+  const dataStr=currentAgendaDate.toISOString().split('T')[0];
+
+  // Buscar locações do dia no Firebase
+  db.collection('locacoes').get().then(snap => {
+    const locacoesDia = snap.docs.map(d=>({id:d.id,...d.data()})).filter(l => {
+      if(!l.dataInicio) return false;
+      const ini = l.dataInicio;
+      const fim = l.dataFim || l.dataInicio;
+      return dataStr >= ini && dataStr <= fim;
+    });
+
+    // Montar mapa: turno+sala → locação
+    function getTurno(inicio) {
+      if(!inicio) return '';
+      const h = parseInt(inicio.split(':')[0]);
+      const m = parseInt((inicio.split(':')[1]||'0'));
+      const tot = h*60+m;
+      if(tot < 13*60) return 'manha';
+      if(tot < 17*60+30) return 'tarde';
+      return 'noite';
+    }
+
+    const mapa = {};
+    locacoesDia.forEach(l => {
+      const t = getTurno(l.inicio);
+      const salaKey = (l.sala||'').toLowerCase().includes('1') || (l.sala||'').toLowerCase().includes('i') && !(l.sala||'').toLowerCase().includes('ii') ? 's1' : 's2';
+      mapa[`${t}_${salaKey}`] = l;
+    });
+
+    function slotHtml(turno, sala, profNome, cor, locId) {
+      if(profNome) return `<div class="hora-cell" style="background:${cor||'var(--gold)'};opacity:.85;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer" onclick="editarLocacao('${locId}')">${profNome}</div>`;
+      return `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>`;
+    }
+
+    // Atualizar badges de sala
+    const s1Count = Object.keys(mapa).filter(k=>k.endsWith('_s1')).length;
+    const s2Count = Object.keys(mapa).filter(k=>k.endsWith('_s2')).length;
+    document.getElementById('sala-occ-badges').innerHTML=`
+      <div class="sala-occ-card"><div><div class="sala-occ-name">${s1}</div><div style="font-size:.73rem;color:var(--text-light)">${s1Count} turno(s) ocupado(s)</div></div><span class="badge ${s1Count>0?'badge-success':'badge-neutral'}" style="margin-left:auto">${s1Count}/3</span></div>
+      <div class="sala-occ-card"><div><div class="sala-occ-name">${s2}</div><div style="font-size:.73rem;color:var(--text-light)">${s2Count} turno(s) ocupado(s)</div></div><span class="badge ${s2Count>0?'badge-success':'badge-neutral'}" style="margin-left:auto">${s2Count}/3</span></div>`;
+
+    const turnoKeys = ['manha','tarde','noite'];
+    document.getElementById('agenda-dia-body').innerHTML=turnos.map((t,ti)=>{
+      const tk = turnoKeys[ti];
+      const l1 = mapa[`${tk}_s1`];
+      const l2 = mapa[`${tk}_s2`];
+      const p1 = l1 ? (profissionaisCache.find(p=>p.id===l1.profId)?.nome || l1.profId || '?') : null;
+      const p2 = l2 ? (profissionaisCache.find(p=>p.id===l2.profId)?.nome || l2.profId || '?') : null;
+      return `
+      <div class="turno-sec">
+        <div class="turno-bar-header">
+          <div class="turno-bar-cell">${t.nome} <span class="tr-range">${t.range}</span></div>
+          <div class="turno-filler"></div><div class="turno-filler"></div>
+        </div>
+        ${t.horas.map((h,i)=>`
+        <div class="hora-row">
+          <div class="hora-label">${h}</div>
+          ${i===0 && p1 ? `<div class="hora-cell" style="background:${l1.cor||'var(--gold)'};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer;grid-row:span 4" onclick="editarLocacao('${l1.id}')">${p1}<br><span style="font-size:.65rem;font-weight:400;opacity:.85">${t.range}</span></div>` : i===0 && !p1 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>` : i>0 && !p1 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"></div>` : ''}
+          ${i===0 && p2 ? `<div class="hora-cell" style="background:${l2.cor||'#3d8a7a'};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer" onclick="editarLocacao('${l2.id}')">${p2}<br><span style="font-size:.65rem;font-weight:400;opacity:.85">${t.range}</span></div>` : i===0 && !p2 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>` : i>0 && !p2 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"></div>` : ''}
+        </div>`).join('')}
+        <div class="hora-row" style="min-height:18px;border-bottom:2px solid #e9ecef">
+          <div class="hora-label" style="font-size:.68rem;padding-top:2px;color:var(--gold);font-weight:600">${t.fechamento}</div>
+          <div class="hora-cell" style="min-height:18px"></div>
+          <div class="hora-cell" style="min-height:18px"></div>
+        </div>
+      </div>`;}).join('');
+  }).catch(()=>{
+    document.getElementById('agenda-dia-body').innerHTML='<div style="padding:1rem;font-size:.82rem;color:var(--text-lighter)">Erro ao carregar agenda.</div>';
+  });
+}
+
+function editarLocacao(id) {
+  openModal('nova-locacao');
 }
 
 function renderAgendaSemana() {
   const turnos=[
-    {nome:'🌅 Manhã',range:'08h–12h',label:'Manhã'},
-    {nome:'☀️ Tarde',range:'13h–17h',label:'Tarde'},
-    {nome:'🌙 Noite',range:'18h–22h',label:'Noite'}
+    {nome:'🌅 Manhã',range:appConfig.hrManha||'08h às 12h',label:'Manhã'},
+    {nome:'☀️ Tarde',range:appConfig.hrTarde||'13h às 17h',label:'Tarde'},
+    {nome:'🌙 Noite',range:appConfig.hrNoite||'17h30 às 21h30',label:'Noite'}
   ];
   document.getElementById('agenda-semana-body').innerHTML=turnos.map(t=>`
     <div class="wg-turno-sec">
@@ -2271,21 +2417,145 @@ async function salvarLocacao() {
 }
 
 // ══ RELATÓRIOS ══
-function initRelatorios() {
-  setTimeout(()=>{
-    try {
-      // Mensal
-      new Chart(document.getElementById('chart-mensal'),{type:'bar',data:{labels:['Jan','Fev','Mar','Abr','Mai'],datasets:[{label:'Receita',data:[6200,7100,7800,7500,8400],backgroundColor:'rgba(160,120,80,.7)',borderRadius:6},{label:'Despesa',data:[2900,3100,3000,3050,3200],backgroundColor:'rgba(220,38,38,.5)',borderRadius:6}]},options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}});
-      // Ocupação
-      new Chart(document.getElementById('chart-ocupacao'),{type:'bar',data:{labels:['Manhã S1','Tarde S1','Noite S1','Manhã S2','Tarde S2','Noite S2'],datasets:[{label:'Ocupação (%)',data:[80,60,20,100,40,60],backgroundColor:'rgba(160,120,80,.7)',borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100}}}});
-      // Semestral
-      new Chart(document.getElementById('chart-semestral'),{type:'line',data:{labels:['Jan','Fev','Mar','Abr','Mai','Jun'],datasets:[{label:'Receita',data:[6200,7100,7800,7500,8400,7600],borderColor:'#a07850',backgroundColor:'rgba(160,120,80,.1)',tension:.4,fill:true,pointRadius:4},{label:'Despesa',data:[2900,3100,3000,3050,3200,2830],borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.1)',tension:.4,fill:true,pointRadius:4}]},options:{responsive:true,plugins:{legend:{position:'top'}}}});
-      // Pizza
-      new Chart(document.getElementById('chart-pizza'),{type:'doughnut',data:{labels:['Turno Fixo','Pacote de Horas','Hora Avulsa'],datasets:[{data:[55,35,10],backgroundColor:['rgba(160,120,80,.8)','rgba(61,138,122,.8)','rgba(109,90,172,.8)'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,plugins:{legend:{position:'right'}}}});
-      // Anual
-      new Chart(document.getElementById('chart-anual'),{type:'bar',data:{labels:['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],datasets:[{label:'Receita',data:[6200,7100,7800,7500,8400,7600,8100,8300,7900,8600,8800,9100],backgroundColor:'rgba(160,120,80,.7)',borderRadius:4},{label:'Despesa',data:[2900,3100,3000,3050,3200,2830,3100,3200,3000,3100,3300,3400],backgroundColor:'rgba(220,38,38,.5)',borderRadius:4}]},options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}});
-    } catch(e){console.log('Charts error',e);}
-  },300);
+let chartInstances = {};
+
+function destroyChart(id) {
+  if(chartInstances[id]) { try { chartInstances[id].destroy(); } catch(e){} delete chartInstances[id]; }
+}
+
+async function initRelatorios() {
+  try {
+    const hoje = new Date();
+    const anoAtual = hoje.getFullYear();
+    const mesAtual = hoje.getMonth();
+    const mesesLabels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    // Buscar todos os dados
+    const [recSnap, despSnap, locSnap] = await Promise.all([
+      db.collection('receitas').get(),
+      db.collection('despesas').get(),
+      db.collection('locacoes').get()
+    ]);
+
+    const receitas = recSnap.docs.map(d=>d.data());
+    const despesas = despSnap.docs.map(d=>d.data());
+    const locacoes = locSnap.docs.map(d=>d.data());
+
+    // Agrupar por mês/ano
+    const recByMes = Array(12).fill(0);
+    const despByMes = Array(12).fill(0);
+    receitas.forEach(r => {
+      const m = r.mes ?? (r.vencimento ? parseInt(r.vencimento.split('-')[1])-1 : mesAtual);
+      const a = r.ano ?? (r.vencimento ? parseInt(r.vencimento.split('-')[0]) : anoAtual);
+      if(a === anoAtual && m >= 0 && m < 12) recByMes[m] += parseFloat(r.valor)||0;
+    });
+    despesas.forEach(d => {
+      const m = d.mes ?? (d.vencimento ? parseInt(d.vencimento.split('-')[1])-1 : mesAtual);
+      const a = d.ano ?? (d.vencimento ? parseInt(d.vencimento.split('-')[0]) : anoAtual);
+      if(a === anoAtual && m >= 0 && m < 12) despByMes[m] += parseFloat(d.valor)||0;
+    });
+
+    // Meses com dados até o atual
+    const mesesComDados = mesesLabels.slice(0, mesAtual+1);
+    const recMes = recByMes.slice(0, mesAtual+1);
+    const despMes = despByMes.slice(0, mesAtual+1);
+
+    // Atualizar título
+    const tituloMensal = document.querySelector('#relat-mensal .chart-title');
+    if(tituloMensal) tituloMensal.textContent = `Receitas x Despesas — ${anoAtual}`;
+
+    setTimeout(()=>{
+      try {
+        // Mensal — dados reais
+        destroyChart('chart-mensal');
+        chartInstances['chart-mensal'] = new Chart(document.getElementById('chart-mensal'),{
+          type:'bar',
+          data:{
+            labels: mesesComDados,
+            datasets:[
+              {label:'Receita',data:recMes,backgroundColor:'rgba(34,197,94,.7)',borderRadius:6},
+              {label:'Despesa',data:despMes,backgroundColor:'rgba(220,38,38,.5)',borderRadius:6}
+            ]
+          },
+          options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}
+        });
+
+        // Ocupação — dados reais
+        function getTurnoKey(ini) {
+          if(!ini) return '';
+          const h=parseInt(ini.split(':')[0]),m=parseInt(ini.split(':')[1]||'0'),t=h*60+m;
+          if(t<13*60) return 'manha';
+          if(t<17*60+30) return 'tarde';
+          return 'noite';
+        }
+        const s1n = appConfig.sala1||'Áthos I';
+        const s2n = appConfig.sala2||'Áthos II';
+        const occ = {manha_s1:0,tarde_s1:0,noite_s1:0,manha_s2:0,tarde_s2:0,noite_s2:0};
+        locacoes.forEach(l=>{
+          const tk=getTurnoKey(l.inicio);
+          const isS1=(l.sala||'').toLowerCase().includes('1')||((l.sala||'').includes('I')&&!(l.sala||'').includes('II'));
+          if(tk) occ[`${tk}_${isS1?'s1':'s2'}`]++;
+        });
+        const maxOcc = Math.max(...Object.values(occ), 1);
+        destroyChart('chart-ocupacao');
+        chartInstances['chart-ocupacao'] = new Chart(document.getElementById('chart-ocupacao'),{
+          type:'bar',
+          data:{
+            labels:[`Manhã ${s1n}`,`Tarde ${s1n}`,`Noite ${s1n}`,`Manhã ${s2n}`,`Tarde ${s2n}`,`Noite ${s2n}`],
+            datasets:[{label:'Locações',data:[occ.manha_s1,occ.tarde_s1,occ.noite_s1,occ.manha_s2,occ.tarde_s2,occ.noite_s2],backgroundColor:'rgba(34,197,94,.7)',borderRadius:6}]
+          },
+          options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+        });
+
+        // Semestral — últimos 6 meses
+        const semi6 = [];
+        for(let i=5;i>=0;i--) {
+          const m=(mesAtual-i+12)%12;
+          semi6.push({label:mesesLabels[m],rec:recByMes[m],desp:despByMes[m]});
+        }
+        destroyChart('chart-semestral');
+        chartInstances['chart-semestral'] = new Chart(document.getElementById('chart-semestral'),{
+          type:'line',
+          data:{
+            labels:semi6.map(x=>x.label),
+            datasets:[
+              {label:'Receita',data:semi6.map(x=>x.rec),borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)',tension:.4,fill:true,pointRadius:4},
+              {label:'Despesa',data:semi6.map(x=>x.desp),borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.1)',tension:.4,fill:true,pointRadius:4}
+            ]
+          },
+          options:{responsive:true,plugins:{legend:{position:'top'}}}
+        });
+
+        // Pizza — distribuição por tipo de receita (dados reais)
+        const tipoMap = {};
+        receitas.forEach(r=>{ const t=r.tipo||'Outro'; tipoMap[t]=(tipoMap[t]||0)+(parseFloat(r.valor)||0); });
+        const pizzaLabels = Object.keys(tipoMap);
+        const pizzaData = pizzaLabels.map(k=>tipoMap[k]);
+        const pizzaCores = ['rgba(34,197,94,.8)','rgba(61,138,122,.8)','rgba(109,90,172,.8)','rgba(160,120,80,.8)','rgba(234,179,8,.8)'];
+        destroyChart('chart-pizza');
+        chartInstances['chart-pizza'] = new Chart(document.getElementById('chart-pizza'),{
+          type:'doughnut',
+          data:{labels:pizzaLabels.length?pizzaLabels:['Sem dados'],datasets:[{data:pizzaData.length?pizzaData:[1],backgroundColor:pizzaLabels.length?pizzaCores.slice(0,pizzaLabels.length):['#e5e7eb'],borderWidth:2,borderColor:'#fff'}]},
+          options:{responsive:true,plugins:{legend:{position:'right'}}}
+        });
+
+        // Anual — todos os meses
+        destroyChart('chart-anual');
+        chartInstances['chart-anual'] = new Chart(document.getElementById('chart-anual'),{
+          type:'bar',
+          data:{
+            labels:mesesLabels,
+            datasets:[
+              {label:'Receita',data:recByMes,backgroundColor:'rgba(34,197,94,.7)',borderRadius:4},
+              {label:'Despesa',data:despByMes,backgroundColor:'rgba(220,38,38,.5)',borderRadius:4}
+            ]
+          },
+          options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}
+        });
+
+      } catch(e){console.log('Charts error',e);}
+    },300);
+  } catch(e) { console.error('Erro ao carregar relatórios:', e); }
 }
 
 function showRelatTab(t,el) {
@@ -2296,8 +2566,16 @@ function showRelatTab(t,el) {
 }
 
 function exportarRelatorio() {
-  showToast('Preparando exportação PDF...','success');
-  setTimeout(()=>window.print(),500);
+  showToast('Preparando impressão/PDF...','success');
+  // Ocultar elementos desnecessários para impressão
+  document.querySelectorAll('.no-print').forEach(el=>el.style.display='none');
+  setTimeout(()=>{
+    window.print();
+    // Restaurar após impressão
+    setTimeout(()=>{
+      document.querySelectorAll('.no-print').forEach(el=>el.style.display='');
+    }, 1000);
+  }, 300);
 }
 
 // ══ MOBILE SIDEBAR ══
@@ -2775,10 +3053,54 @@ async function gerarRelatFiltrado() {
     const totalDesp = despesas.filter(x=>todos.includes(x)).reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
 
     document.getElementById('filtrado-indicadores').innerHTML = `
-      <div class="ind-card"><div class="ind-label">Receitas filtradas</div><div class="ind-value" style="color:var(--success)">${formatMoney(totalRec)}</div><div class="ind-delta">${receitas.length} lançamentos</div></div>
-      <div class="ind-card"><div class="ind-label">Despesas filtradas</div><div class="ind-value" style="color:var(--danger)">${formatMoney(totalDesp)}</div><div class="ind-delta">${despesas.length} lançamentos</div></div>
+      <div class="ind-card"><div class="ind-label">Receitas filtradas</div><div class="ind-value" style="color:var(--success)">${formatMoney(totalRec)}</div><div class="ind-delta">${receitas.filter(x=>todos.includes(x)).length} lançamentos</div></div>
+      <div class="ind-card"><div class="ind-label">Despesas filtradas</div><div class="ind-value" style="color:var(--danger)">${formatMoney(totalDesp)}</div><div class="ind-delta">${despesas.filter(x=>todos.includes(x)).length} lançamentos</div></div>
       <div class="ind-card"><div class="ind-label">Saldo filtrado</div><div class="ind-value">${formatMoney(totalRec-totalDesp)}</div><div class="ind-delta ${totalRec-totalDesp>=0?'pos':'neg'}">${totalRec-totalDesp>=0?'positivo':'negativo'}</div></div>
       <div class="ind-card"><div class="ind-label">Total de registros</div><div class="ind-value">${todos.length}</div></div>`;
+
+    // ── Compilar por categoria ──
+    const catMap = {};
+    todos.forEach(x => {
+      const cat = (x.categoria||x.tipo||'Sem categoria');
+      if(!catMap[cat]) catMap[cat] = {receita:0, despesa:0, itens:0};
+      if(x._tipo==='Receita') catMap[cat].receita += parseFloat(x.valor)||0;
+      else catMap[cat].despesa += parseFloat(x.valor)||0;
+      catMap[cat].itens++;
+    });
+    const catHtml = Object.entries(catMap).map(([cat, v]) => `
+      <div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+        <span style="font-weight:500">${cat}</span>
+        <span style="color:var(--success)">${v.receita>0?formatMoney(v.receita):'—'}</span>
+        <span style="color:var(--danger)">${v.despesa>0?formatMoney(v.despesa):'—'}</span>
+        <span style="color:var(--text-light)">${v.itens} item(s)</span>
+      </div>`).join('');
+    document.getElementById('filtrado-categorias').innerHTML = `
+      <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr"><span>Categoria</span><span>Receita</span><span>Despesa</span><span>Qtd</span></div>
+      ${catHtml||'<div style="padding:.75rem;font-size:.82rem;color:var(--text-lighter)">Sem dados</div>'}`;
+
+    // ── Gráficos do filtrado ──
+    setTimeout(()=>{
+      try {
+        destroyChart('chart-filtrado-bar');
+        destroyChart('chart-filtrado-pizza');
+        const catLabels = Object.keys(catMap);
+        chartInstances['chart-filtrado-bar'] = new Chart(document.getElementById('chart-filtrado-bar'),{
+          type:'bar',
+          data:{labels:catLabels,datasets:[
+            {label:'Receita',data:catLabels.map(c=>catMap[c].receita),backgroundColor:'rgba(34,197,94,.7)',borderRadius:4},
+            {label:'Despesa',data:catLabels.map(c=>catMap[c].despesa),backgroundColor:'rgba(220,38,38,.5)',borderRadius:4}
+          ]},
+          options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}
+        });
+        const pizzaCores=['rgba(34,197,94,.8)','rgba(220,38,38,.5)','rgba(160,120,80,.8)','rgba(109,90,172,.8)','rgba(234,179,8,.8)'];
+        const allVals = catLabels.map(c=>catMap[c].receita+catMap[c].despesa);
+        chartInstances['chart-filtrado-pizza'] = new Chart(document.getElementById('chart-filtrado-pizza'),{
+          type:'doughnut',
+          data:{labels:catLabels,datasets:[{data:allVals,backgroundColor:pizzaCores.slice(0,catLabels.length),borderWidth:2,borderColor:'#fff'}]},
+          options:{responsive:true,plugins:{legend:{position:'right'}}}
+        });
+      } catch(e){console.log('Chart filtrado error',e);}
+    },200);
 
     const tabela = document.getElementById('filtrado-tabela');
     tabela.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span></div>` +
@@ -2948,6 +3270,60 @@ async function excluirLoteDesp() {
     loadFinanceiro();
   } catch(e) { showToast('Erro ao excluir.', 'error'); }
 }
+// ── FILTRO POR DATA — DESPESAS ──
+function aplicarFiltroDespData() {
+  const ini = document.getElementById('desp-filtro-ini')?.value;
+  const fim = document.getElementById('desp-filtro-fim')?.value;
+  let filtrados = despesasCache;
+  if(ini) filtrados = filtrados.filter(d=>d.vencimento&&d.vencimento>=ini);
+  if(fim) filtrados = filtrados.filter(d=>d.vencimento&&d.vencimento<=fim);
+  _renderDespesasData(filtrados);
+  _updateDespTotalizador(filtrados);
+}
+function limparFiltroDespData() {
+  const ini = document.getElementById('desp-filtro-ini');
+  const fim = document.getElementById('desp-filtro-fim');
+  if(ini) ini.value=''; if(fim) fim.value='';
+  _renderDespesasData(despesasCache);
+  _updateDespTotalizador(null);
+}
+function _updateDespTotalizador(lista) {
+  const el = document.getElementById('desp-totalizador');
+  if(!el) return;
+  if(!lista) { el.style.display='none'; return; }
+  const totalPend = lista.filter(d=>d.status!=='Pago').reduce((s,d)=>s+(parseFloat(d.valor)||0),0);
+  const totalPago = lista.filter(d=>d.status==='Pago').reduce((s,d)=>s+(parseFloat(d.valor)||0),0);
+  el.style.display='block';
+  el.innerHTML = `💰 Total pendente: <span style="color:var(--danger)">${formatMoney(totalPend)}</span> &nbsp;·&nbsp; Pago: <span style="color:var(--success)">${formatMoney(totalPago)}</span> &nbsp;·&nbsp; ${lista.length} lançamento(s)`;
+}
+
+// ── FILTRO POR DATA — MOVIMENTAÇÃO ──
+function aplicarFiltroMovData() {
+  const ini = document.getElementById('mov-filtro-ini')?.value;
+  const fim = document.getElementById('mov-filtro-fim')?.value;
+  let filtrados = movCache;
+  if(ini) filtrados = filtrados.filter(x=>x.vencimento&&x.vencimento>=ini);
+  if(fim) filtrados = filtrados.filter(x=>x.vencimento&&x.vencimento<=fim);
+  _renderMovData(filtrados);
+  _updateMovTotalizador(filtrados);
+}
+function limparFiltroMovData() {
+  const ini = document.getElementById('mov-filtro-ini');
+  const fim = document.getElementById('mov-filtro-fim');
+  if(ini) ini.value=''; if(fim) fim.value='';
+  _renderMovData(movCache);
+  _updateMovTotalizador(null);
+}
+function _updateMovTotalizador(lista) {
+  const el = document.getElementById('mov-totalizador');
+  if(!el) return;
+  if(!lista) { el.style.display='none'; return; }
+  const totalRec = lista.filter(x=>x._tipo==='Receita').reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
+  const totalDesp = lista.filter(x=>x._tipo==='Despesa').reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
+  el.style.display='block';
+  el.innerHTML = `📋 Receitas: <span style="color:var(--success)">${formatMoney(totalRec)}</span> &nbsp;·&nbsp; Despesas: <span style="color:var(--danger)">${formatMoney(totalDesp)}</span> &nbsp;·&nbsp; Saldo: <span style="color:${totalRec-totalDesp>=0?'var(--success)':'var(--danger)'}">${formatMoney(totalRec-totalDesp)}</span> &nbsp;·&nbsp; ${lista.length} registro(s)`;
+}
+
 async function excluirPlano(id) {
   if(!confirm('Excluir este plano? Esta ação não pode ser desfeita.')) return;
   try {
@@ -3044,18 +3420,39 @@ async function verificarAlertasVencimento() {
   const hoje = new Date();
   const configDoc = await db.collection('config').doc('geral').get();
   const config = configDoc.exists ? configDoc.data() : {};
-  const dias = config.alertaDias || ['30','15','5'];
+  const diasAlerta = parseInt(config.alertaDias?.[0] || '2');
+
   try {
     const snap = await db.collection('profissionais').where('status','==','Ativo').get();
+    const alertas = [];
     snap.docs.forEach(doc => {
       const p = doc.data();
       if(!p.contratoFim) return;
       const fim = new Date(p.contratoFim + 'T12:00:00');
       const diffDias = Math.floor((fim - hoje) / (1000 * 60 * 60 * 24));
-      if(dias.includes(String(diffDias)) || diffDias <= 0) {
-        console.log(`Alerta: contrato de ${p.nome} vence em ${diffDias} dias`);
+      if(diffDias >= 0 && diffDias <= diasAlerta) {
+        alertas.push({nome: p.nome, dias: diffDias, vencimento: p.contratoFim});
       }
     });
+
+    if(alertas.length > 0) {
+      const existing = document.getElementById('banner-alertas-venc');
+      if(!existing) {
+        const banner = document.createElement('div');
+        banner.id = 'banner-alertas-venc';
+        banner.style.cssText = 'position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:1500;background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:.75rem 1.25rem;max-width:480px;width:90%;box-shadow:0 4px 16px rgba(0,0,0,.1)';
+        banner.innerHTML = `<div style="display:flex;align-items:flex-start;gap:.75rem">
+          <span style="font-size:1.2rem">⚠️</span>
+          <div style="flex:1">
+            <div style="font-size:.82rem;font-weight:700;color:#92400e;margin-bottom:4px">Contrato(s) vencendo em breve</div>
+            ${alertas.map(a=>`<div style="font-size:.75rem;color:#78350f">• ${a.nome} — vence em ${a.dias===0?'hoje':a.dias+' dia(s)'} (${formatDate(a.vencimento)})</div>`).join('')}
+          </div>
+          <button onclick="document.getElementById('banner-alertas-venc').remove()" style="background:none;border:none;cursor:pointer;font-size:1rem;color:#92400e;padding:0">✕</button>
+        </div>`;
+        document.body.appendChild(banner);
+        setTimeout(()=>{ if(banner.parentNode) banner.remove(); }, 10000);
+      }
+    }
   } catch(e) { console.error('Erro ao verificar alertas:', e); }
 }
 
