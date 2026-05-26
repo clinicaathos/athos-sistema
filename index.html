@@ -772,10 +772,10 @@ body.dark .tag{background:#111827;border-color:#374151;}
 
       <!-- ══ PLANOS ══ -->
       <div class="page" id="page-planos">
-        <div class="sec-header"><span class="sec-title">Planos e Pacotes</span><button class="btn btn-primary" onclick="openModal('novo-plano')">+ Novo Plano</button></div>
+        <div class="sec-header"><span class="sec-title">Planos e Pacotes</span><button class="btn btn-primary" onclick="novoPlano()">+ Novo Plano</button></div>
         <div class="divider-label">Pacotes de Horas</div>
         <div class="planos-grid" id="planos-pacotes-list">
-          <div class="plano-card" style="border-style:dashed;box-shadow:none;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;min-height:130px;gap:5px" onclick="openModal('novo-plano')">
+          <div class="plano-card" style="border-style:dashed;box-shadow:none;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;min-height:130px;gap:5px" onclick="novoPlano()">
             <div style="font-size:1.4rem;color:#d1d5db">+</div>
             <div style="font-size:.75rem;color:var(--text-lighter)">Criar novo pacote</div>
           </div>
@@ -849,11 +849,20 @@ body.dark .tag{background:#111827;border-color:#374151;}
               <label style="font-size:.72rem;color:var(--text-lighter);display:flex;align-items:center;gap:4px;cursor:pointer">
                 <input type="checkbox" id="desp-sel-all" onchange="toggleSelAll('desp',this)"> Selecionar todos
               </label>
+              <select class="form-select" id="desp-filtro-cat" style="width:auto;padding:4px 8px;font-size:.72rem" onchange="aplicarFiltroDespCat()">
+                <option value="">Todas as categorias</option>
+                <option value="Fixo">Fixo</option>
+                <option value="Variável">Variável</option>
+                <option value="Extra">Extra</option>
+              </select>
+              <select class="form-select" id="desp-filtro-subcat-sel" style="width:auto;padding:4px 8px;font-size:.72rem" onchange="aplicarFiltroDespCat()">
+                <option value="">Todas as subcategorias</option>
+              </select>
               <div style="display:flex;align-items:center;gap:.4rem;margin-left:auto">
                 <span style="font-size:.72rem;color:var(--text-lighter)">De</span>
-                <input type="date" id="desp-filtro-ini" class="form-input" style="padding:4px 8px;font-size:.72rem;width:130px" onchange="aplicarFiltroDespData()">
+                <input type="date" id="desp-filtro-ini" class="form-input" style="padding:4px 8px;font-size:.72rem;width:130px" onchange="aplicarFiltroDespCat()">
                 <span style="font-size:.72rem;color:var(--text-lighter)">até</span>
-                <input type="date" id="desp-filtro-fim" class="form-input" style="padding:4px 8px;font-size:.72rem;width:130px" onchange="aplicarFiltroDespData()">
+                <input type="date" id="desp-filtro-fim" class="form-input" style="padding:4px 8px;font-size:.72rem;width:130px" onchange="aplicarFiltroDespCat()">
                 <button class="qf-btn" onclick="limparFiltroDespData()" style="font-size:.68rem">✕</button>
               </div>
             </div>
@@ -919,24 +928,27 @@ body.dark .tag{background:#111827;border-color:#374151;}
         <!-- MENSAL -->
         <div class="relat-content active" id="relat-mensal">
           <div style="display:flex;gap:.75rem;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap">
-            <select class="form-select" style="width:auto" id="relat-mes-sel">
-              <option>Maio 2025</option><option>Abril 2025</option><option>Março 2025</option><option>Fevereiro 2025</option>
+            <select class="form-select" style="width:auto" id="relat-mes-sel" onchange="recarregarIndicadores()">
+              <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+              <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+              <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+              <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
             </select>
           </div>
           <div class="indicadores-grid">
-            <div class="ind-card"><div class="ind-label">Receita</div><div class="ind-value" style="color:var(--success)">R$ 8.400</div><div class="ind-delta pos">↑ 12% vs anterior</div></div>
-            <div class="ind-card"><div class="ind-label">Despesas</div><div class="ind-value" style="color:var(--danger)">R$ 3.200</div><div class="ind-delta neg">↑ 5% vs anterior</div></div>
-            <div class="ind-card"><div class="ind-label">Saldo</div><div class="ind-value">R$ 5.200</div><div class="ind-delta pos">↑ 18% vs anterior</div></div>
-            <div class="ind-card"><div class="ind-label">Ocupação média</div><div class="ind-value">73%</div><div class="ind-delta pos">↑ 8% vs anterior</div></div>
-            <div class="ind-card"><div class="ind-label">Profissionais ativos</div><div class="ind-value">5</div><div class="ind-delta" style="color:var(--text-lighter)">estável</div></div>
-            <div class="ind-card"><div class="ind-label">Inadimplência</div><div class="ind-value" style="color:var(--warning)">R$ 1.200</div><div class="ind-delta neg">2 pendentes</div></div>
+            <div class="ind-card"><div class="ind-label">Receita</div><div class="ind-value" style="color:var(--success)" id="ind-rec">—</div><div class="ind-delta" id="ind-rec-d"></div></div>
+            <div class="ind-card"><div class="ind-label">Despesas</div><div class="ind-value" style="color:var(--danger)" id="ind-desp">—</div><div class="ind-delta" id="ind-desp-d"></div></div>
+            <div class="ind-card"><div class="ind-label">Saldo</div><div class="ind-value" id="ind-saldo">—</div><div class="ind-delta" id="ind-saldo-d"></div></div>
+            <div class="ind-card"><div class="ind-label">Ocupação média</div><div class="ind-value" id="ind-ocup">—</div><div class="ind-delta" id="ind-ocup-d"></div></div>
+            <div class="ind-card"><div class="ind-label">Profissionais ativos</div><div class="ind-value" id="ind-profs-r">—</div><div class="ind-delta" id="ind-profs-d" style="color:var(--text-lighter)"></div></div>
+            <div class="ind-card"><div class="ind-label">Inadimplência</div><div class="ind-value" style="color:var(--warning)" id="ind-inadimp">—</div><div class="ind-delta neg" id="ind-inadimp-d"></div></div>
           </div>
           <div class="chart-wrap">
-            <div class="chart-title">Receitas x Despesas — Maio 2025</div>
+            <div class="chart-title" id="chart-mensal-title">Receitas x Despesas</div>
             <canvas id="chart-mensal" height="120"></canvas>
           </div>
           <div class="chart-wrap">
-            <div class="chart-title">Ocupação por Turno — Maio 2025</div>
+            <div class="chart-title" id="chart-ocup-title">Ocupação por Turno</div>
             <canvas id="chart-ocupacao" height="100"></canvas>
           </div>
         </div>
@@ -944,13 +956,13 @@ body.dark .tag{background:#111827;border-color:#374151;}
         <!-- SEMESTRAL -->
         <div class="relat-content" id="relat-semestral">
           <div class="indicadores-grid">
-            <div class="ind-card"><div class="ind-label">Receita Total (6m)</div><div class="ind-value" style="color:var(--success)">R$ 46.800</div><div class="ind-delta pos">↑ 23% vs semestre anterior</div></div>
-            <div class="ind-card"><div class="ind-label">Despesas (6m)</div><div class="ind-value" style="color:var(--danger)">R$ 18.200</div><div class="ind-delta neg">↑ 4% vs semestre anterior</div></div>
-            <div class="ind-card"><div class="ind-label">Saldo (6m)</div><div class="ind-value">R$ 28.600</div><div class="ind-delta pos">↑ 31% vs semestre anterior</div></div>
-            <div class="ind-card"><div class="ind-label">Média mensal</div><div class="ind-value">R$ 7.800</div><div class="ind-delta pos">crescimento consistente</div></div>
+            <div class="ind-card"><div class="ind-label">Receita Total (6m)</div><div class="ind-value" style="color:var(--success)" id="ind-sem-rec">—</div><div class="ind-delta pos" id="ind-sem-rec-d"></div></div>
+            <div class="ind-card"><div class="ind-label">Despesas (6m)</div><div class="ind-value" style="color:var(--danger)" id="ind-sem-desp">—</div><div class="ind-delta neg" id="ind-sem-desp-d"></div></div>
+            <div class="ind-card"><div class="ind-label">Saldo (6m)</div><div class="ind-value" id="ind-sem-saldo">—</div><div class="ind-delta" id="ind-sem-saldo-d"></div></div>
+            <div class="ind-card"><div class="ind-label">Média mensal</div><div class="ind-value" id="ind-sem-media">—</div><div class="ind-delta" id="ind-sem-media-d"></div></div>
           </div>
           <div class="chart-wrap">
-            <div class="chart-title">Evolução de Receitas — Jan a Jun 2025</div>
+            <div class="chart-title" id="chart-sem-title">Evolução — últimos 6 meses</div>
             <canvas id="chart-semestral" height="120"></canvas>
           </div>
           <div class="chart-wrap">
@@ -962,13 +974,13 @@ body.dark .tag{background:#111827;border-color:#374151;}
         <!-- ANUAL -->
         <div class="relat-content" id="relat-anual">
           <div class="indicadores-grid">
-            <div class="ind-card"><div class="ind-label">Receita Anual</div><div class="ind-value" style="color:var(--success)">R$ 89.400</div><div class="ind-delta pos">↑ 31% vs ano anterior</div></div>
-            <div class="ind-card"><div class="ind-label">Despesas Anuais</div><div class="ind-value" style="color:var(--danger)">R$ 36.800</div><div class="ind-delta neg">↑ 7% vs ano anterior</div></div>
-            <div class="ind-card"><div class="ind-label">Lucro Anual</div><div class="ind-value">R$ 52.600</div><div class="ind-delta pos">↑ 48% vs ano anterior</div></div>
-            <div class="ind-card"><div class="ind-label">Profissionais (pico)</div><div class="ind-value">6</div><div class="ind-delta pos">máximo histórico</div></div>
+            <div class="ind-card"><div class="ind-label">Receita Anual</div><div class="ind-value" style="color:var(--success)" id="ind-an-rec">—</div><div class="ind-delta pos" id="ind-an-rec-d"></div></div>
+            <div class="ind-card"><div class="ind-label">Despesas Anuais</div><div class="ind-value" style="color:var(--danger)" id="ind-an-desp">—</div><div class="ind-delta neg" id="ind-an-desp-d"></div></div>
+            <div class="ind-card"><div class="ind-label">Lucro Anual</div><div class="ind-value" id="ind-an-lucro">—</div><div class="ind-delta" id="ind-an-lucro-d"></div></div>
+            <div class="ind-card"><div class="ind-label">Profissionais ativos</div><div class="ind-value" id="ind-an-profs">—</div><div class="ind-delta" id="ind-an-profs-d"></div></div>
           </div>
           <div class="chart-wrap">
-            <div class="chart-title">Receitas x Despesas — 2025 (mensal)</div>
+            <div class="chart-title">Receitas x Despesas — Anual</div>
             <canvas id="chart-anual" height="120"></canvas>
           </div>
         </div>
@@ -1122,7 +1134,8 @@ body.dark .tag{background:#111827;border-color:#374151;}
 <!-- Nova Locação -->
 <div class="modal-overlay" id="modal-nova-locacao" onclick="closeModalBg(event,'nova-locacao')">
   <div class="modal">
-    <div class="modal-title">Nova Locação</div>
+    <div class="modal-title" id="loc-modal-title">Nova Locação</div>
+    <input type="hidden" id="loc-edit-id">
     <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="loc-prof"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Sala</label><select class="form-select" id="loc-sala"><option value="1" id="loc-s1-opt">Sala 1</option><option value="2" id="loc-s2-opt">Sala 2</option></select></div>
@@ -1155,6 +1168,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
       </div>
     </div>
     <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="loc-excluir-btn" style="display:none" onclick="excluirLocacao()">Excluir</button>
       <button class="btn btn-secondary" onclick="closeModal('nova-locacao')">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarLocacao()">Confirmar Locação</button>
     </div>
@@ -1258,7 +1272,8 @@ body.dark .tag{background:#111827;border-color:#374151;}
 <!-- Novo Plano -->
 <div class="modal-overlay" id="modal-novo-plano" onclick="closeModalBg(event,'novo-plano')">
   <div class="modal modal-sm">
-    <div class="modal-title">Novo Pacote de Horas</div>
+    <div class="modal-title" id="plano-modal-title">Novo Pacote de Horas</div>
+    <input type="hidden" id="plano-edit-id">
     <div class="form-group"><label class="form-label">Nome</label><input class="form-input" id="plano-nome" placeholder="Ex: Pacote 10 horas"></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Qtd. Horas</label><input class="form-input" id="plano-horas" type="number" placeholder="10"></div>
@@ -2186,6 +2201,7 @@ async function salvarDespesa() {
     }
     closeModal('nova-despesa');
     loadFinanceiro();
+    if(document.getElementById('fin-mov')?.classList.contains('active')) loadMovimentacao();
   } catch(e) { showToast('Erro ao salvar despesa.','error'); console.error(e); }
 }
 
@@ -2381,7 +2397,83 @@ function renderAgendaDia() {
 }
 
 function editarLocacao(id) {
+  // Carregar dados e preencher modal
+  db.collection('locacoes').doc(id).get().then(doc=>{
+    if(!doc.exists) return;
+    const l=doc.data();
+    document.getElementById('loc-edit-id').value=id;
+    document.getElementById('loc-modal-title').textContent='Editar Locação';
+    document.getElementById('loc-excluir-btn').style.display='inline-flex';
+    const profSel=document.getElementById('loc-prof');
+    if(profSel) profSel.value=l.profId||'';
+    const salaSel=document.getElementById('loc-sala');
+    if(salaSel) salaSel.value=l.sala||'1';
+    const vincSel=document.getElementById('loc-vinculo');
+    if(vincSel) vincSel.value=l.vinculo||'Turno Fixo (4h)';
+    const iniSel=document.getElementById('loc-inicio');
+    if(iniSel) iniSel.value=l.inicio||'08:00';
+    const fimSel=document.getElementById('loc-fim');
+    if(fimSel) fimSel.value=l.fim||'12:00';
+    const dIni=document.getElementById('loc-data-inicio');
+    if(dIni) dIni.value=l.dataInicio||'';
+    const dFim=document.getElementById('loc-data-fim');
+    if(dFim) dFim.value=l.dataFim||'';
+    const recSel=document.getElementById('loc-recorrencia');
+    if(recSel) recSel.value=l.recorrencia||'Apenas este horário';
+    const obsEl=document.getElementById('loc-obs');
+    if(obsEl) obsEl.value=l.obs||'';
+    // Selecionar cor
+    selectedColor=l.cor||'#a07850';
+    document.querySelectorAll('.color-dot').forEach(d=>{
+      d.classList.toggle('selected', d.dataset.color===selectedColor);
+    });
+  }).catch(()=>{});
   openModal('nova-locacao');
+}
+
+async function excluirLocacao() {
+  const id=document.getElementById('loc-edit-id').value;
+  if(!id) return;
+  if(!confirm('Excluir esta locação da agenda?')) return;
+  try {
+    await db.collection('locacoes').doc(id).delete();
+    closeModal('nova-locacao');
+    showToast('Locação excluída!','success');
+    renderAgendaDia();
+    renderAgendaSemana();
+    renderAgendaMes();
+  } catch(e){showToast('Erro ao excluir locação.','error');}
+}
+
+async function salvarLocacao() {
+  const editId=document.getElementById('loc-edit-id').value;
+  const data={
+    profId:document.getElementById('loc-prof').value,
+    sala:document.getElementById('loc-sala').value,
+    vinculo:document.getElementById('loc-vinculo').value,
+    inicio:document.getElementById('loc-inicio').value,
+    fim:document.getElementById('loc-fim').value,
+    dataInicio:document.getElementById('loc-data-inicio').value,
+    dataFim:document.getElementById('loc-data-fim').value,
+    recorrencia:document.getElementById('loc-recorrencia').value,
+    obs:document.getElementById('loc-obs').value,
+    cor:selectedColor,
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if(!data.profId){showToast('Selecione um profissional.','error');return;}
+  try {
+    if(editId) {
+      await db.collection('locacoes').doc(editId).update(data);
+      showToast('Locação atualizada!','success');
+    } else {
+      data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('locacoes').add(data);
+      showToast('Locação confirmada!','success');
+    }
+    closeModal('nova-locacao');
+    renderAgendaDia();
+    renderAgendaSemana();
+  } catch(e){showToast('Erro ao salvar locação.','error');}
 }
 
 function renderAgendaSemana() {
@@ -2552,48 +2644,42 @@ async function loadPlanos() {
           <button class="btn btn-secondary btn-sm" onclick="editarPlano('${p.id}','${p.nome}','${p.horas}','${p.valor}')">Editar</button>
         </div>
       </div>`).join('');
-    grid.innerHTML=cards+`<div class="plano-card" style="border-style:dashed;box-shadow:none;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;min-height:130px;gap:5px" onclick="openModal('novo-plano')"><div style="font-size:1.4rem;color:#d1d5db">+</div><div style="font-size:.75rem;color:var(--text-lighter)">Criar novo pacote</div></div>`;
+    grid.innerHTML=cards+`<div class="plano-card" style="border-style:dashed;box-shadow:none;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;min-height:130px;gap:5px" onclick="novoPlano()"><div style="font-size:1.4rem;color:#d1d5db">+</div><div style="font-size:.75rem;color:var(--text-lighter)">Criar novo pacote</div></div>`;
   } catch(e){console.error(e);}
 }
 
+function novoPlano() {
+  document.getElementById('plano-edit-id').value='';
+  document.getElementById('plano-modal-title').textContent='Novo Pacote de Horas';
+  document.getElementById('plano-nome').value='';
+  document.getElementById('plano-horas').value='';
+  document.getElementById('plano-valor').value='';
+  openModal('novo-plano');
+}
+
 async function salvarPlano() {
+  const editId = document.getElementById('plano-edit-id').value;
   const data={
     nome:document.getElementById('plano-nome').value,
     horas:document.getElementById('plano-horas').value,
     valor:document.getElementById('plano-valor').value,
-    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
   };
   if(!data.nome){showToast('Nome é obrigatório.','error');return;}
   try {
-    await db.collection('planos').add(data);
+    if(editId) {
+      await db.collection('planos').doc(editId).update(data);
+      showToast('Plano atualizado!','success');
+    } else {
+      data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('planos').add(data);
+      showToast('Plano criado!','success');
+    }
     closeModal('novo-plano');
-    showToast('Plano criado!','success');
     loadPlanos();
   } catch(e){showToast('Erro ao salvar plano.','error');}
 }
 
-async function salvarLocacao() {
-  const data={
-    profId:document.getElementById('loc-prof').value,
-    sala:document.getElementById('loc-sala').value,
-    vinculo:document.getElementById('loc-vinculo').value,
-    inicio:document.getElementById('loc-inicio').value,
-    fim:document.getElementById('loc-fim').value,
-    dataInicio:document.getElementById('loc-data-inicio').value,
-    dataFim:document.getElementById('loc-data-fim').value,
-    recorrencia:document.getElementById('loc-recorrencia').value,
-    obs:document.getElementById('loc-obs').value,
-    cor:selectedColor,
-    createdAt:firebase.firestore.FieldValue.serverTimestamp()
-  };
-  if(!data.profId){showToast('Selecione um profissional.','error');return;}
-  try {
-    await db.collection('locacoes').add(data);
-    closeModal('nova-locacao');
-    showToast('Locação confirmada!','success');
-    renderAgendaDia();
-  } catch(e){showToast('Erro ao salvar locação.','error');}
-}
 
 // ══ RELATÓRIOS ══
 let chartInstances = {};
@@ -2602,12 +2688,20 @@ function destroyChart(id) {
   if(chartInstances[id]) { try { chartInstances[id].destroy(); } catch(e){} delete chartInstances[id]; }
 }
 
+// Dados globais para relatórios (reutilizados por recarregarIndicadores)
+let _relDados = null;
+
 async function initRelatorios() {
   try {
     const hoje = new Date();
     const anoAtual = hoje.getFullYear();
     const mesAtual = hoje.getMonth();
     const mesesLabels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const mesesNomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+    // Inicializar select no mês atual
+    const mesSel = document.getElementById('relat-mes-sel');
+    if(mesSel && !mesSel._init) { mesSel.value = String(mesAtual); mesSel._init = true; }
 
     // Buscar todos os dados
     const [recSnap, despSnap, locSnap] = await Promise.all([
@@ -2634,83 +2728,73 @@ async function initRelatorios() {
       if(a === anoAtual && m >= 0 && m < 12) despByMes[m] += parseFloat(d.valor)||0;
     });
 
-    // Meses com dados até o atual
-    const mesesComDados = mesesLabels.slice(0, mesAtual+1);
-    const recMes = recByMes.slice(0, mesAtual+1);
-    const despMes = despByMes.slice(0, mesAtual+1);
+    // Guardar globalmente para recarregarIndicadores
+    _relDados = { receitas, despesas, locacoes, recByMes, despByMes, mesesLabels, mesesNomes, anoAtual, mesAtual };
 
-    // Atualizar título
-    const tituloMensal = document.querySelector('#relat-mensal .chart-title');
-    if(tituloMensal) tituloMensal.textContent = `Receitas x Despesas — ${anoAtual}`;
+    // Atualizar indicadores
+    _atualizarIndicadores();
 
     setTimeout(()=>{
       try {
-        // Mensal — dados reais
-        destroyChart('chart-mensal');
-        chartInstances['chart-mensal'] = new Chart(document.getElementById('chart-mensal'),{
-          type:'bar',
-          data:{
-            labels: mesesComDados,
-            datasets:[
-              {label:'Receita',data:recMes,backgroundColor:'rgba(34,197,94,.7)',borderRadius:6},
-              {label:'Despesa',data:despMes,backgroundColor:'rgba(220,38,38,.5)',borderRadius:6}
-            ]
-          },
-          options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}
-        });
-
-        // Ocupação — dados reais
-        function getTurnoKey(ini) {
+        function getTurnoKeyR(ini) {
           if(!ini) return '';
           const h=parseInt(ini.split(':')[0]),m=parseInt(ini.split(':')[1]||'0'),t=h*60+m;
           if(t<13*60) return 'manha';
           if(t<17*60+30) return 'tarde';
           return 'noite';
         }
+
+        const mesesComDados = mesesLabels.slice(0, mesAtual+1);
+        const recMes = recByMes.slice(0, mesAtual+1);
+        const despMes = despByMes.slice(0, mesAtual+1);
+
+        // Mensal
+        destroyChart('chart-mensal');
+        chartInstances['chart-mensal'] = new Chart(document.getElementById('chart-mensal'),{
+          type:'bar',
+          data:{labels:mesesComDados,datasets:[
+            {label:'Receita',data:recMes,backgroundColor:'rgba(34,197,94,.7)',borderRadius:6},
+            {label:'Despesa',data:despMes,backgroundColor:'rgba(220,38,38,.5)',borderRadius:6}
+          ]},
+          options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}
+        });
+
+        // Ocupação
         const s1n = appConfig.sala1||'Áthos I';
         const s2n = appConfig.sala2||'Áthos II';
         const occ = {manha_s1:0,tarde_s1:0,noite_s1:0,manha_s2:0,tarde_s2:0,noite_s2:0};
         locacoes.forEach(l=>{
-          const tk=getTurnoKey(l.inicio);
+          const tk=getTurnoKeyR(l.inicio);
           const isS1=(l.sala||'').toLowerCase().includes('1')||((l.sala||'').includes('I')&&!(l.sala||'').includes('II'));
           if(tk) occ[`${tk}_${isS1?'s1':'s2'}`]++;
         });
-        const maxOcc = Math.max(...Object.values(occ), 1);
         destroyChart('chart-ocupacao');
         chartInstances['chart-ocupacao'] = new Chart(document.getElementById('chart-ocupacao'),{
           type:'bar',
-          data:{
-            labels:[`Manhã ${s1n}`,`Tarde ${s1n}`,`Noite ${s1n}`,`Manhã ${s2n}`,`Tarde ${s2n}`,`Noite ${s2n}`],
-            datasets:[{label:'Locações',data:[occ.manha_s1,occ.tarde_s1,occ.noite_s1,occ.manha_s2,occ.tarde_s2,occ.noite_s2],backgroundColor:'rgba(34,197,94,.7)',borderRadius:6}]
-          },
+          data:{labels:[`Manhã ${s1n}`,`Tarde ${s1n}`,`Noite ${s1n}`,`Manhã ${s2n}`,`Tarde ${s2n}`,`Noite ${s2n}`],
+            datasets:[{label:'Locações',data:[occ.manha_s1,occ.tarde_s1,occ.noite_s1,occ.manha_s2,occ.tarde_s2,occ.noite_s2],backgroundColor:'rgba(34,197,94,.7)',borderRadius:6}]},
           options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
         });
 
-        // Semestral — últimos 6 meses
-        const semi6 = [];
-        for(let i=5;i>=0;i--) {
-          const m=(mesAtual-i+12)%12;
-          semi6.push({label:mesesLabels[m],rec:recByMes[m],desp:despByMes[m]});
-        }
+        // Semestral
+        const semi6=[];
+        for(let i=5;i>=0;i--){const m=(mesAtual-i+12)%12;semi6.push({label:mesesLabels[m],rec:recByMes[m],desp:despByMes[m]});}
         destroyChart('chart-semestral');
         chartInstances['chart-semestral'] = new Chart(document.getElementById('chart-semestral'),{
           type:'line',
-          data:{
-            labels:semi6.map(x=>x.label),
-            datasets:[
-              {label:'Receita',data:semi6.map(x=>x.rec),borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)',tension:.4,fill:true,pointRadius:4},
-              {label:'Despesa',data:semi6.map(x=>x.desp),borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.1)',tension:.4,fill:true,pointRadius:4}
-            ]
-          },
+          data:{labels:semi6.map(x=>x.label),datasets:[
+            {label:'Receita',data:semi6.map(x=>x.rec),borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)',tension:.4,fill:true,pointRadius:4},
+            {label:'Despesa',data:semi6.map(x=>x.desp),borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.1)',tension:.4,fill:true,pointRadius:4}
+          ]},
           options:{responsive:true,plugins:{legend:{position:'top'}}}
         });
 
-        // Pizza — distribuição por tipo de receita (dados reais)
-        const tipoMap = {};
-        receitas.forEach(r=>{ const t=r.tipo||'Outro'; tipoMap[t]=(tipoMap[t]||0)+(parseFloat(r.valor)||0); });
-        const pizzaLabels = Object.keys(tipoMap);
-        const pizzaData = pizzaLabels.map(k=>tipoMap[k]);
-        const pizzaCores = ['rgba(34,197,94,.8)','rgba(61,138,122,.8)','rgba(109,90,172,.8)','rgba(160,120,80,.8)','rgba(234,179,8,.8)'];
+        // Pizza
+        const tipoMap={};
+        receitas.forEach(r=>{const t=r.tipo||'Outro';tipoMap[t]=(tipoMap[t]||0)+(parseFloat(r.valor)||0);});
+        const pizzaLabels=Object.keys(tipoMap);
+        const pizzaData=pizzaLabels.map(k=>tipoMap[k]);
+        const pizzaCores=['rgba(34,197,94,.8)','rgba(61,138,122,.8)','rgba(109,90,172,.8)','rgba(160,120,80,.8)','rgba(234,179,8,.8)'];
         destroyChart('chart-pizza');
         chartInstances['chart-pizza'] = new Chart(document.getElementById('chart-pizza'),{
           type:'doughnut',
@@ -2718,23 +2802,93 @@ async function initRelatorios() {
           options:{responsive:true,plugins:{legend:{position:'right'}}}
         });
 
-        // Anual — todos os meses
+        // Anual
         destroyChart('chart-anual');
         chartInstances['chart-anual'] = new Chart(document.getElementById('chart-anual'),{
           type:'bar',
-          data:{
-            labels:mesesLabels,
-            datasets:[
-              {label:'Receita',data:recByMes,backgroundColor:'rgba(34,197,94,.7)',borderRadius:4},
-              {label:'Despesa',data:despByMes,backgroundColor:'rgba(220,38,38,.5)',borderRadius:4}
-            ]
-          },
+          data:{labels:mesesLabels,datasets:[
+            {label:'Receita',data:recByMes,backgroundColor:'rgba(34,197,94,.7)',borderRadius:4},
+            {label:'Despesa',data:despByMes,backgroundColor:'rgba(220,38,38,.5)',borderRadius:4}
+          ]},
           options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}
         });
 
       } catch(e){console.log('Charts error',e);}
     },300);
   } catch(e) { console.error('Erro ao carregar relatórios:', e); }
+}
+
+function _atualizarIndicadores() {
+  if(!_relDados) return;
+  const {receitas, despesas, locacoes, recByMes, despByMes, mesesNomes, anoAtual, mesAtual} = _relDados;
+  const mesSel = document.getElementById('relat-mes-sel');
+  const mesRelat = mesSel ? parseInt(mesSel.value) : mesAtual;
+  const sid = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+
+  // Mensal
+  const mRec = recByMes[mesRelat]||0;
+  const mDesp = despByMes[mesRelat]||0;
+  const mSaldo = mRec - mDesp;
+  sid('ind-rec', formatMoney(mRec));
+  sid('ind-desp', formatMoney(mDesp));
+  sid('ind-saldo', formatMoney(mSaldo));
+  const saldoEl = document.getElementById('ind-saldo');
+  if(saldoEl) saldoEl.style.color = mSaldo>=0?'var(--success)':'var(--danger)';
+  sid('ind-saldo-d', mSaldo>=0?'resultado positivo':'resultado negativo');
+
+  // Ocupação do mês
+  const locMes = locacoes.filter(l=>{
+    if(!l.dataInicio) return false;
+    const m=parseInt(l.dataInicio.split('-')[1])-1;
+    const a=parseInt(l.dataInicio.split('-')[0]);
+    return m===mesRelat && a===anoAtual;
+  });
+  const ocupPct = locMes.length > 0 ? Math.min(100,Math.round(locMes.length/(2*3*22)*100)) : 0;
+  sid('ind-ocup', `${ocupPct}%`);
+
+  // Profissionais ativos
+  const profsAtivos = profissionaisCache.filter(p=>p.status==='Ativo').length;
+  sid('ind-profs-r', profsAtivos);
+
+  // Inadimplência do mês
+  const inadimp = receitas.filter(r=>{
+    if(r.status==='Pago') return false;
+    if(!r.vencimento) return false;
+    const m=parseInt(r.vencimento.split('-')[1])-1;
+    const a=parseInt(r.vencimento.split('-')[0]);
+    return m===mesRelat && a===anoAtual;
+  });
+  const inadimpVal = inadimp.reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
+  sid('ind-inadimp', formatMoney(inadimpVal));
+  sid('ind-inadimp-d', `${inadimp.length} pendente(s)`);
+
+  // Título charts
+  const anoAtualStr = anoAtual;
+  sid('chart-mensal-title', `Receitas x Despesas — ${mesesNomes[mesRelat]} ${anoAtualStr}`);
+
+  // Semestral
+  let semRec=0, semDesp=0;
+  for(let i=5;i>=0;i--){const m=(mesAtual-i+12)%12;semRec+=recByMes[m];semDesp+=despByMes[m];}
+  const semSaldo=semRec-semDesp;
+  sid('ind-sem-rec', formatMoney(semRec));
+  sid('ind-sem-desp', formatMoney(semDesp));
+  sid('ind-sem-saldo', formatMoney(semSaldo));
+  sid('ind-sem-media', formatMoney(semRec/6));
+
+  // Anual
+  const anRec=recByMes.reduce((s,v)=>s+v,0);
+  const anDesp=despByMes.reduce((s,v)=>s+v,0);
+  const anLucro=anRec-anDesp;
+  sid('ind-an-rec', formatMoney(anRec));
+  sid('ind-an-desp', formatMoney(anDesp));
+  sid('ind-an-lucro', formatMoney(anLucro));
+  sid('ind-an-profs', profsAtivos);
+  const lucroEl=document.getElementById('ind-an-lucro');
+  if(lucroEl) lucroEl.style.color = anLucro>=0?'var(--success)':'var(--danger)';
+}
+
+function recarregarIndicadores() {
+  _atualizarIndicadores();
 }
 
 function showRelatTab(t,el) {
@@ -2746,15 +2900,24 @@ function showRelatTab(t,el) {
 
 function exportarRelatorio() {
   showToast('Preparando impressão/PDF...','success');
-  // Ocultar elementos desnecessários para impressão
-  document.querySelectorAll('.no-print').forEach(el=>el.style.display='none');
+  // Converter canvas em imagens para aparecer no PDF
+  const snapshots = [];
+  document.querySelectorAll('#page-relatorios canvas').forEach(canvas=>{
+    try {
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL('image/png');
+      img.style.cssText = 'max-width:100%;height:auto;display:block;';
+      canvas.parentNode.insertBefore(img, canvas.nextSibling);
+      canvas.style.display='none';
+      snapshots.push({canvas, img});
+    } catch(e){}
+  });
   setTimeout(()=>{
     window.print();
-    // Restaurar após impressão
     setTimeout(()=>{
-      document.querySelectorAll('.no-print').forEach(el=>el.style.display='');
-    }, 1000);
-  }, 300);
+      snapshots.forEach(({canvas,img})=>{ canvas.style.display=''; img.remove(); });
+    },1500);
+  },400);
 }
 
 // ══ MOBILE SIDEBAR ══
@@ -2782,6 +2945,22 @@ function showPage(n,el) {
 
 // ══ MODALS ══
 function openModal(id) {
+  if(id==='nova-locacao'){
+    const editId=document.getElementById('loc-edit-id');
+    if(editId && !editId.value) {
+      const titleEl=document.getElementById('loc-modal-title');
+      if(titleEl) titleEl.textContent='Nova Locação';
+      const excBtn=document.getElementById('loc-excluir-btn');
+      if(excBtn) excBtn.style.display='none';
+      const obsEl=document.getElementById('loc-obs');
+      if(obsEl) obsEl.value='';
+      selectedColor='#a07850';
+      document.querySelectorAll('.color-dot').forEach((d,i)=>d.classList.toggle('selected',i===0));
+    }
+  }
+  if(id==='novo-plano'){
+    // reset handled by novoPlano()
+  }
   if(id==='novo-prof'){
     document.getElementById('prof-modal-title').textContent='Novo Profissional';
     document.getElementById('prof-edit-id').value='';
@@ -2822,7 +3001,13 @@ function openModal(id) {
   document.getElementById('modal-'+id).classList.add('open');
 }
 
-function closeModal(id){document.getElementById('modal-'+id).classList.remove('open');}
+function closeModal(id){
+  document.getElementById('modal-'+id).classList.remove('open');
+  if(id==='nova-locacao'){
+    const editId=document.getElementById('loc-edit-id');
+    if(editId) editId.value='';
+  }
+}
 function closeModalBg(e,id){if(e.target===document.getElementById('modal-'+id))closeModal(id);}
 
 function showFinTab(t,el) {
@@ -2864,13 +3049,14 @@ function _renderMovData(lista) {
     if(mobileEl) mobileEl.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhum lançamento realizado.</div>';
     return;
   }
-  table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 40px"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Data</span><span>Valor</span><span></span></div>` +
-    lista.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 40px">
+  table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 90px 40px"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Data</span><span>Valor</span><span>Ação</span><span></span></div>` +
+    lista.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 90px 40px">
       <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="${x._tipo==='Receita'?`editarReceita('${x.id}')`:`editarDespesa('${x.id}')`}">${x.profissional||x.descricao||'—'}${x.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">📝 ${x.obs}</span>`:''}</span>
       <span><span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span></span>
       <span style="color:var(--text-light)">${x.categoria||x.tipo||'—'}</span>
       <span>${x.vencimento?formatDate(x.vencimento):'—'}</span>
       <span style="font-weight:600;color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</span>
+      <span>${x.status==='Pago'?`<button class="btn btn-secondary btn-sm" onclick="devolverParaPagar('${x.id}','${x._tipo==='Receita'?'receitas':'despesas'}')">↩ Devolver</button>`:'—'}</span>
       <span><button class="fin-del-btn" style="opacity:1" onclick="excluirLancamento('${x.id}','${x._tipo==='Receita'?'receitas':'despesas'}')">🗑️</button></span>
     </div>`).join('');
   if(mobileEl) mobileEl.innerHTML = lista.map(x=>`
@@ -2884,7 +3070,21 @@ function _renderMovData(lista) {
         ${x.vencimento?`<span>📅 ${formatDate(x.vencimento)}</span>`:''}
         ${x.obs?`<span title="${x.obs}">📝 ${x.obs.substring(0,30)}${x.obs.length>30?'...':''}</span>`:''}
       </div>
+      <div class="fin-card-item-actions">
+        ${x.status==='Pago'?`<button class="btn btn-secondary btn-sm" onclick="devolverParaPagar('${x.id}','${x._tipo==='Receita'?'receitas':'despesas'}')">↩ Devolver</button>`:''}
+        <button class="fin-del-btn" onclick="excluirLancamento('${x.id}','${x._tipo==='Receita'?'receitas':'despesas'}')">🗑️</button>
+      </div>
     </div>`).join('');
+}
+
+async function devolverParaPagar(id, colecao) {
+  if(!confirm('Retornar para "Contas a Pagar"? O status será alterado para Pendente.')) return;
+  try {
+    await db.collection(colecao).doc(id).update({status:'Pendente', updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    showToast('Lançamento devolvido para Contas a Pagar!','success');
+    loadFinanceiro();
+    loadMovimentacao();
+  } catch(e){ showToast('Erro ao devolver lançamento.','error'); }
 }
 
 function filtrarMov(tipo, el) {
@@ -2908,6 +3108,8 @@ function selectColor(el) {
 }
 
 function editarPlano(id,nome,horas,valor) {
+  document.getElementById('plano-edit-id').value=id;
+  document.getElementById('plano-modal-title').textContent='Editar Pacote de Horas';
   document.getElementById('plano-nome').value=nome;
   document.getElementById('plano-horas').value=horas;
   document.getElementById('plano-valor').value=valor;
@@ -3035,6 +3237,7 @@ async function salvarReceita() {
     }
     closeModal('nova-receita');
     loadFinanceiro();
+    if(document.getElementById('fin-mov')?.classList.contains('active')) loadMovimentacao();
   } catch(e) { showToast('Erro ao salvar receita.','error'); console.error(e); }
 }
 
@@ -3114,15 +3317,19 @@ function updateSubcatSelects() {
   const desp = document.getElementById('despesa-subcat');
   const rec = document.getElementById('receita-subcat');
   const filtro = document.getElementById('filtro-subcat');
+  const despFiltroSel = document.getElementById('desp-filtro-subcat-sel');
   const despOpts = '<option value="">Selecionar...</option>' +
     subcatsCache.filter(s=>s.tipo==='ambos'||s.tipo==='despesa').map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
   const recOpts = '<option value="">Selecionar...</option>' +
     subcatsCache.filter(s=>s.tipo==='ambos'||s.tipo==='receita').map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
   const filtroOpts = '<option value="">Todas as subcategorias</option>' +
     subcatsCache.map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+  const despFiltroOpts = '<option value="">Todas as subcategorias</option>' +
+    subcatsCache.filter(s=>s.tipo==='ambos'||s.tipo==='despesa').map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
   if(desp) desp.innerHTML = despOpts;
   if(rec) rec.innerHTML = recOpts;
   if(filtro) filtro.innerHTML = filtroOpts;
+  if(despFiltroSel) despFiltroSel.innerHTML = despFiltroOpts;
 }
 
 async function salvarSubcat() {
@@ -3490,20 +3697,31 @@ async function excluirLoteDesp() {
     loadFinanceiro();
   } catch(e) { showToast('Erro ao excluir.', 'error'); }
 }
-// ── FILTRO POR DATA — DESPESAS ──
-function aplicarFiltroDespData() {
+// ── FILTRO POR CATEGORIA/SUBCATEGORIA — DESPESAS ──
+function aplicarFiltroDespCat() {
+  const cat = document.getElementById('desp-filtro-cat')?.value || '';
+  const sub = document.getElementById('desp-filtro-subcat-sel')?.value || '';
   const ini = document.getElementById('desp-filtro-ini')?.value;
   const fim = document.getElementById('desp-filtro-fim')?.value;
   let filtrados = despesasCache;
+  if(cat) filtrados = filtrados.filter(d=>d.categoria===cat);
+  if(sub) filtrados = filtrados.filter(d=>d.subcategoria===sub);
   if(ini) filtrados = filtrados.filter(d=>d.vencimento&&d.vencimento>=ini);
   if(fim) filtrados = filtrados.filter(d=>d.vencimento&&d.vencimento<=fim);
   _renderDespesasData(filtrados);
   _updateDespTotalizador(filtrados);
 }
+// ── FILTRO POR DATA — DESPESAS ──
+function aplicarFiltroDespData() {
+  aplicarFiltroDespCat();
+}
 function limparFiltroDespData() {
   const ini = document.getElementById('desp-filtro-ini');
   const fim = document.getElementById('desp-filtro-fim');
+  const cat = document.getElementById('desp-filtro-cat');
+  const sub = document.getElementById('desp-filtro-subcat-sel');
   if(ini) ini.value=''; if(fim) fim.value='';
+  if(cat) cat.value=''; if(sub) sub.value='';
   _renderDespesasData(despesasCache);
   _updateDespTotalizador(null);
 }
