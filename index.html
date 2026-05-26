@@ -916,7 +916,13 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="page" id="page-relatorios">
         <div class="sec-header">
           <span class="sec-title">Relatórios</span>
-          <button class="btn btn-primary" onclick="exportarRelatorio()">↓ Exportar PDF</button>
+          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+            <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:.78rem">
+              <button id="relat-tipo-fin" style="padding:5px 12px;background:var(--gold);color:#fff;border:none;cursor:pointer;font-weight:600" onclick="setRelatTipo('financeiro',this)">💰 Financeiro</button>
+              <button id="relat-tipo-ger" style="padding:5px 12px;background:transparent;color:var(--text-light);border:none;cursor:pointer" onclick="setRelatTipo('geral',this)">📊 Geral</button>
+            </div>
+            <button class="btn btn-primary" onclick="exportarRelatorio()">↓ Exportar PDF</button>
+          </div>
         </div>
         <div class="relat-tabs">
           <div class="relat-tab active" onclick="showRelatTab('mensal',this)">Mensal</div>
@@ -2891,6 +2897,26 @@ function recarregarIndicadores() {
   _atualizarIndicadores();
 }
 
+function setRelatTipo(tipo, el) {
+  // Atualizar visual dos botões
+  const fin = document.getElementById('relat-tipo-fin');
+  const ger = document.getElementById('relat-tipo-ger');
+  if(fin && ger) {
+    fin.style.background = tipo==='financeiro' ? 'var(--gold)' : 'transparent';
+    fin.style.color = tipo==='financeiro' ? '#fff' : 'var(--text-light)';
+    fin.style.fontWeight = tipo==='financeiro' ? '600' : 'normal';
+    ger.style.background = tipo==='geral' ? 'var(--gold)' : 'transparent';
+    ger.style.color = tipo==='geral' ? '#fff' : 'var(--text-light)';
+    ger.style.fontWeight = tipo==='geral' ? '600' : 'normal';
+  }
+  // Financeiro: ocultar gráfico de ocupação (salas/turnos)
+  const ocupWrap = document.getElementById('chart-ocupacao')?.closest('.chart-wrap');
+  if(ocupWrap) ocupWrap.style.display = tipo==='financeiro' ? 'none' : '';
+  // Geral: mostrar indicador de ocupação e profissionais
+  const ocupCard = document.getElementById('ind-ocup')?.closest('.ind-card');
+  if(ocupCard) ocupCard.style.display = tipo==='financeiro' ? 'none' : '';
+}
+
 function showRelatTab(t,el) {
   document.querySelectorAll('.relat-tab').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.relat-content').forEach(x=>x.classList.remove('active'));
@@ -2967,10 +2993,13 @@ function openModal(id) {
     document.getElementById('prof-vinculo-formal').value='Sem vínculo';
   }
   if(id==='nova-despesa'){
-    document.getElementById('despesa-modal-title').textContent='Lançar Despesa';
-    document.getElementById('despesa-edit-id').value='';
-    document.getElementById('despesa-excluir-btn').style.display='none';
-    currentDespesaEdit=null;
+    // Só reseta se não veio de editarDespesa (que seta despesa-edit-id antes de chamar openModal)
+    const editIdEl = document.getElementById('despesa-edit-id');
+    if(editIdEl && !editIdEl.value) {
+      document.getElementById('despesa-modal-title').textContent='Lançar Despesa';
+      document.getElementById('despesa-excluir-btn').style.display='none';
+      currentDespesaEdit=null;
+    }
   }
   if(id==='nova-receita'){
     const editId = document.getElementById('receita-edit-id');
@@ -3005,6 +3034,15 @@ function closeModal(id){
   document.getElementById('modal-'+id).classList.remove('open');
   if(id==='nova-locacao'){
     const editId=document.getElementById('loc-edit-id');
+    if(editId) editId.value='';
+  }
+  if(id==='nova-despesa'){
+    const editId=document.getElementById('despesa-edit-id');
+    if(editId) editId.value='';
+    currentDespesaEdit=null;
+  }
+  if(id==='nova-receita'){
+    const editId=document.getElementById('receita-edit-id');
     if(editId) editId.value='';
   }
 }
@@ -3521,22 +3559,59 @@ async function gerarRelatFiltrado() {
 
     const tabela = document.getElementById('filtrado-tabela');
     if(todos.length === 0) {
-      tabela.innerHTML = '<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span></div><div style="padding:1rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum resultado encontrado.</div>';
+      tabela.innerHTML = '<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Tipo</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span></div><div style="padding:1rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum resultado encontrado.</div>';
     } else {
-      const head = '<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span></div>';
-      const rows = todos.map(x=>{
-        const parcelaTag = x.parcela ? ' <span class="badge badge-neutral" style="font-size:.6rem">'+x.parcela+'</span>' : '';
-        const obsTag = x.obs ? '<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">📝 '+x.obs+'</span>' : '';
-        const tipoBadge = '<span class="badge '+(x._tipo==='Receita'?'badge-success':'badge-danger')+'" style="font-size:.6rem">'+x._tipo+'</span>';
-        const cor = x._tipo==='Receita'?'var(--success)':'var(--danger)';
-        return '<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">'
-          +'<span style="font-weight:500">'+(x.descricao||x.profissional||'—')+' '+tipoBadge+parcelaTag+obsTag+'</span>'
-          +'<span>'+(x.categoria||'—')+'</span>'
-          +'<span>'+(x.subcategoria||'—')+'</span>'
-          +'<span>'+(x.vencimento?formatDate(x.vencimento):'—')+'</span>'
-          +'<span style="font-weight:600;color:'+cor+'">'+formatMoney(x.valor)+'</span>'
-          +'</div>';
-      }).join('');
+      // Agrupar por categoria → subcategoria (ordem fixa de categorias, subcats alfabéticas)
+      const CATS_DESP = ['Fixo','Variável','Extra'];
+      const CATS_REC  = ['Fixa','Variável','Extra'];
+      const TODAS_CATS_ORDEM = ['Fixa','Fixo','Variável','Extra','Turno Fixo','Pacote de Horas','Hora Avulsa','Sem categoria'];
+      const grupoCat = {};
+      todos.forEach(x=>{
+        const cat = x.categoria || x.tipo || 'Sem categoria';
+        const sub = x.subcategoria || '—';
+        if(!grupoCat[cat]) grupoCat[cat]={};
+        if(!grupoCat[cat][sub]) grupoCat[cat][sub]=[];
+        grupoCat[cat][sub].push(x);
+      });
+      // Ordenar categorias pela ordem fixa, depois alfabético
+      const catsOrdenadas = [
+        ...TODAS_CATS_ORDEM.filter(c=>grupoCat[c]),
+        ...Object.keys(grupoCat).filter(c=>!TODAS_CATS_ORDEM.includes(c)).sort()
+      ];
+      const head = '<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Tipo</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span></div>';
+      let rows = '';
+      catsOrdenadas.forEach(cat=>{
+        const subs = grupoCat[cat];
+        // Cabeçalho da categoria
+        const totalCat = Object.values(subs).flat().reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
+        rows += `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;background:var(--bg);font-weight:700;border-top:2px solid var(--border);color:var(--gold)">
+          <span>📁 ${cat}</span><span></span><span></span><span></span>
+          <span style="color:var(--text-light)">${formatMoney(totalCat)}</span>
+        </div>`;
+        // Subcategorias em ordem alfabética
+        const subsOrdenadas = Object.keys(subs).sort((a,b)=>a==='—'?1:b==='—'?-1:a.localeCompare(b,'pt'));
+        subsOrdenadas.forEach(sub=>{
+          const itens = subs[sub];
+          if(sub !== '—') {
+            rows += `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;background:#fafaf9;font-weight:600;padding-left:1rem">
+              <span style="font-size:.78rem;color:var(--text-light)">📂 ${sub}</span><span></span><span></span><span></span><span></span>
+            </div>`;
+          }
+          itens.sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||'')).forEach(x=>{
+            const parcelaTag = x.parcela ? ` <span class="badge badge-neutral" style="font-size:.6rem">${x.parcela}</span>` : '';
+            const obsTag = x.obs ? `<br><span style="font-size:.68rem;color:var(--text-lighter)">📝 ${x.obs}</span>` : '';
+            const tipoBadge = `<span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span>`;
+            const cor = x._tipo==='Receita'?'var(--success)':'var(--danger)';
+            rows += `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;padding-left:${sub!=='—'?'2rem':'1rem'}">
+              <span style="font-weight:500">${x.descricao||x.profissional||'—'} ${tipoBadge}${parcelaTag}${obsTag}</span>
+              <span>${x._tipo}</span>
+              <span style="color:var(--text-lighter);font-size:.78rem">${sub==='—'?'':sub}</span>
+              <span>${x.vencimento?formatDate(x.vencimento):'—'}</span>
+              <span style="font-weight:600;color:${cor}">${formatMoney(x.valor)}</span>
+            </div>`;
+          });
+        });
+      });
       tabela.innerHTML = head + rows;
     }
 
