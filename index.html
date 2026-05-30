@@ -430,6 +430,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   .dash-shortcut{min-width:0;}
   /* Fin sticky */
   .fin-sticky-summary{padding:.5rem .875rem;}
+  /* Relatórios — gráficos em coluna única no mobile */
+  #filtrado-charts-wrap{grid-template-columns:1fr !important;}
 }
 @media(max-width:480px){
   .stats-grid{grid-template-columns:1fr;}
@@ -934,7 +936,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <button class="btn btn-primary" onclick="exportarRelatorio()">↓ Exportar PDF</button>
           </div>
         </div>
-        <div id="relat-modo-label" style="font-size:.72rem;color:var(--text-lighter);padding:.25rem 1.25rem .5rem;display:block">💰 Financeiro: exibe exclusivamente as movimentações financeiras — entradas, saídas, categorias e subcategorias.</div>
+        <div id="relat-modo-label" style="font-size:.72rem;color:var(--text-lighter);padding:.25rem 1.25rem .5rem;display:block">💰 Financeiro: exibe somente receitas, despesas e saldo.</div>
         <div class="relat-tabs">
           <div class="relat-tab active" onclick="showRelatTab('mensal',this)">Mensal</div>
           <div class="relat-tab" onclick="showRelatTab('semestral',this)">Semestral</div>
@@ -2050,22 +2052,21 @@ function _renderReceitasData(receitas) {
   const table=document.getElementById('rec-table');
   const mobileEl=document.getElementById('rec-cards-mobile');
   if(receitas.length===0){
-    if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 80px"><span>Profissional</span><span>Tipo</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span><span>Status</span><span>WhatsApp</span></div><div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhuma receita cadastrada.</div>`;
+    if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px"><span>Profissional</span><span>Tipo</span><span>Vencimento</span><span>Valor</span><span>Status</span><span>WhatsApp</span></div><div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhuma receita cadastrada.</div>`;
     if(mobileEl) mobileEl.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhuma receita cadastrada.</div>';
     return;
   }
   const hoje = new Date().toISOString().split('T')[0];
-  if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 1fr 80px 40px"><span></span><span>Profissional</span><span>Tipo</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span><span>Status</span><span>WhatsApp</span><span></span></div>`+
+  if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 80px 40px"><span></span><span>Profissional</span><span>Tipo</span><span>Vencimento</span><span>Valor</span><span>Status</span><span>WhatsApp</span><span></span></div>`+
     receitas.map(r=>{
       const prof = profissionaisCache.find(p=>p.id===r.profId);
       const tel = prof?.telefone?.replace(/\D/g,'')||'';
       const msg = encodeURIComponent(`Olá, ${r.profissional}! Lembramos que o pagamento da sua locação na Áthos vence hoje, ${r.vencimento?formatDate(r.vencimento):''}. Valor: ${formatMoney(r.valor)}. Obrigada!`);
       const wppLink = tel ? `https://wa.me/55${tel}?text=${msg}` : '';
-      return `<div class="dt-row" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 1fr 80px 40px">
+      return `<div class="dt-row" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 80px 40px">
         <span><input type="checkbox" class="rec-sel-cb" data-id="${r.id}" onchange="updateLoteBtn('rec')"></span>
         <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="editarReceita('${r.id}')">${r.profissional||'—'}${r.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">📝 ${r.obs}</span>`:''}</span>
         <span style="color:var(--text-light)">${r.tipo||'—'}</span>
-        <span style="color:var(--text-lighter);font-size:.8rem">${r.subcategoria||'—'}</span>
         <span>${r.vencimento?formatDate(r.vencimento):'—'}</span>
         <span style="font-weight:600">${formatMoney(r.valor)}</span>
         <span><span class="badge ${r.status==='Pago'?'badge-success':'badge-warning'} status-click" onclick="toggleStatusRec(this,'${r.id}')">${r.status||'Pendente'}</span></span>
@@ -2086,7 +2087,6 @@ function _renderReceitasData(receitas) {
       <div class="fin-card-item-meta">
         <span class="badge ${r.status==='Pago'?'badge-success':'badge-warning'}" onclick="toggleStatusRecById('${r.id}',this)" style="cursor:pointer">${r.status||'Pendente'}</span>
         <span>${r.tipo||'—'}</span>
-        ${r.subcategoria?`<span style="font-size:.72rem;color:var(--text-lighter)">${r.subcategoria}</span>`:''}
         ${r.vencimento?`<span>📅 ${formatDate(r.vencimento)}</span>`:''}
         ${wppLink&&r.status!=='Pago'?`<a href="${wppLink}" target="_blank" class="wpp-btn">📱 Avisar</a>`:''}
       </div>
@@ -2109,16 +2109,15 @@ function _renderDespesasData(despesas) {
   const table=document.getElementById('desp-table');
   const mobileEl=document.getElementById('desp-cards-mobile');
   if(sorted.length===0){
-    if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span><span>Status</span></div><div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhuma despesa cadastrada.</div>`;
+    if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Categoria</span><span>Vencimento</span><span>Valor</span><span>Status</span></div><div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhuma despesa cadastrada.</div>`;
     if(mobileEl) mobileEl.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhuma despesa cadastrada.</div>';
     return;
   }
-  if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 1fr 40px"><span></span><span>Descrição</span><span>Categoria</span><span>Subcategoria</span><span>Vencimento</span><span>Valor</span><span>Status</span><span></span></div>`+
-    sorted.map(d=>`<div class="dt-row" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 1fr 40px">
+  if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 40px"><span></span><span>Descrição</span><span>Categoria</span><span>Vencimento</span><span>Valor</span><span>Status</span><span></span></div>`+
+    sorted.map(d=>`<div class="dt-row" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 40px">
       <span><input type="checkbox" class="desp-sel-cb" data-id="${d.id}" onchange="updateLoteBtn('desp')"></span>
       <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="editarDespesa('${d.id}')">${d.descricao||'—'}${d.parcela?` <span class="badge badge-neutral" style="font-size:.6rem">${d.parcela}</span>`:''}${d.recorrencia&&d.recorrencia!=='nenhuma'?` <span class="badge badge-info" style="font-size:.6rem">🔄 ${d.recorrencia}</span>`:''}</span>
-      <span><span class="badge ${d.categoria==='Fixo'?'badge-neutral':d.categoria==='Variável'?'badge-warning':'badge-danger'}">${d.categoria||'—'}</span></span>
-      <span style="color:var(--text-lighter);font-size:.8rem">${d.subcategoria||'—'}</span>
+      <span><span class="badge ${d.categoria==='Fixo'?'badge-neutral':d.categoria==='Variável'?'badge-warning':'badge-danger'}">${d.categoria||'—'}</span>${d.subcategoria?`<br><span style="font-size:.68rem;color:var(--text-lighter)">${d.subcategoria}</span>`:''}</span>
       <span>${d.vencimento?formatDate(d.vencimento):'—'}</span>
       <span style="font-weight:600;color:var(--danger)">${formatMoney(d.valor)}</span>
       <span><span class="badge ${d.status==='Pago'?'badge-success':'badge-warning'} status-click" onclick="toggleStatusDesp(this,'${d.id}')">${d.status||'Pendente'}</span></span>
@@ -2960,40 +2959,33 @@ function setRelatTipo(tipo, el) {
     ger.style.fontWeight = tipo==='geral' ? '600' : 'normal';
   }
 
-  // Financeiro: somente movimentações financeiras (receitas, despesas, saldo, categorias, subcategorias)
-  // Geral: todas as informações consolidadas do sistema
+  // Financeiro: oculta tudo relacionado a salas, agenda e ocupação
+  // Geral: mostra tudo
   const isFin = tipo === 'financeiro';
 
-  // Gráfico de ocupação por turno (salas) — só no Geral
+  // Gráfico de ocupação por turno (salas)
   const ocupWrap = document.getElementById('chart-ocupacao')?.closest('.chart-wrap');
   if(ocupWrap) ocupWrap.style.display = isFin ? 'none' : '';
 
-  // Card de ocupação média nos indicadores — só no Geral
+  // Card de ocupação média nos indicadores
   const ocupCard = document.getElementById('ind-ocup')?.closest('.ind-card');
   if(ocupCard) ocupCard.style.display = isFin ? 'none' : '';
 
-  // Card de inadimplência — só no Geral
-  const inadimpCard = document.getElementById('ind-inadimp')?.closest('.ind-card');
-  if(inadimpCard) inadimpCard.style.display = isFin ? 'none' : '';
-
+  // Tabs semestral/anual — no modo financeiro mostra; no geral também
   // Filtrado (relatório por período) — no financeiro oculta seção de salas
   const filtradoSalas = document.getElementById('filtrado-salas-section');
   if(filtradoSalas) filtradoSalas.style.display = isFin ? 'none' : '';
 
-  // Indicador de profissionais ativos (mensal) — só no Geral
+  // Indicador de profissionais ativos — só no Geral
   const profsCard = document.getElementById('ind-profs-r')?.closest('.ind-card');
   if(profsCard) profsCard.style.display = isFin ? 'none' : '';
-
-  // Indicador de profissionais ativos (anual) — só no Geral
-  const profsAnCard = document.getElementById('ind-an-profs')?.closest('.ind-card');
-  if(profsAnCard) profsAnCard.style.display = isFin ? 'none' : '';
 
   // Legenda do modo atual
   const modeLabel = document.getElementById('relat-modo-label');
   if(modeLabel) {
     modeLabel.textContent = isFin
-      ? '💰 Financeiro: exibe exclusivamente as movimentações financeiras — entradas, saídas, categorias e subcategorias.'
-      : '📊 Geral: consolida todas as informações do sistema — turnos, profissionais, pacotes, agenda, financeiro e demais dados.';
+      ? '💰 Financeiro: exibe somente receitas, despesas e saldo.'
+      : '📊 Geral: exibe todas as informações financeiras, incluindo ocupações de sala, ocultas e de profissionais.';
     modeLabel.style.display = 'block';
   }
 }
@@ -3164,16 +3156,15 @@ function _renderMovData(lista) {
   const mobileEl = document.getElementById('mov-cards-mobile');
   if(!table) return;
   if(lista.length === 0) {
-    table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Subcategoria</span><span>Data</span><span>Valor</span></div><div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum lançamento realizado.</div>`;
+    table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Data</span><span>Valor</span></div><div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum lançamento realizado.</div>`;
     if(mobileEl) mobileEl.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhum lançamento realizado.</div>';
     return;
   }
-  table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 90px 40px"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Subcategoria</span><span>Data</span><span>Valor</span><span>Ação</span><span></span></div>` +
-    lista.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 90px 40px">
+  table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 90px 40px"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Data</span><span>Valor</span><span>Ação</span><span></span></div>` +
+    lista.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 90px 40px">
       <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="${x._tipo==='Receita'?`editarReceita('${x.id}')`:`editarDespesa('${x.id}')`}">${x.profissional||x.descricao||'—'}${x.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">📝 ${x.obs}</span>`:''}</span>
       <span><span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span></span>
       <span style="color:var(--text-light)">${x.categoria||x.tipo||'—'}</span>
-      <span style="color:var(--text-lighter);font-size:.8rem">${x.subcategoria||'—'}</span>
       <span>${x.vencimento?formatDate(x.vencimento):'—'}</span>
       <span style="font-weight:600;color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</span>
       <span>${x.status==='Pago'?`<button class="btn btn-secondary btn-sm" onclick="devolverParaPagar('${x.id}','${x._tipo==='Receita'?'receitas':'despesas'}')">↩ Devolver</button>`:'—'}</span>
@@ -3187,7 +3178,6 @@ function _renderMovData(lista) {
       </div>
       <div class="fin-card-item-meta">
         <span>${x.categoria||x.tipo||'—'}</span>
-        ${x.subcategoria?`<span style="font-size:.72rem;color:var(--text-lighter)">${x.subcategoria}</span>`:''}
         ${x.vencimento?`<span>📅 ${formatDate(x.vencimento)}</span>`:''}
         ${x.obs?`<span title="${x.obs}">📝 ${x.obs.substring(0,30)}${x.obs.length>30?'...':''}</span>`:''}
       </div>
