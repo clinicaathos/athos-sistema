@@ -674,6 +674,16 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div id="dash-alertas-list"><div style="font-size:.8rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhum alerta no momento</div></div>
           </div>
         </div>
+        <!-- Lembrete: parcelas vencidas -->
+        <div id="dash-parcelas-venc-wrap" style="display:none;margin-top:.75rem">
+          <div class="card" style="border-left:3px solid var(--danger);padding:.875rem 1rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.625rem">
+              <span style="font-size:.82rem;font-weight:700;color:var(--danger)">⚠️ Parcelas / Contas Vencidas</span>
+              <span class="badge badge-danger" id="dash-parcelas-venc-count">0</span>
+            </div>
+            <div id="dash-parcelas-venc-list"></div>
+          </div>
+        </div>
       </div>
 
       <!-- ══ AGENDA ══ -->
@@ -1956,6 +1966,35 @@ function loadDashboard() {
       if(cnt) cnt.textContent=`${v}/${max}`;
     });
   }).catch(()=>{});
+
+  // Parcelas / contas vencidas (despesas pendentes com vencimento antes de hoje)
+  db.collection('despesas').get().then(snap=>{
+    const todas = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const vencidas = todas.filter(d=>{
+      if(d.status==='Pago') return false;
+      if(!d.vencimento) return false;
+      return d.vencimento < hojeStr;
+    }).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
+    const wrap = document.getElementById('dash-parcelas-venc-wrap');
+    const lista = document.getElementById('dash-parcelas-venc-list');
+    const cnt = document.getElementById('dash-parcelas-venc-count');
+    if(!wrap || !lista || !cnt) return;
+    if(vencidas.length === 0) { wrap.style.display='none'; return; }
+    wrap.style.display='block';
+    cnt.textContent = vencidas.length;
+    lista.innerHTML = vencidas.slice(0,8).map(d=>{
+      const diasAtraso = Math.floor((new Date(hojeStr) - new Date(d.vencimento))/(1000*60*60*24));
+      return `<div class="mini-item" style="gap:8px;cursor:pointer" onclick="showPage('financeiro',document.querySelector('[onclick*=financeiro]'))">
+        <span style="font-size:.75rem;min-width:36px;color:var(--danger);font-weight:600">${diasAtraso}d</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.78rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.descricao||'—'}${d.parcela?` <span style="font-size:.65rem;color:var(--text-lighter)">${d.parcela}</span>`:''}</div>
+          <div style="font-size:.7rem;color:var(--text-lighter)">${formatDate(d.vencimento)} · ${d.categoria||'—'}</div>
+        </div>
+        <span style="font-size:.78rem;font-weight:600;color:var(--danger);white-space:nowrap">${formatMoney(d.valor)}</span>
+      </div>`;
+    }).join('');
+    if(vencidas.length > 8) lista.innerHTML += `<div style="font-size:.72rem;color:var(--text-lighter);text-align:center;padding:.5rem 0">+${vencidas.length-8} mais...</div>`;
+  }).catch(()=>{});
 }
 
 // ══ FINANCEIRO ══
@@ -2150,10 +2189,12 @@ async function renderPrevisao() {
 async function toggleStatusRec(el,id) {
   const novoStatus=el.textContent.trim()==='Pago'?'Pendente':'Pago';
   try {
-    await db.collection('receitas').doc(id).update({status:novoStatus});
+    await db.collection('receitas').doc(id).update({status:novoStatus, updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
     el.textContent=novoStatus;
     el.className=`badge ${novoStatus==='Pago'?'badge-success':'badge-warning'} status-click`;
     showToast(`Status atualizado: ${novoStatus}`,'success');
+    loadFinanceiro();
+    if(document.getElementById('fin-mov')?.classList.contains('active')) loadMovimentacao();
   } catch(e){showToast('Erro ao atualizar status.','error');}
 }
 
@@ -2164,6 +2205,8 @@ async function toggleStatusDesp(el,id) {
     el.textContent=novoStatus;
     el.className=`badge ${novoStatus==='Pago'?'badge-success':'badge-warning'} status-click`;
     showToast(`Status atualizado: ${novoStatus}`,'success');
+    loadFinanceiro();
+    if(document.getElementById('fin-mov')?.classList.contains('active')) loadMovimentacao();
   } catch(e){showToast('Erro ao atualizar status.','error');}
 }
 
@@ -2180,9 +2223,10 @@ async function salvarDespesa() {
     vencimento: document.getElementById('despesa-venc').value,
     recorrencia: document.getElementById('despesa-recorrencia')?.value || 'nenhuma',
     obs: document.getElementById('despesa-obs')?.value || '',
-    status: 'Pendente',
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
+  // Ao criar novo, define como Pendente. Ao editar, preserva o status atual
+  if(!id) data.status = 'Pendente';
   if(!data.descricao){showToast('Descrição é obrigatória.','error');return;}
   if(!data.valor){showToast('Valor é obrigatório.','error');return;}
   try {
@@ -3707,10 +3751,12 @@ function buscarDesp(q) {
 async function toggleStatusRecById(id, el) {
   const novoStatus = el.textContent.trim() === 'Pago' ? 'Pendente' : 'Pago';
   try {
-    await db.collection('receitas').doc(id).update({status: novoStatus});
+    await db.collection('receitas').doc(id).update({status: novoStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
     el.textContent = novoStatus;
     el.className = `badge ${novoStatus==='Pago'?'badge-success':'badge-warning'}`;
     showToast(`Status: ${novoStatus}`, 'success');
+    loadFinanceiro();
+    if(document.getElementById('fin-mov')?.classList.contains('active')) loadMovimentacao();
   } catch(e) { showToast('Erro.', 'error'); }
 }
 
@@ -3721,6 +3767,8 @@ async function toggleStatusDespById(id, el) {
     el.textContent = novoStatus;
     el.className = `badge ${novoStatus==='Pago'?'badge-success':'badge-warning'}`;
     showToast(`Status: ${novoStatus}`, 'success');
+    loadFinanceiro();
+    if(document.getElementById('fin-mov')?.classList.contains('active')) loadMovimentacao();
   } catch(e) { showToast('Erro.', 'error'); }
 }
 
