@@ -934,7 +934,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <button class="btn btn-primary" onclick="exportarRelatorio()">↓ Exportar PDF</button>
           </div>
         </div>
-        <div id="relat-modo-label" style="font-size:.72rem;color:var(--text-lighter);padding:.25rem 1.25rem .5rem;display:block">💰 Modo Financeiro: exibe receitas, despesas e saldo. Informações de salas e ocupação ocultas.</div>
+        <div id="relat-modo-label" style="font-size:.72rem;color:var(--text-lighter);padding:.25rem 1.25rem .5rem;display:block">💰 Financeiro: exibe somente receitas, despesas e saldo.</div>
         <div class="relat-tabs">
           <div class="relat-tab active" onclick="showRelatTab('mensal',this)">Mensal</div>
           <div class="relat-tab" onclick="showRelatTab('semestral',this)">Semestral</div>
@@ -2982,8 +2982,8 @@ function setRelatTipo(tipo, el) {
   const modeLabel = document.getElementById('relat-modo-label');
   if(modeLabel) {
     modeLabel.textContent = isFin
-      ? '💰 Modo Financeiro: exibe receitas, despesas e saldo. Informações de salas e ocupação ocultas.'
-      : '📊 Modo Geral: exibe todas as informações, incluindo salas, ocupação e profissionais.';
+      ? '💰 Financeiro: exibe somente receitas, despesas e saldo.'
+      : '📊 Geral: exibe todas as informações financeiras, incluindo ocupações de sala, ocultas e de profissionais.';
     modeLabel.style.display = 'block';
   }
 }
