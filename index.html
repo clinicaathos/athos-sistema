@@ -934,6 +934,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <button class="btn btn-primary" onclick="exportarRelatorio()">↓ Exportar PDF</button>
           </div>
         </div>
+        <div id="relat-modo-label" style="font-size:.72rem;color:var(--text-lighter);padding:.25rem 1.25rem .5rem;display:block">💰 Modo Financeiro: exibe receitas, despesas e saldo. Informações de salas e ocupação ocultas.</div>
         <div class="relat-tabs">
           <div class="relat-tab active" onclick="showRelatTab('mensal',this)">Mensal</div>
           <div class="relat-tab" onclick="showRelatTab('semestral',this)">Semestral</div>
@@ -1527,7 +1528,10 @@ async function initApp() {
   loadFinanceiro();
   initAgenda();
   loadPlanos();
-  initRelatorios();
+  initRelatorios().then(()=>{
+    // Apply default Financeiro mode after data loads
+    setTimeout(()=>setRelatTipo('financeiro', document.getElementById('relat-tipo-fin')), 400);
+  });
   loadSubcats();
   renovarHorasMensais();
   verificarAlertasVencimento();
@@ -1899,12 +1903,12 @@ function loadDashboard() {
   // Receitas do mês
   db.collection('receitas').where('mes','==',mesAtual).where('ano','==',anoAtual).get().then(snap=>{
     const receitas = snap.docs.map(d=>d.data());
-    const totalRec = receitas.reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
-    const recPago = receitas.filter(r=>r.status==='Pago').reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
+    const totalRec = receitas.reduce((s,r)=>s+(parseMoney(r.valor)||0),0);
+    const recPago = receitas.filter(r=>r.status==='Pago').reduce((s,r)=>s+(parseMoney(r.valor)||0),0);
     const pendentes = receitas.filter(r=>r.status!=='Pago').length;
     document.getElementById('dash-receita').textContent = formatMoney(totalRec);
     document.getElementById('dash-receita-sub').textContent = `${formatMoney(recPago)} recebido · ${pendentes} pendente(s)`;
-    document.getElementById('dash-receber').textContent = formatMoney(receitas.filter(r=>r.status!=='Pago').reduce((s,r)=>s+(parseFloat(r.valor)||0),0));
+    document.getElementById('dash-receber').textContent = formatMoney(receitas.filter(r=>r.status!=='Pago').reduce((s,r)=>s+(parseMoney(r.valor)||0),0));
     document.getElementById('dash-receber-sub').textContent = `${pendentes} pagamento(s) pendente(s)`;
   }).catch(()=>{});
 
@@ -2011,8 +2015,8 @@ async function loadFinanceiro() {
       db.collection('receitas').where('status','==','Pago').get(),
       db.collection('despesas').where('status','==','Pago').get()
     ]);
-    const totalRecPago = recTodosSnap.docs.reduce((s,d)=>s+(parseFloat(d.data().valor)||0),0);
-    const totalDespPago = despTodosSnap.docs.reduce((s,d)=>s+(parseFloat(d.data().valor)||0),0);
+    const totalRecPago = recTodosSnap.docs.reduce((s,d)=>s+(parseMoney(d.data().valor)||0),0);
+    const totalDespPago = despTodosSnap.docs.reduce((s,d)=>s+(parseMoney(d.data().valor)||0),0);
     const saldo = totalRecPago - totalDespPago;
     document.getElementById('fin-receita-total').textContent = formatMoney(totalRecPago);
     document.getElementById('fin-despesas-total').textContent = formatMoney(totalDespPago);
@@ -2089,6 +2093,7 @@ function _renderReceitasData(receitas) {
         ${wppLink&&r.status!=='Pago'?`<a href="${wppLink}" target="_blank" class="wpp-btn">📱 Avisar</a>`:''}
       </div>
       <div class="fin-card-item-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editarReceita('${r.id}')">✏️ Editar</button>
         <button class="fin-del-btn" onclick="excluirLancamento('${r.id}','receitas')">🗑️</button>
       </div>
     </div>`;}).join('');
@@ -2166,8 +2171,8 @@ async function renderPrevisao() {
     const fixas = despSnap.docs.map(d=>d.data());
     // Agrupar por descrição (evitar duplicatas de parcelamentos)
     const agrup = {};
-    fixas.forEach(d=>{ const k=d.descricao||'—'; if(!agrup[k]||parseFloat(d.valor)>parseFloat(agrup[k].valor)) agrup[k]=d; });
-    const despPrev = Object.values(agrup).reduce((s,d)=>s+(parseFloat(d.valor)||0),0);
+    fixas.forEach(d=>{ const k=d.descricao||'—'; if(!agrup[k]||parseMoney(d.valor)>parseFloat(agrup[k].valor)) agrup[k]=d; });
+    const despPrev = Object.values(agrup).reduce((s,d)=>s+(parseMoney(d.valor)||0),0);
     const saldoPrev = recPrev - despPrev;
 
     document.getElementById('prev-cards').innerHTML=`
@@ -2194,6 +2199,7 @@ async function toggleStatusRec(el,id) {
     el.className=`badge ${novoStatus==='Pago'?'badge-success':'badge-warning'} status-click`;
     showToast(`Status atualizado: ${novoStatus}`,'success');
     loadFinanceiro();
+    loadDashboard();
     if(document.getElementById('fin-mov')?.classList.contains('active')) loadMovimentacao();
   } catch(e){showToast('Erro ao atualizar status.','error');}
 }
@@ -2206,6 +2212,7 @@ async function toggleStatusDesp(el,id) {
     el.className=`badge ${novoStatus==='Pago'?'badge-success':'badge-warning'} status-click`;
     showToast(`Status atualizado: ${novoStatus}`,'success');
     loadFinanceiro();
+    loadDashboard();
     if(document.getElementById('fin-mov')?.classList.contains('active')) loadMovimentacao();
   } catch(e){showToast('Erro ao atualizar status.','error');}
 }
@@ -2770,12 +2777,12 @@ async function initRelatorios() {
     receitas.forEach(r => {
       const m = r.mes ?? (r.vencimento ? parseInt(r.vencimento.split('-')[1])-1 : mesAtual);
       const a = r.ano ?? (r.vencimento ? parseInt(r.vencimento.split('-')[0]) : anoAtual);
-      if(a === anoAtual && m >= 0 && m < 12) recByMes[m] += parseFloat(r.valor)||0;
+      if(a === anoAtual && m >= 0 && m < 12) recByMes[m] += parseMoney(r.valor)||0;
     });
     despesas.forEach(d => {
       const m = d.mes ?? (d.vencimento ? parseInt(d.vencimento.split('-')[1])-1 : mesAtual);
       const a = d.ano ?? (d.vencimento ? parseInt(d.vencimento.split('-')[0]) : anoAtual);
-      if(a === anoAtual && m >= 0 && m < 12) despByMes[m] += parseFloat(d.valor)||0;
+      if(a === anoAtual && m >= 0 && m < 12) despByMes[m] += parseMoney(d.valor)||0;
     });
 
     // Guardar globalmente para recarregarIndicadores
@@ -2841,7 +2848,7 @@ async function initRelatorios() {
 
         // Pizza
         const tipoMap={};
-        receitas.forEach(r=>{const t=r.tipo||'Outro';tipoMap[t]=(tipoMap[t]||0)+(parseFloat(r.valor)||0);});
+        receitas.forEach(r=>{const t=r.tipo||'Outro';tipoMap[t]=(tipoMap[t]||0)+(parseMoney(r.valor)||0);});
         const pizzaLabels=Object.keys(tipoMap);
         const pizzaData=pizzaLabels.map(k=>tipoMap[k]);
         const pizzaCores=['rgba(34,197,94,.8)','rgba(61,138,122,.8)','rgba(109,90,172,.8)','rgba(160,120,80,.8)','rgba(234,179,8,.8)'];
@@ -2908,7 +2915,7 @@ function _atualizarIndicadores() {
     const a=parseInt(r.vencimento.split('-')[0]);
     return m===mesRelat && a===anoAtual;
   });
-  const inadimpVal = inadimp.reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
+  const inadimpVal = inadimp.reduce((s,r)=>s+(parseMoney(r.valor)||0),0);
   sid('ind-inadimp', formatMoney(inadimpVal));
   sid('ind-inadimp-d', `${inadimp.length} pendente(s)`);
 
@@ -2953,12 +2960,36 @@ function setRelatTipo(tipo, el) {
     ger.style.color = tipo==='geral' ? '#fff' : 'var(--text-light)';
     ger.style.fontWeight = tipo==='geral' ? '600' : 'normal';
   }
-  // Financeiro: ocultar gráfico de ocupação (salas/turnos)
+
+  // Financeiro: oculta tudo relacionado a salas, agenda e ocupação
+  // Geral: mostra tudo
+  const isFin = tipo === 'financeiro';
+
+  // Gráfico de ocupação por turno (salas)
   const ocupWrap = document.getElementById('chart-ocupacao')?.closest('.chart-wrap');
-  if(ocupWrap) ocupWrap.style.display = tipo==='financeiro' ? 'none' : '';
-  // Geral: mostrar indicador de ocupação e profissionais
+  if(ocupWrap) ocupWrap.style.display = isFin ? 'none' : '';
+
+  // Card de ocupação média nos indicadores
   const ocupCard = document.getElementById('ind-ocup')?.closest('.ind-card');
-  if(ocupCard) ocupCard.style.display = tipo==='financeiro' ? 'none' : '';
+  if(ocupCard) ocupCard.style.display = isFin ? 'none' : '';
+
+  // Tabs semestral/anual — no modo financeiro mostra; no geral também
+  // Filtrado (relatório por período) — no financeiro oculta seção de salas
+  const filtradoSalas = document.getElementById('filtrado-salas-section');
+  if(filtradoSalas) filtradoSalas.style.display = isFin ? 'none' : '';
+
+  // Indicador de profissionais ativos — só no Geral
+  const profsCard = document.getElementById('ind-profs-r')?.closest('.ind-card');
+  if(profsCard) profsCard.style.display = isFin ? 'none' : '';
+
+  // Legenda do modo atual
+  const modeLabel = document.getElementById('relat-modo-label');
+  if(modeLabel) {
+    modeLabel.textContent = isFin
+      ? '💰 Modo Financeiro: exibe receitas, despesas e saldo. Informações de salas e ocupação ocultas.'
+      : '📊 Modo Geral: exibe todas as informações, incluindo salas, ocupação e profissionais.';
+    modeLabel.style.display = 'block';
+  }
 }
 
 function showRelatTab(t,el) {
@@ -3153,6 +3184,7 @@ function _renderMovData(lista) {
         ${x.obs?`<span title="${x.obs}">📝 ${x.obs.substring(0,30)}${x.obs.length>30?'...':''}</span>`:''}
       </div>
       <div class="fin-card-item-actions">
+        <button class="btn btn-secondary btn-sm" onclick="${x._tipo==='Receita'?`editarReceita('${x.id}')`:`editarDespesa('${x.id}')`}">✏️ Editar</button>
         ${x.status==='Pago'?`<button class="btn btn-secondary btn-sm" onclick="devolverParaPagar('${x.id}','${x._tipo==='Receita'?'receitas':'despesas'}')">↩ Devolver</button>`:''}
         <button class="fin-del-btn" onclick="excluirLancamento('${x.id}','${x._tipo==='Receita'?'receitas':'despesas'}')">🗑️</button>
       </div>
@@ -3165,6 +3197,7 @@ async function devolverParaPagar(id, colecao) {
     await db.collection(colecao).doc(id).update({status:'Pendente', updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
     showToast('Lançamento devolvido para Contas a Pagar!','success');
     loadFinanceiro();
+    loadDashboard();
     loadMovimentacao();
   } catch(e){ showToast('Erro ao devolver lançamento.','error'); }
 }
@@ -3253,7 +3286,7 @@ function calcDescontoLocacao() {
 
 // ── DESCONTO RECEITA ──
 function calcDescontoReceita() {
-  const valor = parseFloat(document.getElementById('receita-valor').value.replace(',','.')) || 0;
+  const valor = parseMoney(document.getElementById('receita-valor').value) || 0;
   const desconto = parseFloat(document.getElementById('receita-desconto').value) || 0;
   const wrap = document.getElementById('receita-valor-final-wrap');
   if(valor > 0 && desconto > 0) {
@@ -3518,8 +3551,8 @@ async function gerarRelatFiltrado() {
     if(dataInicio) todos = todos.filter(x=>x.vencimento>=dataInicio);
     if(dataFim) todos = todos.filter(x=>x.vencimento<=dataFim);
 
-    const totalRec = receitas.filter(x=>todos.includes(x)).reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
-    const totalDesp = despesas.filter(x=>todos.includes(x)).reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
+    const totalRec = receitas.filter(x=>todos.includes(x)).reduce((s,x)=>s+(parseMoney(x.valor)||0),0);
+    const totalDesp = despesas.filter(x=>todos.includes(x)).reduce((s,x)=>s+(parseMoney(x.valor)||0),0);
 
     document.getElementById('filtrado-indicadores').innerHTML = `
       <div class="ind-card"><div class="ind-label">Receitas filtradas</div><div class="ind-value" style="color:var(--success)">${formatMoney(totalRec)}</div><div class="ind-delta">${receitas.filter(x=>todos.includes(x)).length} lançamentos</div></div>
@@ -3534,12 +3567,12 @@ async function gerarRelatFiltrado() {
       const cat = (x.categoria||x.tipo||'Sem categoria');
       const sub = x.subcategoria||'—';
       if(!catMap[cat]) catMap[cat] = {receita:0, despesa:0, itens:0, subs:{}};
-      if(x._tipo==='Receita') catMap[cat].receita += parseFloat(x.valor)||0;
-      else catMap[cat].despesa += parseFloat(x.valor)||0;
+      if(x._tipo==='Receita') catMap[cat].receita += parseMoney(x.valor)||0;
+      else catMap[cat].despesa += parseMoney(x.valor)||0;
       catMap[cat].itens++;
       if(!catMap[cat].subs[sub]) catMap[cat].subs[sub]={receita:0,despesa:0,itens:0};
-      if(x._tipo==='Receita') catMap[cat].subs[sub].receita+=parseFloat(x.valor)||0;
-      else catMap[cat].subs[sub].despesa+=parseFloat(x.valor)||0;
+      if(x._tipo==='Receita') catMap[cat].subs[sub].receita+=parseMoney(x.valor)||0;
+      else catMap[cat].subs[sub].despesa+=parseMoney(x.valor)||0;
       catMap[cat].subs[sub].itens++;
     });
 
@@ -3627,7 +3660,7 @@ async function gerarRelatFiltrado() {
       catsOrdenadas.forEach(cat=>{
         const subs = grupoCat[cat];
         // Cabeçalho da categoria
-        const totalCat = Object.values(subs).flat().reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
+        const totalCat = Object.values(subs).flat().reduce((s,x)=>s+(parseMoney(x.valor)||0),0);
         rows += `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;background:var(--bg);font-weight:700;border-top:2px solid var(--border);color:var(--gold)">
           <span>📁 ${cat}</span><span></span><span></span><span></span>
           <span style="color:var(--text-light)">${formatMoney(totalCat)}</span>
@@ -3699,10 +3732,12 @@ function initSwipe() {
         const novoStatus = status === 'Pago' ? 'Pendente' : 'Pago';
         try {
           const col = tipo === 'rec' ? 'receitas' : 'despesas';
-          await db.collection(col).doc(id).update({status: novoStatus});
+          await db.collection(col).doc(id).update({status: novoStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
           card.dataset.status = novoStatus;
           showToast(`Marcado como ${novoStatus}!`, 'success');
           loadFinanceiro();
+          loadDashboard();
+          if(document.getElementById('fin-mov')?.classList.contains('active')) loadMovimentacao();
         } catch(e) { showToast('Erro ao atualizar.', 'error'); }
       }
     });
@@ -3756,6 +3791,7 @@ async function toggleStatusRecById(id, el) {
     el.className = `badge ${novoStatus==='Pago'?'badge-success':'badge-warning'}`;
     showToast(`Status: ${novoStatus}`, 'success');
     loadFinanceiro();
+    loadDashboard();
     if(document.getElementById('fin-mov')?.classList.contains('active')) loadMovimentacao();
   } catch(e) { showToast('Erro.', 'error'); }
 }
@@ -3768,6 +3804,7 @@ async function toggleStatusDespById(id, el) {
     el.className = `badge ${novoStatus==='Pago'?'badge-success':'badge-warning'}`;
     showToast(`Status: ${novoStatus}`, 'success');
     loadFinanceiro();
+    loadDashboard();
     if(document.getElementById('fin-mov')?.classList.contains('active')) loadMovimentacao();
   } catch(e) { showToast('Erro.', 'error'); }
 }
@@ -3852,8 +3889,8 @@ function _updateDespTotalizador(lista) {
   const el = document.getElementById('desp-totalizador');
   if(!el) return;
   if(!lista) { el.style.display='none'; return; }
-  const totalPend = lista.filter(d=>d.status!=='Pago').reduce((s,d)=>s+(parseFloat(d.valor)||0),0);
-  const totalPago = lista.filter(d=>d.status==='Pago').reduce((s,d)=>s+(parseFloat(d.valor)||0),0);
+  const totalPend = lista.filter(d=>d.status!=='Pago').reduce((s,d)=>s+(parseMoney(d.valor)||0),0);
+  const totalPago = lista.filter(d=>d.status==='Pago').reduce((s,d)=>s+(parseMoney(d.valor)||0),0);
   el.style.display='block';
   el.innerHTML = `💰 Total pendente: <span style="color:var(--danger)">${formatMoney(totalPend)}</span> &nbsp;·&nbsp; Pago: <span style="color:var(--success)">${formatMoney(totalPago)}</span> &nbsp;·&nbsp; ${lista.length} lançamento(s)`;
 }
@@ -3879,8 +3916,8 @@ function _updateMovTotalizador(lista) {
   const el = document.getElementById('mov-totalizador');
   if(!el) return;
   if(!lista) { el.style.display='none'; return; }
-  const totalRec = lista.filter(x=>x._tipo==='Receita').reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
-  const totalDesp = lista.filter(x=>x._tipo==='Despesa').reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
+  const totalRec = lista.filter(x=>x._tipo==='Receita').reduce((s,x)=>s+(parseMoney(x.valor)||0),0);
+  const totalDesp = lista.filter(x=>x._tipo==='Despesa').reduce((s,x)=>s+(parseMoney(x.valor)||0),0);
   el.style.display='block';
   el.innerHTML = `📋 Receitas: <span style="color:var(--success)">${formatMoney(totalRec)}</span> &nbsp;·&nbsp; Despesas: <span style="color:var(--danger)">${formatMoney(totalDesp)}</span> &nbsp;·&nbsp; Saldo: <span style="color:${totalRec-totalDesp>=0?'var(--success)':'var(--danger)'}">${formatMoney(totalRec-totalDesp)}</span> &nbsp;·&nbsp; ${lista.length} registro(s)`;
 }
@@ -3930,10 +3967,17 @@ async function lancarRecorrentePorQtd(data, qtd, colecao) {
   for(let i = 0; i < qtd; i++) {
     const venc = new Date(baseDate);
     venc.setMonth(venc.getMonth() + i);
+    const vencStr = venc.toISOString().split('T')[0];
     const ref = db.collection(colecao).doc();
+    // Derive mes/ano from this installment's vencimento (not the original creation date)
+    const instData = {...data};
+    delete instData.mes;
+    delete instData.ano;
     batch.set(ref, {
-      ...data,
-      vencimento: venc.toISOString().split('T')[0],
+      ...instData,
+      vencimento: vencStr,
+      mes: venc.getMonth(),
+      ano: venc.getFullYear(),
       status: 'Pendente',
       parcela: qtd > 1 ? `${i+1}/${qtd}` : undefined,
       recorrenciaNum: i + 1,
