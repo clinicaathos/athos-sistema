@@ -378,9 +378,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .color-dot.selected{border-color:var(--text);transform:scale(1.15);}
 
 /* ── RESPONSIVE ── */
-@media(min-width:769px){
-  #filtrado-charts-wrap{grid-template-columns:1fr 1fr !important;}
-}
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%);}
   .sidebar.mobile-open{transform:translateX(0);}
@@ -978,6 +975,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div class="chart-title" id="chart-ocup-title">Ocupação por Turno</div>
             <canvas id="chart-ocupacao" height="100"></canvas>
           </div>
+          <div id="relat-geral-extra-mensal" style="display:none"></div>
         </div>
 
         <!-- SEMESTRAL -->
@@ -996,6 +994,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div class="chart-title">Distribuição de Receitas por Tipo</div>
             <canvas id="chart-pizza" height="160"></canvas>
           </div>
+          <div id="relat-geral-extra-semestral" style="display:none"></div>
         </div>
 
         <!-- ANUAL -->
@@ -1010,6 +1009,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div class="chart-title">Receitas x Despesas — Anual</div>
             <canvas id="chart-anual" height="120"></canvas>
           </div>
+          <div id="relat-geral-extra-anual" style="display:none"></div>
         </div>
 
         <!-- FILTRADO -->
@@ -1062,7 +1062,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
           </div>
           <div id="relat-filtrado-resultado" style="display:none">
             <div class="indicadores-grid" id="filtrado-indicadores"></div>
-            <div style="display:grid;grid-template-columns:1fr;gap:1rem;margin-bottom:1rem" id="filtrado-charts-wrap">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem" id="filtrado-charts-wrap">
               <div class="chart-wrap"><div class="chart-title">Receitas x Despesas</div><canvas id="chart-filtrado-bar" height="140"></canvas></div>
               <div class="chart-wrap"><div class="chart-title">Distribuição por Categoria</div><canvas id="chart-filtrado-pizza" height="140"></canvas></div>
             </div>
@@ -2954,8 +2954,100 @@ function recarregarIndicadores() {
   _atualizarIndicadores();
 }
 
-function setRelatTipo(tipo, el) {
-  // Atualizar visual dos botões
+function _buildGeralExtra() {
+  // Profissionais
+  const ativos = profissionaisCache.filter(p=>p.status==='Ativo');
+  const inativos = profissionaisCache.filter(p=>p.status==='Inativo');
+  const profsHtml = `
+    <div class="card" style="margin-bottom:1rem">
+      <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">👤 Profissionais</div>
+      <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
+        <span class="badge badge-success">${ativos.length} ativo${ativos.length!==1?'s':''}</span>
+        ${inativos.length?`<span class="badge badge-neutral">${inativos.length} inativo${inativos.length!==1?'s':''}</span>`:''}
+      </div>
+      ${ativos.length ? `<div class="data-table" style="margin-top:.5rem">
+        <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr">
+          <span>Nome</span><span>Especialidade</span><span>Vínculo</span><span>Contrato até</span>
+        </div>
+        ${ativos.map(p=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+          <span style="font-weight:500">${p.nome||'—'}</span>
+          <span style="color:var(--text-light)">${p.especialidade||'—'}</span>
+          <span style="color:var(--text-light)">${p.vinculo||'—'}</span>
+          <span style="color:var(--text-light)">${p.contratoFim?formatDate(p.contratoFim):'—'}</span>
+        </div>`).join('')}
+      </div>` : '<div style="font-size:.82rem;color:var(--text-lighter);padding:.5rem 0">Nenhum profissional ativo.</div>'}
+    </div>`;
+
+  // Turnos
+  const turnos = [
+    {nome:'Turno Manhã', el:'turno-manha-hrs', valEl:'turno-valor-manha', countEl:'turno-manha-count'},
+    {nome:'Turno Tarde', el:'turno-tarde-hrs', valEl:'turno-valor-tarde', countEl:'turno-tarde-count'},
+    {nome:'Turno Noite', el:'turno-noite-hrs', valEl:'turno-valor-noite', countEl:'turno-noite-count'},
+  ];
+  const turnosHtml = `
+    <div class="card" style="margin-bottom:1rem">
+      <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">🕐 Turnos Ativos</div>
+      <div class="data-table">
+        <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr">
+          <span>Turno</span><span>Horário</span><span>Valor/mês</span><span>Profissionais</span>
+        </div>
+        ${turnos.map(t=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+          <span style="font-weight:500">${t.nome}</span>
+          <span>${document.getElementById(t.el)?.textContent||'—'}</span>
+          <span>${document.getElementById(t.valEl)?.textContent||'—'}</span>
+          <span><span class="badge badge-neutral">${document.getElementById(t.countEl)?.textContent||'0'}</span></span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+
+  // Pacotes — buscar do Firebase
+  let pacotesHtml = `<div class="card" style="margin-bottom:1rem" id="relat-geral-pacotes-card">
+    <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">📦 Pacotes Mensais</div>
+    <div id="relat-geral-pacotes-inner"><span style="font-size:.82rem;color:var(--text-lighter)">Carregando...</span></div>
+  </div>`;
+
+  // Locações recentes (agenda)
+  const hoje = new Date().toISOString().split('T')[0];
+  const locsAtivas = locacoesCache.filter(l=>!l.data||l.data>=hoje).slice(0,10);
+  const locsHtml = locsAtivas.length ? `
+    <div class="card" style="margin-bottom:1rem">
+      <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">📅 Locações Ativas (próximas)</div>
+      <div class="data-table">
+        <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr">
+          <span>Profissional</span><span>Sala</span><span>Turno</span><span>Data</span>
+        </div>
+        ${locsAtivas.map(l=>{
+          const prof=profissionaisCache.find(p=>p.id===l.profId)?.nome||l.profId||'—';
+          return `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+            <span style="font-weight:500">${prof}</span>
+            <span>${l.sala||'—'}</span>
+            <span style="color:var(--text-light)">${l.turno||'—'}</span>
+            <span>${l.data?formatDate(l.data):'—'}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : '';
+
+  // Carregar pacotes do Firebase de forma assíncrona
+  db.collection('planos').get().then(snap=>{
+    const planos=snap.docs.map(d=>({id:d.id,...d.data()}));
+    const inner=document.getElementById('relat-geral-pacotes-inner');
+    if(!inner) return;
+    if(!planos.length){ inner.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter)">Nenhum pacote cadastrado.</div>'; return; }
+    inner.innerHTML=`<div class="data-table">
+      <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr"><span>Nome</span><span>Horas/mês</span><span>Valor</span></div>
+      ${planos.map(p=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr">
+        <span style="font-weight:500">${p.nome||'—'}</span>
+        <span>${p.horas||'—'}h</span>
+        <span style="font-weight:600;color:var(--success)">${p.valor?formatMoney(p.valor):'—'}</span>
+      </div>`).join('')}
+    </div>`;
+  }).catch(()=>{});
+
+  return profsHtml + turnosHtml + pacotesHtml + locsHtml;
+}
+
+function setRelatTipo(tipo) {
   const fin = document.getElementById('relat-tipo-fin');
   const ger = document.getElementById('relat-tipo-ger');
   if(fin && ger) {
@@ -2967,33 +3059,45 @@ function setRelatTipo(tipo, el) {
     ger.style.fontWeight = tipo==='geral' ? '600' : 'normal';
   }
 
-  // Financeiro: oculta tudo relacionado a salas, agenda e ocupação
-  // Geral: mostra tudo
   const isFin = tipo === 'financeiro';
 
-  // Gráfico de ocupação por turno (salas)
+  // Ocupação e profissionais — visíveis em ambos os modos no mensal
+  // No Financeiro: ocultar gráfico de ocupação, card ocupação, inadimplência, profs ativos
   const ocupWrap = document.getElementById('chart-ocupacao')?.closest('.chart-wrap');
   if(ocupWrap) ocupWrap.style.display = isFin ? 'none' : '';
-
-  // Card de ocupação média nos indicadores
   const ocupCard = document.getElementById('ind-ocup')?.closest('.ind-card');
   if(ocupCard) ocupCard.style.display = isFin ? 'none' : '';
-
-  // Tabs semestral/anual — no modo financeiro mostra; no geral também
-  // Filtrado (relatório por período) — no financeiro oculta seção de salas
+  const inadimpCard = document.getElementById('ind-inadimp')?.closest('.ind-card');
+  if(inadimpCard) inadimpCard.style.display = isFin ? 'none' : '';
+  const profsCard = document.getElementById('ind-profs-r')?.closest('.ind-card');
+  if(profsCard) profsCard.style.display = isFin ? 'none' : '';
+  const profsAnCard = document.getElementById('ind-an-profs')?.closest('.ind-card');
+  if(profsAnCard) profsAnCard.style.display = isFin ? 'none' : '';
   const filtradoSalas = document.getElementById('filtrado-salas-section');
   if(filtradoSalas) filtradoSalas.style.display = isFin ? 'none' : '';
 
-  // Indicador de profissionais ativos — só no Geral
-  const profsCard = document.getElementById('ind-profs-r')?.closest('.ind-card');
-  if(profsCard) profsCard.style.display = isFin ? 'none' : '';
+  // Seções extras do Geral
+  const extraIds = ['relat-geral-extra-mensal','relat-geral-extra-semestral','relat-geral-extra-anual'];
+  extraIds.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    if(isFin) {
+      el.style.display='none';
+    } else {
+      el.style.display='block';
+      if(!el.dataset.loaded) {
+        el.innerHTML = _buildGeralExtra();
+        el.dataset.loaded = '1';
+      }
+    }
+  });
 
-  // Legenda do modo atual
+  // Legenda
   const modeLabel = document.getElementById('relat-modo-label');
   if(modeLabel) {
     modeLabel.textContent = isFin
-      ? '💰 Financeiro: exibe somente receitas, despesas e saldo.'
-      : '📊 Geral: exibe todas as informações financeiras, incluindo ocupações de sala, ocultas e de profissionais.';
+      ? '💰 Financeiro: exibe exclusivamente entradas, saídas, categorias e subcategorias.'
+      : '📊 Geral: consolida todas as informações — profissionais, turnos, pacotes, agenda e dados financeiros.';
     modeLabel.style.display = 'block';
   }
 }
@@ -3003,82 +3107,41 @@ function showRelatTab(t,el) {
   document.querySelectorAll('.relat-content').forEach(x=>x.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('relat-'+t).classList.add('active');
+  // Se modo Geral ativo, popular o extra da aba recém-aberta
+  const isGeral = document.getElementById('relat-tipo-ger')?.style.fontWeight === '600';
+  if(isGeral && t!=='filtrado') {
+    const extraEl = document.getElementById('relat-geral-extra-'+t);
+    if(extraEl && !extraEl.dataset.loaded) {
+      extraEl.style.display='block';
+      extraEl.innerHTML = _buildGeralExtra();
+      extraEl.dataset.loaded = '1';
+    }
+  }
 }
 
 function exportarRelatorio() {
   showToast('Preparando impressão/PDF...','success');
-
+  // Converter apenas os canvas da aba ativa em imagens (canvas não renderiza no print)
   const activeContent = document.querySelector('#page-relatorios .relat-content.active');
-  if(!activeContent) { showToast('Nenhuma aba ativa.','error'); return; }
-
-  // Clonar sem tocar no DOM original
-  const clone = activeContent.cloneNode(true);
-
-  // Substituir canvas por imagens base64 apenas no clone
-  const canvases = activeContent.querySelectorAll('canvas');
-  clone.querySelectorAll('canvas').forEach((c, i) => {
-    try {
-      const img = document.createElement('img');
-      img.src = canvases[i].toDataURL('image/png');
-      img.style.cssText = 'width:100%;height:auto;display:block;';
-      c.replaceWith(img);
-    } catch(e) { c.remove(); }
-  });
-
-  // Remover controles de interface do clone
-  clone.querySelectorAll('button,input,select,.fin-del-btn,.wpp-btn,.status-click').forEach(el=>el.remove());
-
-  const tabLabel = document.querySelector('.relat-tab.active')?.textContent?.trim() || 'Relatório';
-  const isFin = document.getElementById('relat-tipo-fin')?.style.fontWeight === '600';
-  const tipoLabel = isFin ? 'Financeiro' : 'Geral';
-  const dataHoje = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
-
-  const win = window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head>
-    <meta charset="UTF-8">
-    <title>Clínica Áthos — ${tipoLabel} · ${tabLabel}</title>
-    <style>
-      *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-      body{font-family:'Segoe UI',Arial,sans-serif;font-size:9pt;color:#111;background:#fff;padding:12mm;max-width:210mm;}
-      .print-header{margin-bottom:1rem;padding-bottom:.6rem;border-bottom:2px solid #a07850;}
-      .print-header h1{font-size:12pt;color:#a07850;font-weight:700;}
-      .print-header p{font-size:8pt;color:#666;margin-top:3px;}
-      /* Indicadores */
-      .indicadores-grid{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:.4rem;margin-bottom:.75rem;}
-      .ind-card{border:1px solid #ddd;border-radius:5px;padding:.5rem .6rem;break-inside:avoid;}
-      .ind-label{font-size:7pt;color:#888;text-transform:uppercase;letter-spacing:.03em;}
-      .ind-value{font-size:11pt;font-weight:700;}
-      .ind-delta{font-size:7pt;} .ind-delta.pos{color:#16a34a;} .ind-delta.neg{color:#dc2626;}
-      /* Gráficos */
-      #filtrado-charts-wrap{display:grid!important;grid-template-columns:1fr 1fr!important;gap:.6rem;margin-bottom:.75rem;}
-      .chart-wrap{border:1px solid #ddd;border-radius:5px;padding:.6rem;break-inside:avoid;overflow:hidden;}
-      .chart-title{font-size:8pt;font-weight:600;margin-bottom:.4rem;color:#374151;}
-      /* Cards e tabelas */
-      .card,.data-table{border:1px solid #ddd;border-radius:5px;padding:.6rem;margin-bottom:.75rem;break-inside:avoid;width:100%;overflow:hidden;}
-      /* Tabelas — colunas fluidas para caber no A4 */
-      .dt-head,.dt-row{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(50px,1fr))!important;font-size:8pt;padding:.3rem .4rem;word-break:break-word;}
-      .dt-head{background:#f9fafb;border-bottom:2px solid #e5e7eb;font-size:7pt;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:.03em;}
-      .dt-row{border-bottom:1px solid #f3f4f6;break-inside:avoid;}
-      .dt-row:last-child{border-bottom:none;}
-      .dt-row span,.dt-head span{overflow:hidden;text-overflow:ellipsis;}
-      /* Badges */
-      .badge{display:inline-block;padding:1px 5px;border-radius:99px;font-size:6.5pt;font-weight:600;white-space:nowrap;}
-      .badge-success{background:#dcfce7;color:#16a34a;} .badge-danger{background:#fee2e2;color:#dc2626;}
-      .badge-warning{background:#fef9c3;color:#ca8a04;} .badge-neutral{background:#f3f4f6;color:#374151;}
-      .badge-info{background:#dbeafe;color:#1d4ed8;} .badge-gold{background:#fef3c7;color:#92400e;}
-      img{max-width:100%;height:auto;display:block;}
-      @page{margin:12mm;size:A4 portrait;}
-      @media print{body{padding:0;}}
-    </style>
-  </head><body>
-    <div class="print-header">
-      <h1>Clínica Áthos — Relatório ${tipoLabel}</h1>
-      <p>${tabLabel} &nbsp;·&nbsp; ${dataHoje}</p>
-    </div>
-    ${clone.innerHTML}
-  </body></html>`);
-  win.document.close();
-  setTimeout(()=>{ win.focus(); win.print(); }, 700);
+  const snapshots = [];
+  if(activeContent) {
+    activeContent.querySelectorAll('canvas').forEach(canvas=>{
+      try {
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL('image/png');
+        img.style.cssText = 'max-width:100%;height:auto;display:block;';
+        canvas.parentNode.insertBefore(img, canvas.nextSibling);
+        canvas.style.display='none';
+        snapshots.push({canvas, img});
+      } catch(e){}
+    });
+  }
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>{
+      snapshots.forEach(({canvas,img})=>{ canvas.style.display=''; img.remove(); });
+    },1500);
+  },400);
 }
 
 // ══ MOBILE SIDEBAR ══
