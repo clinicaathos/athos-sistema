@@ -378,6 +378,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .color-dot.selected{border-color:var(--text);transform:scale(1.15);}
 
 /* ── RESPONSIVE ── */
+@media(min-width:769px){
+  #filtrado-charts-wrap{grid-template-columns:1fr 1fr !important;}
+}
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%);}
   .sidebar.mobile-open{transform:translateX(0);}
@@ -907,6 +910,14 @@ body.dark .tag{background:#111827;border-color:#374151;}
               <input type="date" id="mov-filtro-fim" class="form-input" style="padding:4px 8px;font-size:.72rem;width:130px" onchange="aplicarFiltroMovData()">
               <button class="qf-btn" onclick="limparFiltroMovData()" style="font-size:.68rem">✕</button>
             </div>
+            <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem">
+              <select class="form-select" id="mov-filtro-cat" style="width:auto;padding:4px 8px;font-size:.72rem" onchange="aplicarFiltroMovCat()">
+                <option value="">Todas as categorias</option>
+              </select>
+              <select class="form-select" id="mov-filtro-subcat" style="width:auto;padding:4px 8px;font-size:.72rem" onchange="aplicarFiltroMovCat()">
+                <option value="">Todas as subcategorias</option>
+              </select>
+            </div>
             <div class="quick-filters">
               <button class="qf-btn active" onclick="filtrarMov('todos',this)">Todos</button>
               <button class="qf-btn" onclick="filtrarMov('receitas',this)">Receitas</button>
@@ -1059,7 +1070,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
           </div>
           <div id="relat-filtrado-resultado" style="display:none">
             <div class="indicadores-grid" id="filtrado-indicadores"></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem" id="filtrado-charts-wrap">
+            <div style="display:grid;grid-template-columns:1fr;gap:1rem;margin-bottom:1rem" id="filtrado-charts-wrap">
               <div class="chart-wrap"><div class="chart-title">Receitas x Despesas</div><canvas id="chart-filtrado-bar" height="140"></canvas></div>
               <div class="chart-wrap"><div class="chart-title">Distribuição por Categoria</div><canvas id="chart-filtrado-pizza" height="140"></canvas></div>
             </div>
@@ -1770,9 +1781,25 @@ function verProfissional(id) {
     <div class="modal-actions">
       <button class="btn btn-danger" onclick="excluirProfissional('${id}')">Excluir</button>
       <button class="btn btn-secondary" onclick="closeModal('ver-prof')">Fechar</button>
+      <button class="btn ${p.status==='Ativo'?'btn-warning':'btn-success'}" onclick="toggleStatusProfissional('${id}','${p.status||'Ativo'}')">
+        ${p.status==='Ativo'?'⏸ Desativar':'▶ Reativar'}
+      </button>
       <button class="btn btn-primary" onclick="closeModal('ver-prof');editarProfissional('${id}')">Editar Cadastro</button>
     </div>`;
   openModal('ver-prof');
+}
+
+async function toggleStatusProfissional(id, statusAtual) {
+  const novoStatus = statusAtual === 'Ativo' ? 'Inativo' : 'Ativo';
+  const acao = novoStatus === 'Inativo' ? 'desativar' : 'reativar';
+  if(!confirm(`Deseja ${acao} este profissional? Os dados serão mantidos no sistema.`)) return;
+  try {
+    await db.collection('profissionais').doc(id).update({ status: novoStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    showToast(`Profissional ${novoStatus === 'Inativo' ? 'desativado' : 'reativado'} com sucesso.`, 'success');
+    closeModal('ver-prof');
+    loadProfissionais();
+    loadDashboard();
+  } catch(e) { showToast('Erro ao alterar status do profissional.', 'error'); }
 }
 
 function editarProfissional(id) {
@@ -2952,7 +2979,6 @@ function recarregarIndicadores() {
 }
 
 function setRelatTipo(tipo, el) {
-  // Atualizar visual dos botões
   const fin = document.getElementById('relat-tipo-fin');
   const ger = document.getElementById('relat-tipo-ger');
   if(fin && ger) {
@@ -2964,33 +2990,38 @@ function setRelatTipo(tipo, el) {
     ger.style.fontWeight = tipo==='geral' ? '600' : 'normal';
   }
 
-  // Financeiro: oculta tudo relacionado a salas, agenda e ocupação
-  // Geral: mostra tudo
   const isFin = tipo === 'financeiro';
 
-  // Gráfico de ocupação por turno (salas)
+  // Gráfico de ocupação por turno — só no Geral
   const ocupWrap = document.getElementById('chart-ocupacao')?.closest('.chart-wrap');
   if(ocupWrap) ocupWrap.style.display = isFin ? 'none' : '';
 
-  // Card de ocupação média nos indicadores
+  // Card de ocupação média — só no Geral
   const ocupCard = document.getElementById('ind-ocup')?.closest('.ind-card');
   if(ocupCard) ocupCard.style.display = isFin ? 'none' : '';
 
-  // Tabs semestral/anual — no modo financeiro mostra; no geral também
-  // Filtrado (relatório por período) — no financeiro oculta seção de salas
-  const filtradoSalas = document.getElementById('filtrado-salas-section');
-  if(filtradoSalas) filtradoSalas.style.display = isFin ? 'none' : '';
+  // Card de inadimplência — só no Geral
+  const inadimpCard = document.getElementById('ind-inadimp')?.closest('.ind-card');
+  if(inadimpCard) inadimpCard.style.display = isFin ? 'none' : '';
 
-  // Indicador de profissionais ativos — só no Geral
+  // Profissionais ativos (mensal) — só no Geral
   const profsCard = document.getElementById('ind-profs-r')?.closest('.ind-card');
   if(profsCard) profsCard.style.display = isFin ? 'none' : '';
 
-  // Legenda do modo atual
+  // Profissionais ativos (anual) — só no Geral
+  const profsAnCard = document.getElementById('ind-an-profs')?.closest('.ind-card');
+  if(profsAnCard) profsAnCard.style.display = isFin ? 'none' : '';
+
+  // Seção de salas no filtrado — só no Geral
+  const filtradoSalas = document.getElementById('filtrado-salas-section');
+  if(filtradoSalas) filtradoSalas.style.display = isFin ? 'none' : '';
+
+  // Legenda do modo
   const modeLabel = document.getElementById('relat-modo-label');
   if(modeLabel) {
     modeLabel.textContent = isFin
-      ? '💰 Financeiro: exibe somente receitas, despesas e saldo.'
-      : '📊 Geral: exibe todas as informações financeiras, incluindo ocupações de sala, ocultas e de profissionais.';
+      ? '💰 Financeiro: exibe exclusivamente entradas, saídas, categorias e subcategorias.'
+      : '📊 Geral: consolida todas as informações — turnos, profissionais, agenda e dados financeiros.';
     modeLabel.style.display = 'block';
   }
 }
@@ -3004,75 +3035,27 @@ function showRelatTab(t,el) {
 
 function exportarRelatorio() {
   showToast('Preparando impressão/PDF...','success');
-
+  // Converter apenas os canvas da aba ativa em imagens (canvas não renderiza no print)
   const activeContent = document.querySelector('#page-relatorios .relat-content.active');
-  if(!activeContent) { showToast('Nenhuma aba ativa encontrada.','error'); return; }
-
-  // Clonar o conteúdo da aba ativa
-  const clone = activeContent.cloneNode(true);
-
-  // Substituir cada canvas pelo snapshot em base64
-  const canvases = activeContent.querySelectorAll('canvas');
-  const cloneCanvases = clone.querySelectorAll('canvas');
-  canvases.forEach((canvas, i) => {
-    try {
-      const img = document.createElement('img');
-      img.src = canvas.toDataURL('image/png');
-      img.style.cssText = 'max-width:100%;height:auto;display:block;';
-      cloneCanvases[i]?.replaceWith(img);
-    } catch(e) { cloneCanvases[i]?.remove(); }
-  });
-
-  // Identificar a aba ativa para o título
-  const activeTab = document.querySelector('.relat-tab.active');
-  const tabLabel = activeTab ? activeTab.textContent.trim() : 'Relatório';
-  const tipoLabel = document.querySelector('#relat-tipo-fin')?.style.fontWeight === '600' ? 'Financeiro' : 'Geral';
-
-  // Abrir janela isolada com apenas o conteúdo triado
-  const win = window.open('', '_blank');
-  win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head>
-    <meta charset="UTF-8">
-    <title>Clínica Áthos — Relatório ${tipoLabel} · ${tabLabel}</title>
-    <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: 'Segoe UI', sans-serif; font-size: 11pt; color: #111; background: #fff; padding: 15mm; }
-      h2, h3 { margin-bottom: .5rem; }
-      .print-header { margin-bottom: 1.5rem; border-bottom: 2px solid #a07850; padding-bottom: .75rem; }
-      .print-header h1 { font-size: 1.1rem; color: #a07850; }
-      .print-header p { font-size: .8rem; color: #666; margin-top: .25rem; }
-      .card, .chart-wrap, .data-table { border: 1px solid #ddd; border-radius: 6px; padding: .75rem; margin-bottom: 1rem; break-inside: avoid; }
-      .indicadores-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: .5rem; margin-bottom: 1rem; }
-      .ind-card { border: 1px solid #ddd; border-radius: 6px; padding: .6rem .75rem; break-inside: avoid; }
-      .ind-label { font-size: .65rem; color: #888; text-transform: uppercase; letter-spacing: .03em; }
-      .ind-value { font-size: 1.1rem; font-weight: 700; color: #111; }
-      .ind-delta { font-size: .7rem; }
-      .ind-delta.pos { color: #16a34a; }
-      .ind-delta.neg { color: #dc2626; }
-      .dt-head { display: grid; font-size: .7rem; font-weight: 700; text-transform: uppercase; color: #888; border-bottom: 2px solid #e5e7eb; padding: .4rem .5rem; letter-spacing: .03em; }
-      .dt-row { display: grid; font-size: .78rem; padding: .45rem .5rem; border-bottom: 1px solid #f3f4f6; break-inside: avoid; }
-      .dt-row:last-child { border-bottom: none; }
-      .badge { display: inline-block; padding: 1px 7px; border-radius: 99px; font-size: .62rem; font-weight: 600; }
-      .badge-success { background: #dcfce7; color: #16a34a; }
-      .badge-danger { background: #fee2e2; color: #dc2626; }
-      .badge-warning { background: #fef9c3; color: #ca8a04; }
-      .badge-neutral { background: #f3f4f6; color: #374151; }
-      .chart-title { font-size: .8rem; font-weight: 600; margin-bottom: .5rem; color: #374151; }
-      img { max-width: 100%; height: auto; display: block; }
-      #filtrado-charts-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-bottom: 1rem; }
-      .btn, .fin-del-btn, .wpp-btn, .status-click, input[type=checkbox] { display: none !important; }
-      @page { margin: 15mm; size: A4 portrait; }
-      @media print { body { padding: 0; } }
-    </style>
-  </head><body>
-    <div class="print-header">
-      <h1>Clínica Áthos — Relatório ${tipoLabel}</h1>
-      <p>${tabLabel} · Gerado em ${new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}</p>
-    </div>
-    ${clone.innerHTML}
-  </body></html>`);
-  win.document.close();
-
-  setTimeout(() => { win.focus(); win.print(); }, 600);
+  const snapshots = [];
+  if(activeContent) {
+    activeContent.querySelectorAll('canvas').forEach(canvas=>{
+      try {
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL('image/png');
+        img.style.cssText = 'max-width:100%;height:auto;display:block;';
+        canvas.parentNode.insertBefore(img, canvas.nextSibling);
+        canvas.style.display='none';
+        snapshots.push({canvas, img});
+      } catch(e){}
+    });
+  }
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>{
+      snapshots.forEach(({canvas,img})=>{ canvas.style.display=''; img.remove(); });
+    },1500);
+  },400);
 }
 
 // ══ MOBILE SIDEBAR ══
@@ -3191,18 +3174,24 @@ let movCache = [];
 async function loadMovimentacao() {
   try {
     const hoje = new Date().toISOString().split('T')[0];
-    // Receitas pagas ou vencidas
     const recSnap = await db.collection('receitas').get();
     const receitas = recSnap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Receita'}))
       .filter(r => r.status==='Pago' || (r.vencimento && r.vencimento <= hoje));
 
-    // Despesas pagas ou vencidas
     const despSnap = await db.collection('despesas').get();
     const despesas = despSnap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Despesa'}))
       .filter(d => d.status==='Pago' || (d.vencimento && d.vencimento <= hoje));
 
-    // Combinar e ordenar cronologicamente
     movCache = [...receitas, ...despesas].sort((a,b) => (a.vencimento||'').localeCompare(b.vencimento||''));
+
+    // Popular selects de categoria e subcategoria
+    const cats = [...new Set(movCache.map(x=>x.categoria||x.tipo||'').filter(Boolean))].sort();
+    const subcats = [...new Set(movCache.map(x=>x.subcategoria||'').filter(Boolean))].sort();
+    const catSel = document.getElementById('mov-filtro-cat');
+    const subSel = document.getElementById('mov-filtro-subcat');
+    if(catSel) catSel.innerHTML = '<option value="">Todas as categorias</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+    if(subSel) subSel.innerHTML = '<option value="">Todas as subcategorias</option>' + subcats.map(s=>`<option value="${s}">${s}</option>`).join('');
+
     _renderMovData(movCache);
   } catch(e) { showToast('Erro ao carregar movimentação.','error'); console.error(e); }
 }
@@ -3212,15 +3201,16 @@ function _renderMovData(lista) {
   const mobileEl = document.getElementById('mov-cards-mobile');
   if(!table) return;
   if(lista.length === 0) {
-    table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Data</span><span>Valor</span></div><div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum lançamento realizado.</div>`;
+    table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Subcategoria</span><span>Data</span><span>Valor</span></div><div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum lançamento realizado.</div>`;
     if(mobileEl) mobileEl.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhum lançamento realizado.</div>';
     return;
   }
-  table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 90px 40px"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Data</span><span>Valor</span><span>Ação</span><span></span></div>` +
-    lista.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 90px 40px">
+  table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 90px 40px"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Subcategoria</span><span>Data</span><span>Valor</span><span>Ação</span><span></span></div>` +
+    lista.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 90px 40px">
       <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="${x._tipo==='Receita'?`editarReceita('${x.id}')`:`editarDespesa('${x.id}')`}">${x.profissional||x.descricao||'—'}${x.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">📝 ${x.obs}</span>`:''}</span>
       <span><span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span></span>
       <span style="color:var(--text-light)">${x.categoria||x.tipo||'—'}</span>
+      <span style="color:var(--text-lighter);font-size:.8rem">${x.subcategoria||'—'}</span>
       <span>${x.vencimento?formatDate(x.vencimento):'—'}</span>
       <span style="font-weight:600;color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</span>
       <span>${x.status==='Pago'?`<button class="btn btn-secondary btn-sm" onclick="devolverParaPagar('${x.id}','${x._tipo==='Receita'?'receitas':'despesas'}')">↩ Devolver</button>`:'—'}</span>
@@ -3234,6 +3224,7 @@ function _renderMovData(lista) {
       </div>
       <div class="fin-card-item-meta">
         <span>${x.categoria||x.tipo||'—'}</span>
+        ${x.subcategoria?`<span style="font-size:.72rem;color:var(--text-lighter)">${x.subcategoria}</span>`:''}
         ${x.vencimento?`<span>📅 ${formatDate(x.vencimento)}</span>`:''}
         ${x.obs?`<span title="${x.obs}">📝 ${x.obs.substring(0,30)}${x.obs.length>30?'...':''}</span>`:''}
       </div>
@@ -3958,6 +3949,15 @@ function aplicarFiltroMovData() {
   if(fim) filtrados = filtrados.filter(x=>x.vencimento&&x.vencimento<=fim);
   _renderMovData(filtrados);
   _updateMovTotalizador(filtrados);
+}
+function aplicarFiltroMovCat() {
+  const cat = document.getElementById('mov-filtro-cat')?.value;
+  const sub = document.getElementById('mov-filtro-subcat')?.value;
+  let filtrados = movCache;
+  if(cat) filtrados = filtrados.filter(x=>(x.categoria||x.tipo||'')=== cat);
+  if(sub) filtrados = filtrados.filter(x=>(x.subcategoria||'')=== sub);
+  _renderMovData(filtrados);
+  _updateMovTotalizador(filtrados.length < movCache.length ? filtrados : null);
 }
 function limparFiltroMovData() {
   const ini = document.getElementById('mov-filtro-ini');
