@@ -975,7 +975,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div class="chart-title" id="chart-ocup-title">Ocupação por Turno</div>
             <canvas id="chart-ocupacao" height="100"></canvas>
           </div>
-          <div id="relat-geral-extra-mensal" style="display:none"></div>
+          <div id="relat-geral-extra-mensal" style="display:none;margin-top:1rem"></div>
         </div>
 
         <!-- SEMESTRAL -->
@@ -994,7 +994,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div class="chart-title">Distribuição de Receitas por Tipo</div>
             <canvas id="chart-pizza" height="160"></canvas>
           </div>
-          <div id="relat-geral-extra-semestral" style="display:none"></div>
+          <div id="relat-geral-extra-semestral" style="display:none;margin-top:1rem"></div>
         </div>
 
         <!-- ANUAL -->
@@ -1009,7 +1009,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div class="chart-title">Receitas x Despesas — Anual</div>
             <canvas id="chart-anual" height="120"></canvas>
           </div>
-          <div id="relat-geral-extra-anual" style="display:none"></div>
+          <div id="relat-geral-extra-anual" style="display:none;margin-top:1rem"></div>
         </div>
 
         <!-- FILTRADO -->
@@ -2954,168 +2954,133 @@ function recarregarIndicadores() {
   _atualizarIndicadores();
 }
 
-function _buildGeralExtra() {
-  // Profissionais
-  const ativos = profissionaisCache.filter(p=>p.status==='Ativo');
-  const inativos = profissionaisCache.filter(p=>p.status==='Inativo');
-  const profsHtml = `
-    <div class="card" style="margin-bottom:1rem">
+async function _buildGeralExtra(targetEl) {
+  if(!targetEl) return;
+  targetEl.style.display = 'block';
+  targetEl.innerHTML = '<div style="padding:1rem;font-size:.82rem;color:var(--text-lighter)">⏳ Carregando dados do sistema...</div>';
+  try {
+    const [profSnap, planosSnap, locSnap] = await Promise.all([
+      db.collection('profissionais').get(),
+      db.collection('planos').get(),
+      db.collection('locacoes').get()
+    ]);
+    const profs  = profSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const planos = planosSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const hoje   = new Date().toISOString().split('T')[0];
+    const locs   = locSnap.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(l=>l.data && l.data >= hoje)
+      .sort((a,b)=>(a.data||'').localeCompare(b.data||''))
+      .slice(0,15);
+    const ativos   = profs.filter(p=>!p.status||p.status==='Ativo');
+    const inativos = profs.filter(p=>p.status==='Inativo');
+
+    const profsHtml = `<div class="card" style="margin-bottom:1rem">
       <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">👤 Profissionais</div>
-      <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
+      <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
         <span class="badge badge-success">${ativos.length} ativo${ativos.length!==1?'s':''}</span>
         ${inativos.length?`<span class="badge badge-neutral">${inativos.length} inativo${inativos.length!==1?'s':''}</span>`:''}
       </div>
-      ${ativos.length ? `<div class="data-table" style="margin-top:.5rem">
-        <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr">
-          <span>Nome</span><span>Especialidade</span><span>Vínculo</span><span>Contrato até</span>
-        </div>
+      ${ativos.length?`<div class="data-table">
+        <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr"><span>Nome</span><span>Especialidade</span><span>Vínculo</span><span>Contrato até</span></div>
         ${ativos.map(p=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
           <span style="font-weight:500">${p.nome||'—'}</span>
           <span style="color:var(--text-light)">${p.especialidade||'—'}</span>
           <span style="color:var(--text-light)">${p.vinculo||'—'}</span>
           <span style="color:var(--text-light)">${p.contratoFim?formatDate(p.contratoFim):'—'}</span>
         </div>`).join('')}
-      </div>` : '<div style="font-size:.82rem;color:var(--text-lighter);padding:.5rem 0">Nenhum profissional ativo.</div>'}
+      </div>`:'<div style="font-size:.82rem;color:var(--text-lighter)">Nenhum profissional ativo.</div>'}
     </div>`;
 
-  // Turnos
-  const turnos = [
-    {nome:'Turno Manhã', el:'turno-manha-hrs', valEl:'turno-valor-manha', countEl:'turno-manha-count'},
-    {nome:'Turno Tarde', el:'turno-tarde-hrs', valEl:'turno-valor-tarde', countEl:'turno-tarde-count'},
-    {nome:'Turno Noite', el:'turno-noite-hrs', valEl:'turno-valor-noite', countEl:'turno-noite-count'},
-  ];
-  const turnosHtml = `
-    <div class="card" style="margin-bottom:1rem">
-      <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">🕐 Turnos Ativos</div>
-      <div class="data-table">
-        <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr">
-          <span>Turno</span><span>Horário</span><span>Valor/mês</span><span>Profissionais</span>
-        </div>
-        ${turnos.map(t=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
-          <span style="font-weight:500">${t.nome}</span>
-          <span>${document.getElementById(t.el)?.textContent||'—'}</span>
-          <span>${document.getElementById(t.valEl)?.textContent||'—'}</span>
-          <span><span class="badge badge-neutral">${document.getElementById(t.countEl)?.textContent||'0'}</span></span>
+    const pacotesHtml = `<div class="card" style="margin-bottom:1rem">
+      <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">📦 Pacotes Mensais</div>
+      ${planos.length?`<div class="data-table">
+        <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr"><span>Nome</span><span>Horas/mês</span><span>Valor</span></div>
+        ${planos.map(p=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr">
+          <span style="font-weight:500">${p.nome||'—'}</span>
+          <span>${p.horas||'—'}h</span>
+          <span style="font-weight:600;color:var(--success)">${p.valor?formatMoney(parseFloat(p.valor)):'—'}</span>
         </div>`).join('')}
-      </div>
+      </div>`:'<div style="font-size:.82rem;color:var(--text-lighter)">Nenhum pacote cadastrado.</div>'}
     </div>`;
 
-  // Pacotes — buscar do Firebase
-  let pacotesHtml = `<div class="card" style="margin-bottom:1rem" id="relat-geral-pacotes-card">
-    <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">📦 Pacotes Mensais</div>
-    <div id="relat-geral-pacotes-inner"><span style="font-size:.82rem;color:var(--text-lighter)">Carregando...</span></div>
-  </div>`;
-
-  // Locações recentes (agenda)
-  const hoje = new Date().toISOString().split('T')[0];
-  const locsAtivas = locacoesCache.filter(l=>!l.data||l.data>=hoje).slice(0,10);
-  const locsHtml = locsAtivas.length ? `
-    <div class="card" style="margin-bottom:1rem">
-      <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">📅 Locações Ativas (próximas)</div>
+    const agendaHtml = locs.length?`<div class="card" style="margin-bottom:1rem">
+      <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">📅 Agenda — Próximas Locações</div>
       <div class="data-table">
-        <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr">
-          <span>Profissional</span><span>Sala</span><span>Turno</span><span>Data</span>
-        </div>
-        ${locsAtivas.map(l=>{
-          const prof=profissionaisCache.find(p=>p.id===l.profId)?.nome||l.profId||'—';
+        <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr"><span>Profissional</span><span>Sala</span><span>Turno</span><span>Data</span></div>
+        ${locs.map(l=>{
+          const nome=profs.find(p=>p.id===l.profId)?.nome||l.profId||'—';
           return `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
-            <span style="font-weight:500">${prof}</span>
+            <span style="font-weight:500">${nome}</span>
             <span>${l.sala||'—'}</span>
             <span style="color:var(--text-light)">${l.turno||'—'}</span>
             <span>${l.data?formatDate(l.data):'—'}</span>
           </div>`;
         }).join('')}
       </div>
-    </div>` : '';
+    </div>`:'';
 
-  // Carregar pacotes do Firebase de forma assíncrona
-  db.collection('planos').get().then(snap=>{
-    const planos=snap.docs.map(d=>({id:d.id,...d.data()}));
-    const inner=document.getElementById('relat-geral-pacotes-inner');
-    if(!inner) return;
-    if(!planos.length){ inner.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter)">Nenhum pacote cadastrado.</div>'; return; }
-    inner.innerHTML=`<div class="data-table">
-      <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr"><span>Nome</span><span>Horas/mês</span><span>Valor</span></div>
-      ${planos.map(p=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr">
-        <span style="font-weight:500">${p.nome||'—'}</span>
-        <span>${p.horas||'—'}h</span>
-        <span style="font-weight:600;color:var(--success)">${p.valor?formatMoney(p.valor):'—'}</span>
-      </div>`).join('')}
-    </div>`;
-  }).catch(()=>{});
-
-  return profsHtml + turnosHtml + pacotesHtml + locsHtml;
+    targetEl.innerHTML = profsHtml + pacotesHtml + agendaHtml;
+  } catch(e) {
+    targetEl.innerHTML = '<div style="padding:1rem;font-size:.82rem;color:var(--danger)">Erro ao carregar dados.</div>';
+    console.error(e);
+  }
 }
 
-function setRelatTipo(tipo) {
-  const fin = document.getElementById('relat-tipo-fin');
-  const ger = document.getElementById('relat-tipo-ger');
-  if(fin && ger) {
-    fin.style.background = tipo==='financeiro' ? 'var(--gold)' : 'transparent';
-    fin.style.color = tipo==='financeiro' ? '#fff' : 'var(--text-light)';
-    fin.style.fontWeight = tipo==='financeiro' ? '600' : 'normal';
-    ger.style.background = tipo==='geral' ? 'var(--gold)' : 'transparent';
-    ger.style.color = tipo==='geral' ? '#fff' : 'var(--text-light)';
-    ger.style.fontWeight = tipo==='geral' ? '600' : 'normal';
+function setRelatTipo(tipo, el) {
+  const finBtn = document.getElementById('relat-tipo-fin');
+  const gerBtn = document.getElementById('relat-tipo-ger');
+  if(finBtn && gerBtn) {
+    finBtn.style.background  = tipo==='financeiro' ? 'var(--gold)' : 'transparent';
+    finBtn.style.color       = tipo==='financeiro' ? '#fff' : 'var(--text-light)';
+    finBtn.style.fontWeight  = tipo==='financeiro' ? '600' : 'normal';
+    gerBtn.style.background  = tipo==='geral' ? 'var(--gold)' : 'transparent';
+    gerBtn.style.color       = tipo==='geral' ? '#fff' : 'var(--text-light)';
+    gerBtn.style.fontWeight  = tipo==='geral' ? '600' : 'normal';
   }
-
   const isFin = tipo === 'financeiro';
 
-  // Ocupação e profissionais — visíveis em ambos os modos no mensal
-  // No Financeiro: ocultar gráfico de ocupação, card ocupação, inadimplência, profs ativos
-  const ocupWrap = document.getElementById('chart-ocupacao')?.closest('.chart-wrap');
-  if(ocupWrap) ocupWrap.style.display = isFin ? 'none' : '';
-  const ocupCard = document.getElementById('ind-ocup')?.closest('.ind-card');
-  if(ocupCard) ocupCard.style.display = isFin ? 'none' : '';
-  const inadimpCard = document.getElementById('ind-inadimp')?.closest('.ind-card');
-  if(inadimpCard) inadimpCard.style.display = isFin ? 'none' : '';
-  const profsCard = document.getElementById('ind-profs-r')?.closest('.ind-card');
-  if(profsCard) profsCard.style.display = isFin ? 'none' : '';
-  const profsAnCard = document.getElementById('ind-an-profs')?.closest('.ind-card');
-  if(profsAnCard) profsAnCard.style.display = isFin ? 'none' : '';
+  // Elementos que só aparecem no Geral
+  ['chart-ocupacao','ind-ocup','ind-inadimp','ind-profs-r','ind-an-profs'].forEach(id=>{
+    const card = document.getElementById(id)?.closest('.chart-wrap,.ind-card');
+    if(card) card.style.display = isFin ? 'none' : '';
+  });
   const filtradoSalas = document.getElementById('filtrado-salas-section');
   if(filtradoSalas) filtradoSalas.style.display = isFin ? 'none' : '';
 
-  // Seções extras do Geral
-  const extraIds = ['relat-geral-extra-mensal','relat-geral-extra-semestral','relat-geral-extra-anual'];
-  extraIds.forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el) return;
+  // Seções extras do Geral — carregar apenas a aba ativa
+  ['mensal','semestral','anual'].forEach(tab=>{
+    const extraEl = document.getElementById('relat-geral-extra-'+tab);
+    if(!extraEl) return;
     if(isFin) {
-      el.style.display='none';
+      extraEl.style.display = 'none';
+      extraEl.innerHTML = '';
     } else {
-      el.style.display='block';
-      if(!el.dataset.loaded) {
-        el.innerHTML = _buildGeralExtra();
-        el.dataset.loaded = '1';
+      const tabContent = document.getElementById('relat-'+tab);
+      if(tabContent && tabContent.classList.contains('active')) {
+        _buildGeralExtra(extraEl);
       }
     }
   });
 
-  // Legenda
   const modeLabel = document.getElementById('relat-modo-label');
   if(modeLabel) {
     modeLabel.textContent = isFin
       ? '💰 Financeiro: exibe exclusivamente entradas, saídas, categorias e subcategorias.'
-      : '📊 Geral: consolida todas as informações — profissionais, turnos, pacotes, agenda e dados financeiros.';
+      : '📊 Geral: consolida todas as informações — profissionais, pacotes, agenda e dados financeiros.';
     modeLabel.style.display = 'block';
   }
 }
 
-function showRelatTab(t,el) {
+function showRelatTab(t, el) {
   document.querySelectorAll('.relat-tab').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.relat-content').forEach(x=>x.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('relat-'+t).classList.add('active');
-  // Se modo Geral ativo, popular o extra da aba recém-aberta
-  const isGeral = document.getElementById('relat-tipo-ger')?.style.fontWeight === '600';
-  if(isGeral && t!=='filtrado') {
+  // Se modo Geral ativo, carregar o extra desta aba
+  const isGeral = document.getElementById('relat-tipo-ger')?.style.background === 'var(--gold)';
+  if(isGeral && t !== 'filtrado') {
     const extraEl = document.getElementById('relat-geral-extra-'+t);
-    if(extraEl && !extraEl.dataset.loaded) {
-      extraEl.style.display='block';
-      extraEl.innerHTML = _buildGeralExtra();
-      extraEl.dataset.loaded = '1';
-    }
+    if(extraEl) _buildGeralExtra(extraEl);
   }
 }
 
