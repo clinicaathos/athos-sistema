@@ -378,6 +378,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .color-dot.selected{border-color:var(--text);transform:scale(1.15);}
 
 /* ── RESPONSIVE ── */
+@media(min-width:769px){#filtrado-charts-wrap{grid-template-columns:1fr 1fr !important;}}
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%);}
   .sidebar.mobile-open{transform:translateX(0);}
@@ -1062,7 +1063,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
           </div>
           <div id="relat-filtrado-resultado" style="display:none">
             <div class="indicadores-grid" id="filtrado-indicadores"></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem" id="filtrado-charts-wrap">
+            <div style="display:grid;grid-template-columns:1fr;gap:1rem;margin-bottom:1rem" id="filtrado-charts-wrap">
               <div class="chart-wrap"><div class="chart-title">Receitas x Despesas</div><canvas id="chart-filtrado-bar" height="140"></canvas></div>
               <div class="chart-wrap"><div class="chart-title">Distribuição por Categoria</div><canvas id="chart-filtrado-pizza" height="140"></canvas></div>
             </div>
@@ -2957,7 +2958,7 @@ function recarregarIndicadores() {
 async function _buildGeralExtra(targetEl) {
   if(!targetEl) return;
   targetEl.style.display = 'block';
-  targetEl.innerHTML = '<div style="padding:1rem;font-size:.82rem;color:var(--text-lighter)">⏳ Carregando dados do sistema...</div>';
+  targetEl.innerHTML = '<div style="padding:1rem;font-size:.82rem;color:var(--text-lighter)">⏳ Carregando...</div>';
   try {
     const [profSnap, planosSnap, locSnap] = await Promise.all([
       db.collection('profissionais').get(),
@@ -3030,24 +3031,24 @@ function setRelatTipo(tipo, el) {
   const finBtn = document.getElementById('relat-tipo-fin');
   const gerBtn = document.getElementById('relat-tipo-ger');
   if(finBtn && gerBtn) {
-    finBtn.style.background  = tipo==='financeiro' ? 'var(--gold)' : 'transparent';
-    finBtn.style.color       = tipo==='financeiro' ? '#fff' : 'var(--text-light)';
-    finBtn.style.fontWeight  = tipo==='financeiro' ? '600' : 'normal';
-    gerBtn.style.background  = tipo==='geral' ? 'var(--gold)' : 'transparent';
-    gerBtn.style.color       = tipo==='geral' ? '#fff' : 'var(--text-light)';
-    gerBtn.style.fontWeight  = tipo==='geral' ? '600' : 'normal';
+    finBtn.style.background = tipo==='financeiro' ? 'var(--gold)' : 'transparent';
+    finBtn.style.color      = tipo==='financeiro' ? '#fff' : 'var(--text-light)';
+    finBtn.style.fontWeight = tipo==='financeiro' ? '600' : 'normal';
+    gerBtn.style.background = tipo==='geral' ? 'var(--gold)' : 'transparent';
+    gerBtn.style.color      = tipo==='geral' ? '#fff' : 'var(--text-light)';
+    gerBtn.style.fontWeight = tipo==='geral' ? '600' : 'normal';
   }
   const isFin = tipo === 'financeiro';
 
-  // Elementos que só aparecem no Geral
+  // Elementos exclusivos do Geral
   ['chart-ocupacao','ind-ocup','ind-inadimp','ind-profs-r','ind-an-profs'].forEach(id=>{
-    const card = document.getElementById(id)?.closest('.chart-wrap,.ind-card');
-    if(card) card.style.display = isFin ? 'none' : '';
+    const wrap = document.getElementById(id)?.closest('.chart-wrap,.ind-card');
+    if(wrap) wrap.style.display = isFin ? 'none' : '';
   });
   const filtradoSalas = document.getElementById('filtrado-salas-section');
   if(filtradoSalas) filtradoSalas.style.display = isFin ? 'none' : '';
 
-  // Seções extras do Geral — carregar apenas a aba ativa
+  // Seções extras — carregar somente a aba visível agora
   ['mensal','semestral','anual'].forEach(tab=>{
     const extraEl = document.getElementById('relat-geral-extra-'+tab);
     if(!extraEl) return;
@@ -3055,8 +3056,7 @@ function setRelatTipo(tipo, el) {
       extraEl.style.display = 'none';
       extraEl.innerHTML = '';
     } else {
-      const tabContent = document.getElementById('relat-'+tab);
-      if(tabContent && tabContent.classList.contains('active')) {
+      if(document.getElementById('relat-'+tab)?.classList.contains('active')) {
         _buildGeralExtra(extraEl);
       }
     }
@@ -3076,9 +3076,8 @@ function showRelatTab(t, el) {
   document.querySelectorAll('.relat-content').forEach(x=>x.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('relat-'+t).classList.add('active');
-  // Se modo Geral ativo, carregar o extra desta aba
-  const isGeral = document.getElementById('relat-tipo-ger')?.style.background === 'var(--gold)';
-  if(isGeral && t !== 'filtrado') {
+  // Se Geral ativo, carregar extra desta aba
+  if(document.getElementById('relat-tipo-ger')?.style.background === 'var(--gold)' && t !== 'filtrado') {
     const extraEl = document.getElementById('relat-geral-extra-'+t);
     if(extraEl) _buildGeralExtra(extraEl);
   }
