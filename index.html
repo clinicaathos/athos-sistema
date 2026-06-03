@@ -943,6 +943,16 @@ body.dark .tag{background:#111827;border-color:#374151;}
           </div>
         </div>
         <div id="relat-modo-label" style="font-size:.72rem;color:var(--text-lighter);padding:.25rem 1.25rem .5rem;display:block">💰 Financeiro: exibe somente receitas, despesas e saldo.</div>
+
+        <!-- Filtro de data global — alimenta todas as abas -->
+        <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;padding:.5rem 1.25rem .75rem;background:var(--bg);border-bottom:1px solid var(--border)">
+          <span style="font-size:.75rem;font-weight:600;color:var(--text-light)">📅 Período:</span>
+          <input type="date" id="relat-data-ini" class="form-input" style="padding:4px 8px;font-size:.75rem;width:140px" onchange="recarregarIndicadores()">
+          <span style="font-size:.75rem;color:var(--text-lighter)">até</span>
+          <input type="date" id="relat-data-fim" class="form-input" style="padding:4px 8px;font-size:.75rem;width:140px" onchange="recarregarIndicadores()">
+          <button class="btn btn-secondary" style="font-size:.72rem;padding:4px 10px" onclick="document.getElementById('relat-data-ini').value='';document.getElementById('relat-data-fim').value='';recarregarIndicadores()">✕ Limpar</button>
+        </div>
+
         <div class="relat-tabs">
           <div class="relat-tab active" onclick="showRelatTab('mensal',this)">Mensal</div>
           <div class="relat-tab" onclick="showRelatTab('semestral',this)">Semestral</div>
@@ -977,9 +987,8 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <canvas id="chart-ocupacao" height="100"></canvas>
           </div>
           <div id="relat-geral-extra-mensal" style="display:none;margin-top:1rem"></div>
+          <div id="relat-lanc-mensal" style="margin-top:1rem"></div>
         </div>
-
-        <!-- SEMESTRAL -->
         <div class="relat-content" id="relat-semestral">
           <div class="indicadores-grid">
             <div class="ind-card"><div class="ind-label">Receita Total (6m)</div><div class="ind-value" style="color:var(--success)" id="ind-sem-rec">—</div><div class="ind-delta pos" id="ind-sem-rec-d"></div></div>
@@ -996,6 +1005,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <canvas id="chart-pizza" height="160"></canvas>
           </div>
           <div id="relat-geral-extra-semestral" style="display:none;margin-top:1rem"></div>
+          <div id="relat-lanc-semestral" style="margin-top:1rem"></div>
         </div>
 
         <!-- ANUAL -->
@@ -1011,6 +1021,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <canvas id="chart-anual" height="120"></canvas>
           </div>
           <div id="relat-geral-extra-anual" style="display:none;margin-top:1rem"></div>
+          <div id="relat-lanc-anual" style="margin-top:1rem"></div>
         </div>
 
         <!-- FILTRADO -->
@@ -1072,7 +1083,6 @@ body.dark .tag{background:#111827;border-color:#374151;}
               <div id="filtrado-categorias"></div>
             </div>
             <div class="data-table" id="filtrado-tabela"></div>
-            <div id="filtrado-geral-extra" style="display:none;margin-top:1rem"></div>
           </div>
         </div>
       </div>
@@ -2775,9 +2785,9 @@ async function initRelatorios() {
       db.collection('locacoes').get()
     ]);
 
-    const receitas = recSnap.docs.map(d=>d.data());
-    const despesas = despSnap.docs.map(d=>d.data());
-    const locacoes = locSnap.docs.map(d=>d.data());
+    const receitas = recSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const despesas = despSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const locacoes = locSnap.docs.map(d=>({id:d.id,...d.data()}));
 
     // Agrupar por mês/ano
     const recByMes = Array(12).fill(0);
@@ -2798,6 +2808,7 @@ async function initRelatorios() {
 
     // Atualizar indicadores
     _atualizarIndicadores();
+    _renderLancamentosRelat();
 
     setTimeout(()=>{
       try {
@@ -2954,6 +2965,133 @@ function _atualizarIndicadores() {
 
 function recarregarIndicadores() {
   _atualizarIndicadores();
+  _renderLancamentosRelat();
+}
+
+function _getPeriodoRelat() {
+  const ini = document.getElementById('relat-data-ini')?.value || '';
+  const fim = document.getElementById('relat-data-fim')?.value || '';
+  return { ini, fim };
+}
+
+function _renderLancamentosRelat() {
+  if(!_relDados) return;
+  const { receitas, despesas } = _relDados;
+  const { ini, fim } = _getPeriodoRelat();
+  const mesSel = document.getElementById('relat-mes-sel');
+  const mesRelat = mesSel ? parseInt(mesSel.value) : new Date().getMonth();
+  const anoAtual = _relDados.anoAtual;
+
+  // Determinar qual aba está ativa
+  const abaAtiva = document.querySelector('.relat-content.active')?.id?.replace('relat-','') || 'mensal';
+  const lancContainerId = 'relat-lanc-' + abaAtiva;
+  const lancEl = document.getElementById(lancContainerId);
+  if(!lancEl) return;
+
+  // Filtrar lançamentos conforme o período global ou o período da aba
+  let todos = [
+    ...receitas.map(r=>({...r, id:r.id||'', _tipo:'Receita'})),
+    ...despesas.map(d=>({...d, id:d.id||'', _tipo:'Despesa'}))
+  ];
+
+  if(ini || fim) {
+    // Filtro global de data tem precedência
+    if(ini) todos = todos.filter(x => x.vencimento && x.vencimento >= ini);
+    if(fim) todos = todos.filter(x => x.vencimento && x.vencimento <= fim);
+  } else if(abaAtiva === 'mensal') {
+    // Sem filtro global: usar mês/ano selecionado
+    todos = todos.filter(x => {
+      if(!x.vencimento) return false;
+      const m = parseInt(x.vencimento.split('-')[1]) - 1;
+      const a = parseInt(x.vencimento.split('-')[0]);
+      return m === mesRelat && a === anoAtual;
+    });
+  } else if(abaAtiva === 'semestral') {
+    const meses6 = [];
+    for(let i=5;i>=0;i--) meses6.push((mesRelat-i+12)%12);
+    todos = todos.filter(x => {
+      if(!x.vencimento) return false;
+      const m = parseInt(x.vencimento.split('-')[1]) - 1;
+      const a = parseInt(x.vencimento.split('-')[0]);
+      return a === anoAtual && meses6.includes(m);
+    });
+  }
+  // anual: sem filtro adicional — mostra o ano todo
+
+  if(!todos.length) {
+    lancEl.innerHTML = '<div class="card" style="font-size:.82rem;color:var(--text-lighter);padding:.75rem">Nenhum lançamento no período.</div>';
+    return;
+  }
+
+  // Agrupar por categoria → subcategoria
+  const ORDEM_CATS = ['Fixa','Fixo','Variável','Extra','Turno Fixo','Pacote de Horas','Hora Avulsa'];
+  const grupoCat = {};
+  todos.forEach(x => {
+    const cat = x.categoria || x.tipo || 'Sem categoria';
+    const sub = x.subcategoria || '—';
+    if(!grupoCat[cat]) grupoCat[cat] = {};
+    if(!grupoCat[cat][sub]) grupoCat[cat][sub] = [];
+    grupoCat[cat][sub].push(x);
+  });
+  const catsOrdenadas = [
+    ...ORDEM_CATS.filter(c=>grupoCat[c]),
+    ...Object.keys(grupoCat).filter(c=>!ORDEM_CATS.includes(c)).sort()
+  ];
+
+  const totalRec  = todos.filter(x=>x._tipo==='Receita').reduce((s,x)=>s+(parseMoney(x.valor)||0),0);
+  const totalDesp = todos.filter(x=>x._tipo==='Despesa').reduce((s,x)=>s+(parseMoney(x.valor)||0),0);
+  const saldo = totalRec - totalDesp;
+
+  const head = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+    <span>Descrição</span><span>Tipo</span><span>Subcategoria</span><span>Data</span><span>Valor</span>
+  </div>`;
+
+  let rows = '';
+  catsOrdenadas.forEach(cat => {
+    const subs = grupoCat[cat];
+    const totalCat = Object.values(subs).flat().reduce((s,x)=>s+(parseMoney(x.valor)||0),0);
+    rows += `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;background:var(--bg);font-weight:700;border-top:2px solid var(--border);color:var(--gold)">
+      <span>📁 ${cat}</span><span></span><span></span><span></span>
+      <span style="color:var(--text-light)">${formatMoney(totalCat)}</span>
+    </div>`;
+    const subsOrdenadas = Object.keys(subs).sort((a,b)=>a==='—'?1:b==='—'?-1:a.localeCompare(b,'pt'));
+    subsOrdenadas.forEach(sub => {
+      if(sub !== '—') {
+        rows += `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;background:#fafaf9;padding-left:1rem">
+          <span style="font-size:.78rem;color:var(--text-light);font-weight:600">📂 ${sub}</span><span></span><span></span><span></span><span></span>
+        </div>`;
+      }
+      subs[sub].sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||'')).forEach(x => {
+        const cor = x._tipo==='Receita'?'var(--success)':'var(--danger)';
+        const badge = `<span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.6rem">${x._tipo}</span>`;
+        const obs = x.obs ? `<br><span style="font-size:.68rem;color:var(--text-lighter)">📝 ${x.obs}</span>` : '';
+        rows += `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;padding-left:${sub!=='—'?'2rem':'1rem'}">
+          <span style="font-weight:500">${x.descricao||x.profissional||'—'} ${badge}${obs}</span>
+          <span>${x._tipo}</span>
+          <span style="color:var(--text-lighter);font-size:.78rem">${sub==='—'?'':sub}</span>
+          <span>${x.vencimento?formatDate(x.vencimento):'—'}</span>
+          <span style="font-weight:600;color:${cor}">${formatMoney(x.valor)}</span>
+        </div>`;
+      });
+    });
+  });
+
+  // Linha de totais
+  rows += `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;background:#f0fdf4;border-top:2px solid var(--success);font-weight:700">
+    <span>TOTAL</span>
+    <span style="color:var(--success)">${formatMoney(totalRec)}</span>
+    <span style="color:var(--danger)">${formatMoney(totalDesp)}</span>
+    <span></span>
+    <span style="color:${saldo>=0?'var(--success)':'var(--danger)'}">${formatMoney(saldo)}</span>
+  </div>`;
+
+  lancEl.innerHTML = `<div class="card" style="margin-bottom:1rem">
+    <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">
+      💳 Movimentações${ini||fim?' ('+[ini?formatDate(ini):'',fim?formatDate(fim):''].filter(Boolean).join(' a ')+')':''}
+      <span class="badge badge-neutral" style="margin-left:.5rem">${todos.length} lançamentos</span>
+    </div>
+    <div class="data-table">${head}${rows}</div>
+  </div>`;
 }
 
 async function _buildGeralExtra(targetEl) {
@@ -3077,11 +3215,20 @@ function showRelatTab(t, el) {
   document.querySelectorAll('.relat-content').forEach(x=>x.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('relat-'+t).classList.add('active');
-  // Se Geral ativo, carregar extra desta aba
-  if(document.getElementById('relat-tipo-ger')?.style.background === 'var(--gold)' && t !== 'filtrado') {
+
+  const isGeral = document.getElementById('relat-tipo-ger')?.style.background === 'var(--gold)';
+
+  if(isGeral && t !== 'filtrado') {
     const extraEl = document.getElementById('relat-geral-extra-'+t);
     if(extraEl) _buildGeralExtra(extraEl);
   }
+  if(!isGeral && t !== 'filtrado') {
+    const extraEl = document.getElementById('relat-geral-extra-'+t);
+    if(extraEl) { extraEl.style.display = 'none'; extraEl.innerHTML = ''; }
+  }
+
+  // Renderizar lançamentos da aba recém-aberta (filtrado gera sob demanda)
+  if(t !== 'filtrado') setTimeout(_renderLancamentosRelat, 50);
 }
 
 function exportarRelatorio() {
@@ -3782,73 +3929,6 @@ async function gerarRelatFiltrado() {
 
     document.getElementById('relat-filtrado-resultado').style.display = 'block';
     showToast(`${todos.length} registros encontrados.`,'success');
-
-    // Se modo Geral ativo, mostrar também profissionais e locações do período
-    const isGeral = document.getElementById('relat-tipo-ger')?.style.background === 'var(--gold)';
-    const extraEl = document.getElementById('filtrado-geral-extra');
-    if(!extraEl) { /* noop */ }
-    else if(!isGeral) {
-      extraEl.style.display = 'none';
-      extraEl.innerHTML = '';
-    } else {
-      extraEl.style.display = 'block';
-      extraEl.innerHTML = '<div style="padding:1rem;font-size:.82rem;color:var(--text-lighter)">⏳ Carregando dados complementares...</div>';
-      try {
-        const [profSnap, locSnap] = await Promise.all([
-          db.collection('profissionais').get(),
-          db.collection('locacoes').get()
-        ]);
-        const profs = profSnap.docs.map(d=>({id:d.id,...d.data()}));
-        const ativos = profs.filter(p=>!p.status||p.status==='Ativo');
-        const inativos = profs.filter(p=>p.status==='Inativo');
-
-        // Locações no período filtrado
-        let locs = locSnap.docs.map(d=>({id:d.id,...d.data()}));
-        if(dataInicio) locs = locs.filter(l=>l.data && l.data >= dataInicio);
-        if(dataFim)    locs = locs.filter(l=>l.data && l.data <= dataFim);
-        locs = locs.sort((a,b)=>(a.data||'').localeCompare(b.data||''));
-
-        const profsHtml = `<div class="card" style="margin-bottom:1rem">
-          <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">👤 Profissionais</div>
-          <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
-            <span class="badge badge-success">${ativos.length} ativo${ativos.length!==1?'s':''}</span>
-            ${inativos.length?`<span class="badge badge-neutral">${inativos.length} inativo${inativos.length!==1?'s':''}</span>`:''}
-          </div>
-          ${ativos.length?`<div class="data-table">
-            <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr"><span>Nome</span><span>Especialidade</span><span>Vínculo</span><span>Contrato até</span></div>
-            ${ativos.map(p=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
-              <span style="font-weight:500">${p.nome||'—'}</span>
-              <span style="color:var(--text-light)">${p.especialidade||'—'}</span>
-              <span style="color:var(--text-light)">${p.vinculo||'—'}</span>
-              <span style="color:var(--text-light)">${p.contratoFim?formatDate(p.contratoFim):'—'}</span>
-            </div>`).join('')}
-          </div>`:'<div style="font-size:.82rem;color:var(--text-lighter)">Nenhum profissional ativo.</div>'}
-        </div>`;
-
-        const agendaHtml = locs.length?`<div class="card" style="margin-bottom:1rem">
-          <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">📅 Locações no período${dataInicio||dataFim?' ('+[dataInicio?formatDate(dataInicio):'',dataFim?formatDate(dataFim):''].filter(Boolean).join(' a ')+')':''}</div>
-          <div style="margin-bottom:.5rem"><span class="badge badge-neutral">${locs.length} locação${locs.length!==1?'ões':''}</span></div>
-          <div class="data-table">
-            <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr"><span>Profissional</span><span>Sala</span><span>Turno</span><span>Data</span></div>
-            ${locs.map(l=>{
-              const nome=profs.find(p=>p.id===l.profId)?.nome||l.profId||'—';
-              return `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
-                <span style="font-weight:500">${nome}</span>
-                <span>${l.sala||'—'}</span>
-                <span style="color:var(--text-light)">${l.turno||'—'}</span>
-                <span>${l.data?formatDate(l.data):'—'}</span>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>`:'<div class="card" style="margin-bottom:1rem"><div style="font-size:.82rem;color:var(--text-lighter)">📅 Nenhuma locação encontrada no período.</div></div>';
-
-        extraEl.innerHTML = profsHtml + agendaHtml;
-      } catch(e) {
-        extraEl.innerHTML = '<div style="padding:1rem;font-size:.82rem;color:var(--danger)">Erro ao carregar dados complementares.</div>';
-        console.error(e);
-      }
-    }
-
   } catch(e) { showToast('Erro ao gerar relatório.','error'); console.error(e); }
 }
 
