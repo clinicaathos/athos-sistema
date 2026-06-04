@@ -943,8 +943,6 @@ body.dark .tag{background:#111827;border-color:#374151;}
           </div>
         </div>
         <div id="relat-modo-label" style="font-size:.72rem;color:var(--text-lighter);padding:.25rem 1.25rem .5rem;display:block">💰 Financeiro: exibe somente receitas, despesas e saldo.</div>
-
-        <!-- Filtro de data global — alimenta todas as abas -->
         <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;padding:.5rem 1.25rem .75rem;background:var(--bg);border-bottom:1px solid var(--border)">
           <span style="font-size:.75rem;font-weight:600;color:var(--text-light)">📅 Período:</span>
           <input type="date" id="relat-data-ini" class="form-input" style="padding:4px 8px;font-size:.75rem;width:140px" onchange="recarregarIndicadores()">
@@ -952,7 +950,6 @@ body.dark .tag{background:#111827;border-color:#374151;}
           <input type="date" id="relat-data-fim" class="form-input" style="padding:4px 8px;font-size:.75rem;width:140px" onchange="recarregarIndicadores()">
           <button class="btn btn-secondary" style="font-size:.72rem;padding:4px 10px" onclick="document.getElementById('relat-data-ini').value='';document.getElementById('relat-data-fim').value='';recarregarIndicadores()">✕ Limpar</button>
         </div>
-
         <div class="relat-tabs">
           <div class="relat-tab active" onclick="showRelatTab('mensal',this)">Mensal</div>
           <div class="relat-tab" onclick="showRelatTab('semestral',this)">Semestral</div>
@@ -989,6 +986,8 @@ body.dark .tag{background:#111827;border-color:#374151;}
           <div id="relat-geral-extra-mensal" style="display:none;margin-top:1rem"></div>
           <div id="relat-lanc-mensal" style="margin-top:1rem"></div>
         </div>
+
+        <!-- SEMESTRAL -->
         <div class="relat-content" id="relat-semestral">
           <div class="indicadores-grid">
             <div class="ind-card"><div class="ind-label">Receita Total (6m)</div><div class="ind-value" style="color:var(--success)" id="ind-sem-rec">—</div><div class="ind-delta pos" id="ind-sem-rec-d"></div></div>
@@ -1083,11 +1082,10 @@ body.dark .tag{background:#111827;border-color:#374151;}
               <div id="filtrado-categorias"></div>
             </div>
             <div class="data-table" id="filtrado-tabela"></div>
+            <div id="filtrado-geral-extra" style="display:none;margin-top:1rem"></div>
           </div>
         </div>
       </div>
-
-      <!-- ══ CONFIGURAÇÕES ══ -->
       <div class="page" id="page-configuracoes">
         <div class="sec-header">
           <span class="sec-title">Configurações</span>
@@ -2043,15 +2041,15 @@ async function loadFinanceiro() {
     document.getElementById('fin-saldo').style.color = saldo>=0?'var(--success)':'var(--danger)';
     updateStickySummary(totalRecPago, totalDespPago);
 
-    // Tabelas: pendentes/futuros
+    // Tabelas: somente pendentes (status !== 'Pago')
     const recSnap=await db.collection('receitas').get();
     const todasReceitas=recSnap.docs.map(d=>({id:d.id,...d.data()}));
-    const receitas=todasReceitas.filter(r=>r.status!=='Pago' || (r.vencimento && r.vencimento >= hoje2));
+    const receitas=todasReceitas.filter(r=>r.status!=='Pago');
     renderReceitas(receitas);
 
     const despSnap=await db.collection('despesas').get();
     const todasDespesas=despSnap.docs.map(d=>({id:d.id,...d.data()}));
-    const despesas=todasDespesas.filter(d=>d.status!=='Pago' || (d.vencimento && d.vencimento >= hoje2));
+    const despesas=todasDespesas.filter(d=>d.status!=='Pago');
     renderDespesas(despesas);
     _updateDespTotalizador(despesas);
 
@@ -2808,7 +2806,7 @@ async function initRelatorios() {
 
     // Atualizar indicadores
     _atualizarIndicadores();
-    _renderLancamentosRelat();
+    setTimeout(_renderLancamentosRelat, 100);
 
     setTimeout(()=>{
       try {
@@ -2969,9 +2967,10 @@ function recarregarIndicadores() {
 }
 
 function _getPeriodoRelat() {
-  const ini = document.getElementById('relat-data-ini')?.value || '';
-  const fim = document.getElementById('relat-data-fim')?.value || '';
-  return { ini, fim };
+  return {
+    ini: document.getElementById('relat-data-ini')?.value || '',
+    fim: document.getElementById('relat-data-fim')?.value || ''
+  };
 }
 
 function _renderLancamentosRelat() {
@@ -2981,25 +2980,21 @@ function _renderLancamentosRelat() {
   const mesSel = document.getElementById('relat-mes-sel');
   const mesRelat = mesSel ? parseInt(mesSel.value) : new Date().getMonth();
   const anoAtual = _relDados.anoAtual;
-
-  // Determinar qual aba está ativa
   const abaAtiva = document.querySelector('.relat-content.active')?.id?.replace('relat-','') || 'mensal';
-  const lancContainerId = 'relat-lanc-' + abaAtiva;
-  const lancEl = document.getElementById(lancContainerId);
+  const lancEl = document.getElementById('relat-lanc-' + abaAtiva);
   if(!lancEl) return;
 
-  // Filtrar lançamentos conforme o período global ou o período da aba
+  // Somente lançamentos com status 'Pago'
   let todos = [
-    ...receitas.map(r=>({...r, id:r.id||'', _tipo:'Receita'})),
-    ...despesas.map(d=>({...d, id:d.id||'', _tipo:'Despesa'}))
+    ...receitas.filter(r=>r.status==='Pago').map(r=>({...r,_tipo:'Receita'})),
+    ...despesas.filter(d=>d.status==='Pago').map(d=>({...d,_tipo:'Despesa'}))
   ];
 
+  // Aplicar filtro de período
   if(ini || fim) {
-    // Filtro global de data tem precedência
     if(ini) todos = todos.filter(x => x.vencimento && x.vencimento >= ini);
     if(fim) todos = todos.filter(x => x.vencimento && x.vencimento <= fim);
   } else if(abaAtiva === 'mensal') {
-    // Sem filtro global: usar mês/ano selecionado
     todos = todos.filter(x => {
       if(!x.vencimento) return false;
       const m = parseInt(x.vencimento.split('-')[1]) - 1;
@@ -3016,14 +3011,13 @@ function _renderLancamentosRelat() {
       return a === anoAtual && meses6.includes(m);
     });
   }
-  // anual: sem filtro adicional — mostra o ano todo
+  // anual: ano todo, sem filtro adicional
 
   if(!todos.length) {
-    lancEl.innerHTML = '<div class="card" style="font-size:.82rem;color:var(--text-lighter);padding:.75rem">Nenhum lançamento no período.</div>';
+    lancEl.innerHTML = '<div class="card" style="font-size:.82rem;color:var(--text-lighter);padding:.75rem">Nenhum lançamento pago no período.</div>';
     return;
   }
 
-  // Agrupar por categoria → subcategoria
   const ORDEM_CATS = ['Fixa','Fixo','Variável','Extra','Turno Fixo','Pacote de Horas','Hora Avulsa'];
   const grupoCat = {};
   todos.forEach(x => {
@@ -3076,7 +3070,6 @@ function _renderLancamentosRelat() {
     });
   });
 
-  // Linha de totais
   rows += `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;background:#f0fdf4;border-top:2px solid var(--success);font-weight:700">
     <span>TOTAL</span>
     <span style="color:var(--success)">${formatMoney(totalRec)}</span>
@@ -3087,7 +3080,7 @@ function _renderLancamentosRelat() {
 
   lancEl.innerHTML = `<div class="card" style="margin-bottom:1rem">
     <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">
-      💳 Movimentações${ini||fim?' ('+[ini?formatDate(ini):'',fim?formatDate(fim):''].filter(Boolean).join(' a ')+')':''}
+      💳 Movimentações pagas${ini||fim?' ('+[ini?formatDate(ini):'',fim?formatDate(fim):''].filter(Boolean).join(' a ')+')':''}
       <span class="badge badge-neutral" style="margin-left:.5rem">${todos.length} lançamentos</span>
     </div>
     <div class="data-table">${head}${rows}</div>
@@ -3215,9 +3208,7 @@ function showRelatTab(t, el) {
   document.querySelectorAll('.relat-content').forEach(x=>x.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('relat-'+t).classList.add('active');
-
   const isGeral = document.getElementById('relat-tipo-ger')?.style.background === 'var(--gold)';
-
   if(isGeral && t !== 'filtrado') {
     const extraEl = document.getElementById('relat-geral-extra-'+t);
     if(extraEl) _buildGeralExtra(extraEl);
@@ -3226,8 +3217,6 @@ function showRelatTab(t, el) {
     const extraEl = document.getElementById('relat-geral-extra-'+t);
     if(extraEl) { extraEl.style.display = 'none'; extraEl.innerHTML = ''; }
   }
-
-  // Renderizar lançamentos da aba recém-aberta (filtrado gera sob demanda)
   if(t !== 'filtrado') setTimeout(_renderLancamentosRelat, 50);
 }
 
@@ -3371,19 +3360,25 @@ let movCache = [];
 
 async function loadMovimentacao() {
   try {
-    const hoje = new Date().toISOString().split('T')[0];
-    // Receitas pagas ou vencidas
+    // Movimentação = somente lançamentos com status 'Pago'
     const recSnap = await db.collection('receitas').get();
     const receitas = recSnap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Receita'}))
-      .filter(r => r.status==='Pago' || (r.vencimento && r.vencimento <= hoje));
+      .filter(r => r.status === 'Pago');
 
-    // Despesas pagas ou vencidas
     const despSnap = await db.collection('despesas').get();
     const despesas = despSnap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Despesa'}))
-      .filter(d => d.status==='Pago' || (d.vencimento && d.vencimento <= hoje));
+      .filter(d => d.status === 'Pago');
 
-    // Combinar e ordenar cronologicamente
     movCache = [...receitas, ...despesas].sort((a,b) => (a.vencimento||'').localeCompare(b.vencimento||''));
+
+    // Popular selects de categoria e subcategoria
+    const cats = [...new Set(movCache.map(x=>x.categoria||x.tipo||'').filter(Boolean))].sort();
+    const subcats = [...new Set(movCache.map(x=>x.subcategoria||'').filter(Boolean))].sort();
+    const catSel = document.getElementById('mov-filtro-cat');
+    const subSel = document.getElementById('mov-filtro-subcat');
+    if(catSel) catSel.innerHTML = '<option value="">Todas as categorias</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+    if(subSel) subSel.innerHTML = '<option value="">Todas as subcategorias</option>' + subcats.map(s=>`<option value="${s}">${s}</option>`).join('');
+
     _renderMovData(movCache);
   } catch(e) { showToast('Erro ao carregar movimentação.','error'); console.error(e); }
 }
@@ -3780,6 +3775,8 @@ async function gerarRelatFiltrado() {
     }
 
     let todos = [...receitas,...despesas];
+    // Somente lançamentos baixados (pagos)
+    todos = todos.filter(x => x.status === 'Pago');
     if(profFiltro) todos = todos.filter(x=>x.profId===profFiltro||x.profissional===profFiltro);
     if(catFiltro) todos = todos.filter(x=>x.categoria===catFiltro);
     if(subcatFiltro) todos = todos.filter(x=>x.subcategoria===subcatFiltro);
@@ -3929,6 +3926,88 @@ async function gerarRelatFiltrado() {
 
     document.getElementById('relat-filtrado-resultado').style.display = 'block';
     showToast(`${todos.length} registros encontrados.`,'success');
+
+    // Modo Geral: adicionar profissionais, turnos e locações do período
+    const isGeral = document.getElementById('relat-tipo-ger')?.style.background === 'var(--gold)';
+    const extraEl = document.getElementById('filtrado-geral-extra');
+    if(extraEl) {
+      if(!isGeral) {
+        extraEl.style.display = 'none';
+        extraEl.innerHTML = '';
+      } else {
+        extraEl.style.display = 'block';
+        extraEl.innerHTML = '<div style="padding:1rem;font-size:.82rem;color:var(--text-lighter)">⏳ Carregando dados complementares...</div>';
+        try {
+          const [profSnap, locSnap] = await Promise.all([
+            db.collection('profissionais').get(),
+            db.collection('locacoes').get()
+          ]);
+          const profs   = profSnap.docs.map(d=>({id:d.id,...d.data()}));
+          const ativos  = profs.filter(p=>!p.status||p.status==='Ativo');
+          const inativos= profs.filter(p=>p.status==='Inativo');
+          let locs = locSnap.docs.map(d=>({id:d.id,...d.data()}));
+          if(dataInicio) locs = locs.filter(l=>l.data && l.data >= dataInicio);
+          if(dataFim)    locs = locs.filter(l=>l.data && l.data <= dataFim);
+          locs = locs.sort((a,b)=>(a.data||'').localeCompare(b.data||''));
+
+          const turnosData = [
+            {nome:'Turno Manhã', hrs:document.getElementById('turno-manha-hrs')?.textContent||'—', val:document.querySelector('.turno-valor-manha')?.textContent||'—', count:document.getElementById('turno-manha-count')?.textContent||'0'},
+            {nome:'Turno Tarde', hrs:document.getElementById('turno-tarde-hrs')?.textContent||'—', val:document.querySelector('.turno-valor-tarde')?.textContent||'—', count:document.getElementById('turno-tarde-count')?.textContent||'0'},
+            {nome:'Turno Noite', hrs:document.getElementById('turno-noite-hrs')?.textContent||'—', val:document.querySelector('.turno-valor-noite')?.textContent||'—', count:document.getElementById('turno-noite-count')?.textContent||'0'},
+          ];
+          const turnosHtml = `<div class="card" style="margin-bottom:1rem">
+            <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">🕐 Turnos Ativos</div>
+            <div class="data-table">
+              <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr"><span>Turno</span><span>Horário</span><span>Valor/mês</span><span>Profissionais</span></div>
+              ${turnosData.map(t=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+                <span style="font-weight:500">${t.nome}</span>
+                <span style="color:var(--text-light)">${t.hrs}</span>
+                <span style="color:var(--text-light)">${t.val}</span>
+                <span><span class="badge badge-neutral">${t.count}</span></span>
+              </div>`).join('')}
+            </div>
+          </div>`;
+          const profsHtml = `<div class="card" style="margin-bottom:1rem">
+            <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">👤 Profissionais</div>
+            <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
+              <span class="badge badge-success">${ativos.length} ativo${ativos.length!==1?'s':''}</span>
+              ${inativos.length?`<span class="badge badge-neutral">${inativos.length} inativo${inativos.length!==1?'s':''}</span>`:''}
+            </div>
+            ${ativos.length?`<div class="data-table">
+              <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr"><span>Nome</span><span>Especialidade</span><span>Vínculo</span><span>Contrato até</span></div>
+              ${ativos.map(p=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+                <span style="font-weight:500">${p.nome||'—'}</span>
+                <span style="color:var(--text-light)">${p.especialidade||'—'}</span>
+                <span style="color:var(--text-light)">${p.vinculo||'—'}</span>
+                <span style="color:var(--text-light)">${p.contratoFim?formatDate(p.contratoFim):'—'}</span>
+              </div>`).join('')}
+            </div>`:'<div style="font-size:.82rem;color:var(--text-lighter)">Nenhum profissional ativo.</div>'}
+          </div>`;
+          const periodoLabel = [dataInicio?formatDate(dataInicio):'', dataFim?formatDate(dataFim):''].filter(Boolean).join(' a ');
+          const agendaHtml = locs.length?`<div class="card" style="margin-bottom:1rem">
+            <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">📅 Locações no período${periodoLabel?' ('+periodoLabel+')':''}</div>
+            <span class="badge badge-neutral" style="margin-bottom:.75rem;display:inline-block">${locs.length} locação${locs.length!==1?'ões':''}</span>
+            <div class="data-table">
+              <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr"><span>Profissional</span><span>Sala</span><span>Turno</span><span>Data</span></div>
+              ${locs.map(l=>{
+                const nome=profs.find(p=>p.id===l.profId)?.nome||l.profId||'—';
+                return `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+                  <span style="font-weight:500">${nome}</span>
+                  <span>${l.sala||'—'}</span>
+                  <span style="color:var(--text-light)">${l.turno||'—'}</span>
+                  <span>${l.data?formatDate(l.data):'—'}</span>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>`:'<div class="card" style="margin-bottom:1rem;font-size:.82rem;color:var(--text-lighter);padding:.75rem">📅 Nenhuma locação no período.</div>';
+          extraEl.innerHTML = turnosHtml + profsHtml + agendaHtml;
+        } catch(e) {
+          extraEl.innerHTML = '<div style="padding:1rem;font-size:.82rem;color:var(--danger)">Erro ao carregar dados complementares.</div>';
+          console.error(e);
+        }
+      }
+    }
+
   } catch(e) { showToast('Erro ao gerar relatório.','error'); console.error(e); }
 }
 
