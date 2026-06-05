@@ -682,11 +682,21 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div id="dash-alertas-list"><div style="font-size:.8rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhum alerta no momento</div></div>
           </div>
         </div>
-        <!-- Lembrete: parcelas vencidas -->
+        <!-- Lembrete: vence hoje -->
+        <div id="dash-vence-hoje-wrap" style="display:none;margin-top:.75rem">
+          <div class="card" style="border-left:3px solid var(--warning);padding:.875rem 1rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.625rem">
+              <span style="font-size:.82rem;font-weight:700;color:var(--warning)">📅 Vence Hoje</span>
+              <span class="badge badge-warning" id="dash-vence-hoje-count">0</span>
+            </div>
+            <div id="dash-vence-hoje-list"></div>
+          </div>
+        </div>
+        <!-- Lembrete: em atraso -->
         <div id="dash-parcelas-venc-wrap" style="display:none;margin-top:.75rem">
           <div class="card" style="border-left:3px solid var(--danger);padding:.875rem 1rem">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.625rem">
-              <span style="font-size:.82rem;font-weight:700;color:var(--danger)">⚠️ Parcelas / Contas Vencidas</span>
+              <span style="font-size:.82rem;font-weight:700;color:var(--danger)">⚠️ Lançamentos em Atraso</span>
               <span class="badge badge-danger" id="dash-parcelas-venc-count">0</span>
             </div>
             <div id="dash-parcelas-venc-list"></div>
@@ -2001,33 +2011,70 @@ function loadDashboard() {
     });
   }).catch(()=>{});
 
-  // Parcelas / contas vencidas (despesas pendentes com vencimento antes de hoje)
-  db.collection('despesas').get().then(snap=>{
-    const todas = snap.docs.map(d=>({id:d.id,...d.data()}));
-    const vencidas = todas.filter(d=>{
-      if(d.status==='Pago') return false;
-      if(!d.vencimento) return false;
-      return d.vencimento < hojeStr;
-    }).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
+  // Lançamentos que vencem hoje ou estão em atraso (receitas + despesas pendentes)
+  Promise.all([
+    db.collection('despesas').get(),
+    db.collection('receitas').get()
+  ]).then(([despSnap, recSnap])=>{
+    const despesas = despSnap.docs.map(d=>({id:d.id, _tipo:'despesa', ...d.data()}));
+    const receitas = recSnap.docs.map(d=>({id:d.id, _tipo:'receita', ...d.data()}));
+    const todos = [...despesas, ...receitas].filter(x=>{
+      if(x.status==='Pago') return false;
+      if(!x.vencimento) return false;
+      return x.vencimento <= hojeStr;
+    });
+
+    const hoje_items = todos.filter(x=>x.vencimento===hojeStr)
+      .sort((a,b)=>(a.descricao||a.profissional||'').localeCompare(b.descricao||b.profissional||''));
+    const atraso_items = todos.filter(x=>x.vencimento<hojeStr)
+      .sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
+
+    function renderItem(x, showDias) {
+      const isRec = x._tipo==='receita';
+      const label = isRec ? (x.profissional||x.descricao||'—') : (x.descricao||'—');
+      const parcela = x.parcela ? ` <span style="font-size:.65rem;color:var(--text-lighter)">${x.parcela}</span>` : '';
+      const tipo = isRec
+        ? `<span style="font-size:.65rem;color:var(--success);font-weight:500">↑ receber</span>`
+        : `<span style="font-size:.65rem;color:var(--danger);font-weight:500">↓ pagar</span>`;
+      const diasEl = showDias
+        ? `<span style="font-size:.75rem;min-width:36px;color:var(--danger);font-weight:600">${Math.floor((new Date(hojeStr)-new Date(x.vencimento))/86400000)}d</span>`
+        : `<span style="font-size:.75rem;min-width:36px;color:var(--warning);font-weight:600">hoje</span>`;
+      const valorColor = isRec ? 'var(--success)' : 'var(--danger)';
+      return `<div class="mini-item" style="gap:8px;cursor:pointer" onclick="showPage('financeiro',document.querySelector('[onclick*=financeiro]'))">
+        ${diasEl}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.78rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}${parcela} ${tipo}</div>
+          <div style="font-size:.7rem;color:var(--text-lighter)">${formatDate(x.vencimento)} · ${x.categoria||'—'}</div>
+        </div>
+        <span style="font-size:.78rem;font-weight:600;color:${valorColor};white-space:nowrap">${formatMoney(x.valor)}</span>
+      </div>`;
+    }
+
+    // Bloco "Vence Hoje"
+    const hojeWrap = document.getElementById('dash-vence-hoje-wrap');
+    const hojeList = document.getElementById('dash-vence-hoje-list');
+    const hojeCnt  = document.getElementById('dash-vence-hoje-count');
+    if(hojeWrap && hojeList && hojeCnt) {
+      if(hoje_items.length === 0) {
+        hojeWrap.style.display='none';
+      } else {
+        hojeWrap.style.display='block';
+        hojeCnt.textContent = hoje_items.length;
+        hojeList.innerHTML = hoje_items.slice(0,8).map(x=>renderItem(x,false)).join('');
+        if(hoje_items.length>8) hojeList.innerHTML+=`<div style="font-size:.72rem;color:var(--text-lighter);text-align:center;padding:.5rem 0">+${hoje_items.length-8} mais...</div>`;
+      }
+    }
+
+    // Bloco "Em Atraso"
     const wrap = document.getElementById('dash-parcelas-venc-wrap');
     const lista = document.getElementById('dash-parcelas-venc-list');
-    const cnt = document.getElementById('dash-parcelas-venc-count');
+    const cnt   = document.getElementById('dash-parcelas-venc-count');
     if(!wrap || !lista || !cnt) return;
-    if(vencidas.length === 0) { wrap.style.display='none'; return; }
+    if(atraso_items.length === 0) { wrap.style.display='none'; return; }
     wrap.style.display='block';
-    cnt.textContent = vencidas.length;
-    lista.innerHTML = vencidas.slice(0,8).map(d=>{
-      const diasAtraso = Math.floor((new Date(hojeStr) - new Date(d.vencimento))/(1000*60*60*24));
-      return `<div class="mini-item" style="gap:8px;cursor:pointer" onclick="showPage('financeiro',document.querySelector('[onclick*=financeiro]'))">
-        <span style="font-size:.75rem;min-width:36px;color:var(--danger);font-weight:600">${diasAtraso}d</span>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:.78rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.descricao||'—'}${d.parcela?` <span style="font-size:.65rem;color:var(--text-lighter)">${d.parcela}</span>`:''}</div>
-          <div style="font-size:.7rem;color:var(--text-lighter)">${formatDate(d.vencimento)} · ${d.categoria||'—'}</div>
-        </div>
-        <span style="font-size:.78rem;font-weight:600;color:var(--danger);white-space:nowrap">${formatMoney(d.valor)}</span>
-      </div>`;
-    }).join('');
-    if(vencidas.length > 8) lista.innerHTML += `<div style="font-size:.72rem;color:var(--text-lighter);text-align:center;padding:.5rem 0">+${vencidas.length-8} mais...</div>`;
+    cnt.textContent = atraso_items.length;
+    lista.innerHTML = atraso_items.slice(0,8).map(x=>renderItem(x,true)).join('');
+    if(atraso_items.length>8) lista.innerHTML+=`<div style="font-size:.72rem;color:var(--text-lighter);text-align:center;padding:.5rem 0">+${atraso_items.length-8} mais...</div>`;
   }).catch(()=>{});
 }
 
