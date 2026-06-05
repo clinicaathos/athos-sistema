@@ -4409,7 +4409,7 @@ document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==
 // ── PWA: Service Worker ──
 if('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker.register('/athos-sistema/sw.js')
       .then(reg => console.log('[Áthos] SW registrado:', reg.scope))
       .catch(err => console.warn('[Áthos] SW falhou:', err));
   });

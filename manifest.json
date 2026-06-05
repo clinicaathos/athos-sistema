@@ -2,7 +2,7 @@
   "name": "Áthos — Sistema de Gestão",
   "short_name": "Áthos",
   "description": "Sistema de Gestão de Locação de Salas — Clínica Áthos",
-  "start_url": "/",
+  "start_url": "/athos-sistema/",
   "display": "standalone",
   "background_color": "#f5f0eb",
   "theme_color": "#a07850",
