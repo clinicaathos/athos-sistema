@@ -2309,26 +2309,27 @@ async function renderPrevisao() {
   document.getElementById('prev-despesas').innerHTML = skelList(3);
 
   try {
-    // ── RECEITAS: lançamentos pendentes com vencimento no próximo mês ──
+    // ── RECEITAS: vencimento no próximo mês (filtro status em memória — evita índice composto) ──
     const recSnap = await db.collection('receitas')
       .where('vencimento', '>=', proxMesInicio)
       .where('vencimento', '<=', proxMesFim)
-      .where('status', '==', 'Pendente')
       .get();
-    const recFuturas = recSnap.docs.map(d => ({id: d.id, ...d.data()}));
+    const recFuturas = recSnap.docs
+      .map(d => ({id: d.id, ...d.data()}))
+      .filter(r => r.status !== 'Pago');
     const recPrev = recFuturas.reduce((s, r) => s + (parseMoney(r.valor) || 0), 0);
 
-    // Complemento: profissionais ativos sem receita cadastrada no próximo mês
-    // (aviso de contrato vencendo — exibido no card de alerta)
+    // Alerta de contrato vencendo
     const profs = profissionaisCache.filter(p => p.status === 'Ativo');
 
-    // ── DESPESAS: lançamentos pendentes com vencimento no próximo mês ──
+    // ── DESPESAS: vencimento no próximo mês (filtro status em memória) ──
     const despSnap = await db.collection('despesas')
       .where('vencimento', '>=', proxMesInicio)
       .where('vencimento', '<=', proxMesFim)
-      .where('status', '==', 'Pendente')
       .get();
-    const despFuturas = despSnap.docs.map(d => ({id: d.id, ...d.data()}));
+    const despFuturas = despSnap.docs
+      .map(d => ({id: d.id, ...d.data()}))
+      .filter(d => d.status !== 'Pago');
     const despPrev = despFuturas.reduce((s, d) => s + (parseMoney(d.valor) || 0), 0);
 
     const saldoPrev = recPrev - despPrev;
