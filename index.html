@@ -2290,47 +2290,111 @@ function _renderDespesasData(despesas) {
 }
 
 async function renderPrevisao() {
-  const profs=profissionaisCache.filter(p=>p.status==='Ativo');
-  const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const proxMes=meses[(new Date().getMonth()+1)%12];
+  const hoje = new Date();
+  const _hj = hoje;
+  const hojeStrPrev = `${_hj.getFullYear()}-${String(_hj.getMonth()+1).padStart(2,'0')}-${String(_hj.getDate()).padStart(2,'0')}`;
 
-  // Receita prevista baseada nos contratos
-  let recPrev=0;
-  const linhasRec=profs.map(p=>{
-    let v=0;
-    const s1val=parseFloat((appConfig.precoTurnoS1||'').replace(/[^\d,]/g,'').replace(',','.'))||0;
-    const s2val=parseFloat((appConfig.precoTurnoS2||'').replace(/[^\d,]/g,'').replace(',','.'))||0;
-    if(p.vinculo==='Turno Fixo') v=s1val||s2val;
-    if(p.vinculo==='Pacote de Horas'&&appConfig.preco10h) v=parseFloat(appConfig.preco10h.replace(/[^\d,]/g,'').replace(',','.'))||0;
-    recPrev+=v;
-    const diff=p.contratoFim?Math.floor((new Date(p.contratoFim+'T12:00:00')-new Date())/(1000*60*60*24)):99;
-    const venc=diff<=2;
-    return `<div class="prev-row"><span${venc?' style="color:var(--danger)"':''} class="prev-row-label">${p.nome||'—'}${venc?' <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg>':''} — ${p.vinculo||'—'}</span><span class="prev-row-value" style="color:${v>0?'var(--success)':'var(--text-lighter)'}">${v>0?formatMoney(v):'variável'}</span></div>`;
-  }).join('');
+  // Próximo mês: início e fim
+  const proxMesNum = (hoje.getMonth() + 1) % 12;
+  const proxAnoNum = hoje.getMonth() === 11 ? hoje.getFullYear() + 1 : hoje.getFullYear();
+  const proxMesInicio = `${proxAnoNum}-${String(proxMesNum + 1).padStart(2,'0')}-01`;
+  const ultimoDia = new Date(proxAnoNum, proxMesNum + 1, 0).getDate();
+  const proxMesFim = `${proxAnoNum}-${String(proxMesNum + 1).padStart(2,'0')}-${ultimoDia}`;
+  const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const proxMesLabel = `${meses[proxMesNum]} ${proxAnoNum}`;
 
-  // Despesas fixas reais do Firebase (categoria Fixo)
+  // Loading state
+  document.getElementById('prev-cards').innerHTML = `<div style="padding:.5rem 0">${skelList(3)}</div>`;
+  document.getElementById('prev-receitas').innerHTML = skelList(3);
+  document.getElementById('prev-despesas').innerHTML = skelList(3);
+
   try {
-    const despSnap = await db.collection('despesas').where('categoria','==','Fixo').get();
-    const fixas = despSnap.docs.map(d=>d.data());
-    // Agrupar por descrição (evitar duplicatas de parcelamentos)
-    const agrup = {};
-    fixas.forEach(d=>{ const k=d.descricao||'—'; if(!agrup[k]||parseMoney(d.valor)>parseFloat(agrup[k].valor)) agrup[k]=d; });
-    const despPrev = Object.values(agrup).reduce((s,d)=>s+(parseMoney(d.valor)||0),0);
+    // ── RECEITAS: lançamentos pendentes com vencimento no próximo mês ──
+    const recSnap = await db.collection('receitas')
+      .where('vencimento', '>=', proxMesInicio)
+      .where('vencimento', '<=', proxMesFim)
+      .where('status', '==', 'Pendente')
+      .get();
+    const recFuturas = recSnap.docs.map(d => ({id: d.id, ...d.data()}));
+    const recPrev = recFuturas.reduce((s, r) => s + (parseMoney(r.valor) || 0), 0);
+
+    // Complemento: profissionais ativos sem receita cadastrada no próximo mês
+    // (aviso de contrato vencendo — exibido no card de alerta)
+    const profs = profissionaisCache.filter(p => p.status === 'Ativo');
+
+    // ── DESPESAS: lançamentos pendentes com vencimento no próximo mês ──
+    const despSnap = await db.collection('despesas')
+      .where('vencimento', '>=', proxMesInicio)
+      .where('vencimento', '<=', proxMesFim)
+      .where('status', '==', 'Pendente')
+      .get();
+    const despFuturas = despSnap.docs.map(d => ({id: d.id, ...d.data()}));
+    const despPrev = despFuturas.reduce((s, d) => s + (parseMoney(d.valor) || 0), 0);
+
     const saldoPrev = recPrev - despPrev;
 
-    document.getElementById('prev-cards').innerHTML=`
-      <div class="prev-card"><div class="prev-label">Receita Prevista — ${proxMes}</div><div class="prev-value" style="color:var(--success)">${formatMoney(recPrev)}</div><div class="prev-sub">baseado nos contratos ativos</div></div>
-      <div class="prev-card"><div class="prev-label">Despesas Fixas Previstas — ${proxMes}</div><div class="prev-value" style="color:var(--danger)">${formatMoney(despPrev)}</div><div class="prev-sub">baseado em despesas fixas cadastradas</div></div>
-      <div class="prev-card"><div class="prev-label">Saldo Projetado</div><div class="prev-value" style="color:${saldoPrev>=0?'var(--success)':'var(--danger)'}">${formatMoney(saldoPrev)}</div><div class="prev-sub" style="color:${saldoPrev>=0?'var(--success)':'var(--danger)'}">estimativa ${saldoPrev>=0?'positiva':'negativa'}</div></div>
-      ${profs.some(p=>p.contratoFim&&Math.floor((new Date(p.contratoFim+'T12:00:00')-new Date())/(1000*60*60*24))<=2)?`<div class="prev-card" style="background:var(--warning-bg);border-color:#fde68a"><div class="prev-label" style="color:var(--warning)"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg> Atenção</div><div style="font-size:.82rem;color:var(--warning);font-weight:500;margin-top:4px">Há contratos vencidos ou vencendo. Renove para garantir a receita projetada.</div></div>`:''}`;
+    // ── CARDS RESUMO ──
+    const alertaContrato = profs.some(p => p.contratoFim && Math.floor((new Date(p.contratoFim + 'T12:00:00') - hoje) / (1000*60*60*24)) <= 2);
+    document.getElementById('prev-cards').innerHTML = `
+      <div class="prev-card">
+        <div class="prev-label">Receitas Previstas — ${proxMesLabel}</div>
+        <div class="prev-value" style="color:var(--success)">${formatMoney(recPrev)}</div>
+        <div class="prev-sub">${recFuturas.length} lançamento${recFuturas.length !== 1 ? 's' : ''} pendente${recFuturas.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="prev-card">
+        <div class="prev-label">Despesas Previstas — ${proxMesLabel}</div>
+        <div class="prev-value" style="color:var(--danger)">${formatMoney(despPrev)}</div>
+        <div class="prev-sub">${despFuturas.length} lançamento${despFuturas.length !== 1 ? 's' : ''} pendente${despFuturas.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="prev-card">
+        <div class="prev-label">Saldo Projetado</div>
+        <div class="prev-value" style="color:${saldoPrev >= 0 ? 'var(--success)' : 'var(--danger)'}">${formatMoney(saldoPrev)}</div>
+        <div class="prev-sub" style="color:${saldoPrev >= 0 ? 'var(--success)' : 'var(--danger)'}">estimativa ${saldoPrev >= 0 ? 'positiva' : 'negativa'}</div>
+      </div>
+      ${alertaContrato ? `<div class="prev-card" style="background:var(--warning-bg);border-color:#fde68a">
+        <div class="prev-label" style="color:var(--warning)">
+          <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg> Atenção
+        </div>
+        <div style="font-size:.82rem;color:var(--warning);font-weight:500;margin-top:4px">Há contratos vencidos ou vencendo. Renove para garantir a receita projetada.</div>
+      </div>` : ''}`;
 
-    document.getElementById('prev-receitas').innerHTML=linhasRec||'<div style="font-size:.82rem;color:var(--text-lighter)">Sem profissionais ativos</div>';
-    document.getElementById('prev-despesas').innerHTML=Object.values(agrup).length>0
-      ? Object.values(agrup).map(d=>`<div class="prev-row"><span class="prev-row-label">${d.descricao||'—'}${d.subcategoria?` <span style="font-size:.74rem;color:var(--text-lighter)">· ${d.subcategoria}</span>`:''}</span><span class="prev-row-value" style="color:var(--danger)">${formatMoney(d.valor)}</span></div>`).join('')
-      : '<div style="font-size:.82rem;color:var(--text-lighter)">Nenhuma despesa fixa cadastrada.</div>';
+    // ── LISTA DE RECEITAS FUTURAS ──
+    const catChip = cat => {
+      const map = { 'Fixo': 'badge-neutral', 'Variável': 'badge-warning', 'Extra': 'badge-success' };
+      return `<span class="badge ${map[cat]||'badge-neutral'}" style="font-size:.65rem">${cat||'—'}</span>`;
+    };
+
+    document.getElementById('prev-receitas').innerHTML = recFuturas.length > 0
+      ? recFuturas
+          .sort((a, b) => a.vencimento > b.vencimento ? 1 : -1)
+          .map(r => `<div class="prev-row">
+            <span class="prev-row-label">
+              ${r.profissional || r.descricao || '—'}
+              ${r.categoria ? catChip(r.categoria) : ''}
+              <span style="font-size:.72rem;color:var(--text-lighter);margin-left:3px">${formatDate(r.vencimento)}</span>
+            </span>
+            <span class="prev-row-value" style="color:var(--success)">${formatMoney(r.valor)}</span>
+          </div>`).join('')
+      : emptyState('money', 'Nenhuma receita prevista', `Nenhum lançamento pendente com vencimento em ${proxMesLabel}.`, 'Lançar receita', "openModal('nova-receita')");
+
+    // ── LISTA DE DESPESAS FUTURAS ──
+    document.getElementById('prev-despesas').innerHTML = despFuturas.length > 0
+      ? despFuturas
+          .sort((a, b) => a.vencimento > b.vencimento ? 1 : -1)
+          .map(d => `<div class="prev-row">
+            <span class="prev-row-label">
+              ${d.descricao || '—'}
+              ${d.categoria ? catChip(d.categoria) : ''}
+              ${d.subcategoria ? `<span style="font-size:.72rem;color:var(--text-lighter)">· ${d.subcategoria}</span>` : ''}
+              <span style="font-size:.72rem;color:var(--text-lighter);margin-left:3px">${formatDate(d.vencimento)}</span>
+            </span>
+            <span class="prev-row-value" style="color:var(--danger)">${formatMoney(d.valor)}</span>
+          </div>`).join('')
+      : emptyState('receipt', 'Nenhuma despesa prevista', `Nenhum lançamento pendente com vencimento em ${proxMesLabel}.`, 'Lançar despesa', "openModal('nova-despesa')");
+
   } catch(e) {
-    console.error('Erro ao buscar despesas fixas:', e);
-    document.getElementById('prev-despesas').innerHTML='<div style="font-size:.82rem;color:var(--text-lighter)">Erro ao carregar despesas fixas.</div>';
+    console.error('Erro ao carregar previsão:', e);
+    document.getElementById('prev-despesas').innerHTML = '<div style="font-size:.82rem;color:var(--danger);padding:.75rem">Erro ao carregar previsão. Tente novamente.</div>';
   }
 }
 
