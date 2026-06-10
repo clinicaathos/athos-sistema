@@ -1938,7 +1938,8 @@ function loadDashboard() {
 
   const mesAtual = hoje.getMonth();
   const anoAtual = hoje.getFullYear();
-  const hojeStr = hoje.toISOString().split('T')[0];
+  // Usar data local (não UTC) para evitar divergência de fuso horário (UTC-3)
+  const hojeStr = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
 
   // Receitas do mês
   db.collection('receitas').where('mes','==',mesAtual).where('ano','==',anoAtual).get().then(snap=>{
@@ -2135,7 +2136,7 @@ function _renderReceitasData(receitas) {
     if(mobileEl) mobileEl.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhuma receita cadastrada.</div>';
     return;
   }
-  const hoje = new Date().toISOString().split('T')[0];
+  const _hjr = new Date(); const hoje = `${_hjr.getFullYear()}-${String(_hjr.getMonth()+1).padStart(2,'0')}-${String(_hjr.getDate()).padStart(2,'0')}`;
   if(table) table.innerHTML=`<div class="dt-head" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 80px 40px"><span></span><span>Profissional</span><span>Tipo</span><span>Vencimento</span><span>Valor</span><span>Status</span><span>WhatsApp</span><span></span></div>`+
     receitas.map(r=>{
       const prof = profissionaisCache.find(p=>p.id===r.profId);
@@ -4123,7 +4124,7 @@ function initSwipe() {
 function filtrarRec(tipo, el) {
   document.querySelectorAll('#fin-rec .qf-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
-  const hoje = new Date().toISOString().split('T')[0];
+  const _hj = new Date(); const hoje = `${_hj.getFullYear()}-${String(_hj.getMonth()+1).padStart(2,'0')}-${String(_hj.getDate()).padStart(2,'0')}`;
   const mesAtual = new Date().getMonth();
   let filtrados = receitasCache;
   if(tipo === 'pendente') filtrados = receitasCache.filter(r => r.status !== 'Pago');
@@ -4136,7 +4137,7 @@ function filtrarRec(tipo, el) {
 function filtrarDesp(tipo, el) {
   document.querySelectorAll('#fin-desp .qf-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
-  const hoje = new Date().toISOString().split('T')[0];
+  const _hj2 = new Date(); const hoje = `${_hj2.getFullYear()}-${String(_hj2.getMonth()+1).padStart(2,'0')}-${String(_hj2.getDate()).padStart(2,'0')}`;
   const mesAtual = new Date().getMonth();
   let filtrados = despesasCache;
   if(tipo === 'pendente') filtrados = despesasCache.filter(d => d.status !== 'Pago');
@@ -4420,7 +4421,7 @@ function checkVinculoAlertas(profs) {
 async function verificarAlertasVencimento() {
   try {
     const hoje = new Date();
-    const hojeStr = hoje.toISOString().split('T')[0];
+    const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
     const snap = await db.collection('profissionais').where('status','==','Ativo').get();
     const alertas = [];
 
