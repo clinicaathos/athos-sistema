@@ -2023,7 +2023,31 @@ function loadDashboard() {
     const all = snap.docs.map(d=>({id:d.id,...d.data()}));
     const hoje_loc = all.filter(l=>{
       if(!l.dataInicio) return false;
-      return hojeStr >= l.dataInicio && hojeStr <= (l.dataFim||l.dataInicio);
+      // Fora do período do contrato
+      if(hojeStr < l.dataInicio) return false;
+      if(l.dataFim && hojeStr > l.dataFim) return false;
+
+      const rec = (l.recorrencia||'').toLowerCase().trim();
+
+      // Sem recorrência: só aparece no dia exato
+      if(!rec || rec === 'apenas este horário' || rec === 'apenas este horario') {
+        return hojeStr === l.dataInicio;
+      }
+
+      // Com recorrência: verifica se hoje cai no ciclo correto
+      const inicio = new Date(l.dataInicio + 'T12:00:00');
+      const hj    = new Date(hojeStr + 'T12:00:00');
+      const diffDias = Math.round((hj - inicio) / (1000*60*60*24));
+
+      if(rec === 'semanal')    return diffDias % 7  === 0;
+      if(rec === 'quinzenal')  return diffDias % 14 === 0;
+      if(rec === 'mensal') {
+        // Mesmo dia do mês que o dataInicio
+        return hj.getDate() === inicio.getDate();
+      }
+
+      // Fallback: qualquer outra string — cai no dia exato
+      return hojeStr === l.dataInicio;
     });
     const s1 = appConfig.sala1||'Áthos I';
     const s2 = appConfig.sala2||'Áthos II';
@@ -2058,12 +2082,38 @@ function loadDashboard() {
     if(badgeEl) badgeEl.textContent=`${ocupados} turno${ocupados!==1?'s':''}`;
     document.getElementById('dash-hoje-list').innerHTML=miniItems.length?miniItems.join(''):emptyState('calendar','Nenhuma locação hoje','As duas salas estão livres.','Nova locação',"openModal('nova-locacao')");
 
-    // Barras de ocupação — total de locações por turno/sala (não só hoje)
+    // Barras de ocupação — conta locações ativas para cada dia da semana atual
+    // usando a mesma lógica de recorrência do filtro de hoje
+    function locAtivaEmDia(l, diaStr) {
+      if(!l.dataInicio) return false;
+      if(diaStr < l.dataInicio) return false;
+      if(l.dataFim && diaStr > l.dataFim) return false;
+      const rec = (l.recorrencia||'').toLowerCase().trim();
+      if(!rec || rec === 'apenas este horário' || rec === 'apenas este horario') {
+        return diaStr === l.dataInicio;
+      }
+      const inicio = new Date(l.dataInicio + 'T12:00:00');
+      const dia    = new Date(diaStr + 'T12:00:00');
+      const diffDias = Math.round((dia - inicio) / (1000*60*60*24));
+      if(rec === 'semanal')   return diffDias % 7  === 0;
+      if(rec === 'quinzenal') return diffDias % 14 === 0;
+      if(rec === 'mensal')    return dia.getDate() === inicio.getDate();
+      return diaStr === l.dataInicio;
+    }
+    // Gerar os 7 dias da semana atual (Dom–Sáb)
+    const semanaAtual = Array.from({length:7}, (_,i)=>{
+      const d = new Date(hoje);
+      d.setDate(hoje.getDate() - hoje.getDay() + i);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    });
     const occ = {manha_s1:0,tarde_s1:0,noite_s1:0,manha_s2:0,tarde_s2:0,noite_s2:0};
-    all.forEach(l=>{
-      const tk=getTurnoKey(l.inicio);
-      const sk=getSalaKey(l.sala);
-      if(tk && sk) occ[`${tk}_${sk}`]=(occ[`${tk}_${sk}`]||0)+1;
+    semanaAtual.forEach(diaStr=>{
+      all.forEach(l=>{
+        if(!locAtivaEmDia(l, diaStr)) return;
+        const tk=getTurnoKey(l.inicio);
+        const sk=getSalaKey(l.sala);
+        if(tk && sk) occ[`${tk}_${sk}`]=(occ[`${tk}_${sk}`]||0)+1;
+      });
     });
     const max=5;
     const pct=(n)=>Math.min(100,Math.round(n/max*100))+'%';
