@@ -11,6 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <title>Áthos — Sistema de Gestão</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -180,6 +181,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .badge{font-size:.72rem}
 .form-label{font-size:.75rem}
 .nav-item{font-size:.85rem}
+
+
+/* radio highlight recorrência */
+#rec-opt-single-wrap:has(input:checked),
+#rec-opt-future-wrap:has(input:checked) { border-color: var(--gold); background: var(--gold-pale); }
 
 /* ── TOAST ── */
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--text);color:#fff;padding:.75rem 1.25rem;border-radius:10px;font-size:.82rem;font-weight:500;z-index:1000;animation:slideUp .2s ease;box-shadow:var(--shadow-lg);max-width:320px;}
@@ -2496,6 +2502,19 @@ async function salvarDespesa() {
   if(!data.valor){showToast('Valor é obrigatório.','error');return;}
   try {
     if(id) {
+      // Checar se pertence a série recorrente
+      const meta = window._recEditMeta;
+      if(meta?.recorrenciaId && meta.id === id) {
+        // Guardar dados para uso após confirmação no modal
+        window._recEditPendente = { data: {...data}, id, colecao: 'despesas',
+          recorrenciaId: meta.recorrenciaId, vencimento: meta.vencimento };
+        // Resetar seleção
+        const single = document.getElementById('rec-opt-single');
+        if(single) single.checked = true;
+        closeModal('nova-despesa');
+        openModal('rec-confirm');
+        return;
+      }
       data.historico = firebase.firestore.FieldValue.arrayUnion({
         editadoEm: new Date().toISOString(),
         por: auth.currentUser?.email||'admin'
@@ -2525,7 +2544,6 @@ function editarDespesa(id) {
   document.getElementById('despesa-edit-id').value=id;
   document.getElementById('despesa-excluir-btn').style.display='inline-flex';
   currentDespesaEdit=id;
-  // Carregar dados da despesa
   db.collection('despesas').doc(id).get().then(doc=>{
     if(doc.exists){
       const d=doc.data();
@@ -2536,6 +2554,8 @@ function editarDespesa(id) {
       document.getElementById('despesa-venc').value=d.vencimento||'';
       if(document.getElementById('despesa-obs')) document.getElementById('despesa-obs').value=d.obs||'';
       if(document.getElementById('despesa-recorrencia')) document.getElementById('despesa-recorrencia').value=d.recorrencia||'nenhuma';
+      // Guarda metadados da série para uso posterior
+      window._recEditMeta = { id, colecao:'despesas', recorrenciaId: d.recorrenciaId||null, vencimento: d.vencimento||'' };
     }
   });
   openModal('nova-despesa');
@@ -2550,6 +2570,71 @@ async function excluirDespesa() {
     showToast('Despesa excluída.','success');
     loadFinanceiro();
   } catch(e){showToast('Erro ao excluir.','error');}
+}
+
+
+// ── BACKUP EXCEL ──
+async function exportarBackupExcel() {
+  showToast('Gerando backup... aguarde.', 'success');
+  try {
+    const [recSnap, despSnap, locSnap, profSnap] = await Promise.all([
+      db.collection('receitas').get(),
+      db.collection('despesas').get(),
+      db.collection('locacoes').get(),
+      db.collection('profissionais').get()
+    ]);
+
+    const wb = XLSX.utils.book_new();
+
+    // Receitas
+    const receitas = recSnap.docs.map(d => {
+      const r = d.data();
+      return { ID: d.id, Profissional: r.profissional||'', Categoria: r.categoria||'', Tipo: r.tipo||'',
+        Subcategoria: r.subcategoria||'', Valor: r.valor||'', Desconto: r.desconto||'0',
+        'Valor Final': r.valorFinal||'', Vencimento: r.vencimento||'', Status: r.status||'',
+        'Observação': r.obs||'', Parcela: r.parcela||'', 'Nº Recorrência': r.recorrenciaNum||'',
+        'ID Recorrência': r.recorrenciaId||'' };
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(receitas.length ? receitas : [{}]), 'Receitas');
+
+    // Despesas
+    const despesas = despSnap.docs.map(d => {
+      const x = d.data();
+      return { ID: d.id, 'Descrição': x.descricao||'', Categoria: x.categoria||'',
+        Subcategoria: x.subcategoria||'', Valor: x.valor||'', Vencimento: x.vencimento||'',
+        'Recorrência': x.recorrencia||'', Status: x.status||'', Parcela: x.parcela||'',
+        'Nº Recorrência': x.recorrenciaNum||'', 'ID Recorrência': x.recorrenciaId||'', 'Observação': x.obs||'' };
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(despesas.length ? despesas : [{}]), 'Despesas');
+
+    // Locações
+    const locacoes = locSnap.docs.map(d => {
+      const l = d.data();
+      const profNome = profissionaisCache.find(p => p.id === l.profId)?.nome || l.profId || '';
+      return { ID: d.id, Profissional: profNome, Sala: l.sala||'', 'Vínculo': l.vinculo||'',
+        'Hora Início': l.inicio||'', 'Hora Fim': l.fim||'', 'Data Início': l.dataInicio||'',
+        'Data Fim': l.dataFim||'', 'Recorrência': l.recorrencia||'', 'Observação': l.obs||'' };
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(locacoes.length ? locacoes : [{}]), 'Locações');
+
+    // Profissionais
+    const profs = profSnap.docs.map(d => {
+      const p = d.data();
+      return { ID: d.id, Nome: p.nome||'', 'Registro Profissional': p.registro||'',
+        Especialidade: p.especialidade||'', 'Vínculo': p.vinculo||'', Telefone: p.telefone||'',
+        Email: p.email||'', 'Data Nascimento': p.dataNascimento||'', 'Contrato Início': p.contratoInicio||'',
+        'Contrato Fim': p.contratoFim||'', Status: p.status||'', 'Observações': p.obs||'' };
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(profs.length ? profs : [{}]), 'Profissionais');
+
+    const hoje = new Date();
+    const dataStr = `${hoje.getFullYear()}${String(hoje.getMonth()+1).padStart(2,'0')}${String(hoje.getDate()).padStart(2,'0')}`;
+    XLSX.writeFile(wb, `Backup_Athos_${dataStr}.xlsx`);
+    showToast('Backup Excel gerado com sucesso!', 'success');
+  } catch(e) {
+    console.error('Erro ao gerar backup:', e);
+    showToast('Erro ao gerar backup. Tente novamente.', 'error');
+  }
 }
 
 function exportarFinanceiro() {
@@ -3810,6 +3895,16 @@ async function salvarReceita() {
   const recorrenciaQtd = parseInt(document.getElementById('receita-recorrencia-qtd')?.value) || 1;
   try {
     if(editId) {
+      const meta = window._recEditMeta;
+      if(meta?.recorrenciaId && meta.id === editId) {
+        window._recEditPendente = { data: {...data}, id: editId, colecao: 'receitas',
+          recorrenciaId: meta.recorrenciaId, vencimento: meta.vencimento };
+        const single = document.getElementById('rec-opt-single');
+        if(single) single.checked = true;
+        closeModal('nova-receita');
+        openModal('rec-confirm');
+        return;
+      }
       data.historico = firebase.firestore.FieldValue.arrayUnion({editadoEm: new Date().toISOString(), por: auth.currentUser?.email||'admin'});
       await db.collection('receitas').doc(editId).update(data);
       showToast('Receita atualizada!','success');
@@ -3829,7 +3924,6 @@ async function salvarReceita() {
 }
 
 function editarReceita(id) {
-  // Define o id ANTES de openModal para que o reset não apague os campos
   const editIdEl = document.getElementById('receita-edit-id');
   if(editIdEl) editIdEl.value = id;
   document.getElementById('receita-modal-title').textContent = 'Editar Receita';
@@ -3856,6 +3950,7 @@ function editarReceita(id) {
       document.getElementById('receita-desconto').value = r.desconto || '0';
       document.getElementById('receita-venc').value = r.vencimento || '';
       if(document.getElementById('receita-obs')) document.getElementById('receita-obs').value = r.obs || '';
+      window._recEditMeta = { id, colecao:'receitas', recorrenciaId: r.recorrenciaId||null, vencimento: r.vencimento||'' };
     }
   });
 }
@@ -3971,6 +4066,7 @@ async function renovarHorasMensais() {
 
 // ── DESPESAS PARCELADAS — VENCIMENTOS CORRETOS ──
 async function salvarDespesaComParcelas(data, numParcelas) {
+  const recorrenciaId = db.collection('despesas').doc().id;
   const batch = db.batch();
   const baseDate = new Date(data.vencimento + 'T12:00:00');
   // Usa o valor informado diretamente — cada parcela = esse valor
@@ -4520,12 +4616,13 @@ async function excluirLancamento(id, colecao) {
 async function lancarRecorrentePorQtd(data, qtd, colecao) {
   const batch = db.batch();
   const baseDate = new Date((data.vencimento||new Date().toISOString().split('T')[0]) + 'T12:00:00');
+  // ID de grupo para identificar a série recorrente
+  const recorrenciaId = db.collection(colecao).doc().id;
   for(let i = 0; i < qtd; i++) {
     const venc = new Date(baseDate);
     venc.setMonth(venc.getMonth() + i);
-    const vencStr = venc.toISOString().split('T')[0];
+    const vencStr = `${venc.getFullYear()}-${String(venc.getMonth()+1).padStart(2,'0')}-${String(venc.getDate()).padStart(2,'0')}`;
     const ref = db.collection(colecao).doc();
-    // Derive mes/ano from this installment's vencimento (not the original creation date)
     const instData = {...data};
     delete instData.mes;
     delete instData.ano;
@@ -4536,6 +4633,7 @@ async function lancarRecorrentePorQtd(data, qtd, colecao) {
       ano: venc.getFullYear(),
       status: 'Pendente',
       parcela: qtd > 1 ? `${i+1}/${qtd}` : undefined,
+      recorrenciaId,
       recorrenciaNum: i + 1,
       totalRecorrencias: qtd,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -4595,6 +4693,73 @@ function checkVinculoAlertas(profs) {
     });
   });
   return alertas;
+}
+
+
+// ── EDIÇÃO RECORRENTE ──
+async function confirmarEdicaoRecorrente() {
+  const scope = document.querySelector('input[name="rec-edit-scope"]:checked')?.value || 'single';
+  const p = window._recEditPendente;
+  if(!p) { closeModal('rec-confirm'); return; }
+
+  const historicoEntry = firebase.firestore.FieldValue.arrayUnion({
+    editadoEm: new Date().toISOString(), por: auth.currentUser?.email||'admin'
+  });
+
+  try {
+    if(scope === 'single') {
+      // Apenas este lançamento
+      await db.collection(p.colecao).doc(p.id).update({
+        ...p.data, historico: historicoEntry
+      });
+      showToast('Lançamento atualizado!', 'success');
+    } else {
+      // Este e todos os futuros da mesma série
+      const snap = await db.collection(p.colecao)
+        .where('recorrenciaId', '==', p.recorrenciaId)
+        .get();
+      const futuros = snap.docs.filter(doc => {
+        const venc = doc.data().vencimento || '';
+        return venc >= p.vencimento; // este e futuros
+      });
+      if(futuros.length === 0) {
+        await db.collection(p.colecao).doc(p.id).update({...p.data, historico: historicoEntry});
+        showToast('Lançamento atualizado!', 'success');
+      } else {
+        const batch = db.batch();
+        // Calcular diferença de dias no vencimento para propagar ajuste proporcional
+        const dataOrigVenc = p.vencimento;
+        const dataNovoVenc = p.data.vencimento || dataOrigVenc;
+        const diffMs = new Date(dataNovoVenc + 'T12:00:00') - new Date(dataOrigVenc + 'T12:00:00');
+        const diffDias = Math.round(diffMs / (1000*60*60*24));
+
+        futuros.forEach(doc => {
+          const dVenc = doc.data().vencimento || '';
+          let novoVenc = dVenc;
+          if(diffDias !== 0 && dVenc) {
+            const d = new Date(dVenc + 'T12:00:00');
+            d.setDate(d.getDate() + diffDias);
+            novoVenc = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          }
+          const upd = {...p.data, vencimento: novoVenc,
+            mes: new Date(novoVenc+'T12:00:00').getMonth(),
+            ano: new Date(novoVenc+'T12:00:00').getFullYear(),
+            historico: historicoEntry};
+          batch.update(doc.ref, upd);
+        });
+        await batch.commit();
+        showToast(`${futuros.length} lançamento(s) atualizado(s)!`, 'success');
+      }
+    }
+    closeModal('rec-confirm');
+    window._recEditPendente = null;
+    window._recEditMeta = null;
+    loadFinanceiro();
+    if(document.getElementById('fin-mov')?.classList.contains('active')) loadMovimentacao();
+  } catch(e) {
+    console.error('Erro ao editar recorrência:', e);
+    showToast('Erro ao atualizar. Tente novamente.', 'error');
+  }
 }
 
 // ── ALERTAS DE VENCIMENTO REAIS (Firebase) ──
@@ -4657,5 +4822,35 @@ if('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<!-- MODAL: Edição de recorrência -->
+<div class="modal-overlay" id="modal-rec-confirm" onclick="closeModalBg(event,'rec-confirm')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">Editar lançamento recorrente</div>
+    <p style="font-size:.88rem;color:var(--text-light);margin-bottom:1.25rem;line-height:1.6">
+      Este lançamento faz parte de uma série recorrente. Como deseja aplicar a alteração?
+    </p>
+    <div style="display:flex;flex-direction:column;gap:.625rem;margin-bottom:1.5rem">
+      <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px;transition:border-color .15s" id="rec-opt-single-wrap">
+        <input type="radio" name="rec-edit-scope" id="rec-opt-single" value="single" style="margin-top:2px;accent-color:var(--gold)" checked>
+        <div>
+          <div style="font-size:.88rem;font-weight:600">Somente este lançamento</div>
+          <div style="font-size:.78rem;color:var(--text-lighter);margin-top:2px">Apenas a ocorrência selecionada será alterada.</div>
+        </div>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px;transition:border-color .15s" id="rec-opt-future-wrap">
+        <input type="radio" name="rec-edit-scope" id="rec-opt-future" value="future" style="margin-top:2px;accent-color:var(--gold)">
+        <div>
+          <div style="font-size:.88rem;font-weight:600">Este e todos os lançamentos futuros</div>
+          <div style="font-size:.78rem;color:var(--text-lighter);margin-top:2px">A alteração será aplicada a esta ocorrência e a todas as próximas da mesma série.</div>
+        </div>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('rec-confirm')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarEdicaoRecorrente()">Confirmar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
