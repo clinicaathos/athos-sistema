@@ -872,6 +872,10 @@ body.dark .tag{background:#111827;border-color:#374151;}
           <div style="display:flex;gap:.5rem">
             <button class="btn btn-secondary" onclick="openModal('nova-receita')">+ Receita</button>
             <button class="btn btn-secondary" onclick="openModal('nova-despesa')">+ Despesa</button>
+            <button class="btn btn-secondary" onclick="exportarBackupExcel()" title="Backup completo em Excel">
+              <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2l2 4 2-4h2"/></svg>
+              Backup Excel
+            </button>
             <button class="btn btn-primary" onclick="exportarFinanceiro()">↓ Exportar</button>
           </div>
         </div>
@@ -954,7 +958,10 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div id="desp-totalizador" style="display:none;background:var(--warning-bg);border:1px solid #fde68a;border-radius:8px;padding:.6rem 1rem;margin-top:.75rem;font-size:.82rem;font-weight:600;color:#92400e"></div>
           </div>
           <div class="fin-content" id="fin-mov" style="padding:0 1.25rem 1.25rem">
-            <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.5rem;margin-top:.25rem"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Lançamentos já realizados (pagos ou com vencimento passado), em ordem cronológica.</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;margin-top:.25rem">
+              <div style="font-size:.72rem;color:var(--text-lighter)"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Lançamentos realizados em</div>
+              <span id="mov-periodo-label" style="font-size:.8rem;font-weight:600;color:var(--gold)"></span>
+            </div>
             <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem">
               <div class="fin-search" style="flex:1;min-width:180px">
                 <span class="fin-search-icon">🔍</span>
@@ -1037,8 +1044,15 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div class="chart-title" id="chart-mensal-title">Receitas x Despesas</div>
             <canvas id="chart-mensal" height="120"></canvas>
           </div>
-          <div class="chart-wrap">
-            <div class="chart-title" id="chart-ocup-title">Ocupação por Turno</div>
+          <div class="chart-wrap" id="ind-ocup">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+              <div class="chart-title" id="chart-ocup-title" style="margin-bottom:0">Ocupação por Turno</div>
+              <div style="display:flex;gap:4px">
+                <button class="qf-btn relat-loc-tipo-btn active" data-tipo="todos" onclick="setRelatTipoLoc('todos')" style="font-size:.72rem;padding:3px 9px">Todos</button>
+                <button class="qf-btn relat-loc-tipo-btn" data-tipo="turno" onclick="setRelatTipoLoc('turno')" style="font-size:.72rem;padding:3px 9px">Turnos</button>
+                <button class="qf-btn relat-loc-tipo-btn" data-tipo="avulsa" onclick="setRelatTipoLoc('avulsa')" style="font-size:.72rem;padding:3px 9px">Hora Avulsa</button>
+              </div>
+            </div>
             <canvas id="chart-ocupacao" height="100"></canvas>
           </div>
           <div id="relat-geral-extra-mensal" style="display:none;margin-top:1rem"></div>
@@ -1273,8 +1287,26 @@ body.dark .tag{background:#111827;border-color:#374151;}
     <input type="hidden" id="prof-edit-id">
     <div class="form-group"><label class="form-label">Nome Completo</label><input class="form-input" id="prof-nome" placeholder="Dr. / Dra."></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">CPF</label><input class="form-input" id="prof-cpf" placeholder="000.000.000-00"></div>
+      <div class="form-group">
+        <label class="form-label">Tipo de Pessoa</label>
+        <select class="form-select" id="prof-tipo-pessoa" onchange="toggleTipoPessoa()">
+          <option value="PF">Pessoa Física (PF)</option>
+          <option value="PJ">Pessoa Jurídica (PJ)</option>
+        </select>
+      </div>
       <div class="form-group"><label class="form-label">RG</label><input class="form-input" id="prof-rg" placeholder="00.000.000-0"></div>
+    </div>
+    <div class="form-row" id="prof-cpf-row">
+      <div class="form-group"><label class="form-label">CPF</label><input class="form-input" id="prof-cpf" placeholder="000.000.000-00"></div>
+      <div class="form-group" style="display:none" id="prof-cnpj-wrap"><label class="form-label">CNPJ</label><input class="form-input" id="prof-cnpj" placeholder="00.000.000/0000-00"></div>
+    </div>
+    <div id="prof-pj-section" style="display:none;background:var(--gold-pale);border:1px solid #e5d5c0;border-radius:9px;padding:.875rem;margin-bottom:.75rem">
+      <div style="font-size:.74rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.625rem">Representante Legal (Pessoa Física)</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nome do Representante</label><input class="form-input" id="prof-rep-nome" placeholder="Nome completo do representante"></div>
+        <div class="form-group"><label class="form-label">CPF do Representante</label><input class="form-input" id="prof-rep-cpf" placeholder="000.000.000-00"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Cargo / Função</label><input class="form-input" id="prof-rep-cargo" placeholder="Ex: Sócio, Diretor, Responsável Técnico"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Conselho</label><select class="form-select" id="prof-conselho"><option>CRP</option><option>CRM</option><option>CREFITO</option><option>CRN</option><option>Outro</option></select></div>
@@ -1316,9 +1348,10 @@ body.dark .tag{background:#111827;border-color:#374151;}
     <div class="form-group">
       <label class="form-label">Vencimento da Locação</label>
       <select class="form-select" id="prof-venc-locacao">
-        <option value="5">5</option>
-        <option value="15" selected>15</option>
-        <option value="30">30</option>
+        <option value="sem_vencimento">Sem data de vencimento</option>
+        <option value="5">5 dias</option>
+        <option value="15" selected>15 dias</option>
+        <option value="30">30 dias</option>
       </select>
     </div>
     <div class="form-group"><label class="form-label">Observações</label><textarea class="form-textarea" id="prof-obs" placeholder="Observações gerais sobre o profissional..."></textarea></div>
@@ -1544,6 +1577,38 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ── HELPERS VISUAIS (skeleton + empty state) ──
+
+// ── locAtivaEmDia: verifica se uma locação ocorre num dia específico ──
+// Considera recorrência (semanal, quinzenal, mensal, única)
+function locAtivaEmDia(l, diaStr) {
+  if(!l.dataInicio) return false;
+  if(diaStr < l.dataInicio) return false;
+  if(l.dataFim && diaStr > l.dataFim) return false;
+  const rec = (l.recorrencia||'').toLowerCase().trim();
+  if(!rec || rec === 'apenas este horário' || rec === 'apenas este horario' || rec === 'nenhuma' || !l.dataFim || l.dataFim === l.dataInicio) {
+    // Hora avulsa ou sem recorrência: só no dia exato
+    return diaStr === l.dataInicio;
+  }
+  if(rec === 'semanal') {
+    const inicio = new Date(l.dataInicio + 'T12:00:00');
+    const dia    = new Date(diaStr + 'T12:00:00');
+    const diffDias = Math.round((dia - inicio) / (1000*60*60*24));
+    return diffDias % 7 === 0;
+  }
+  if(rec === 'quinzenal') {
+    const inicio = new Date(l.dataInicio + 'T12:00:00');
+    const dia    = new Date(diaStr + 'T12:00:00');
+    const diffDias = Math.round((dia - inicio) / (1000*60*60*24));
+    return diffDias % 14 === 0;
+  }
+  if(rec === 'mensal') {
+    const inicio = new Date(l.dataInicio + 'T12:00:00');
+    const dia    = new Date(diaStr + 'T12:00:00');
+    return dia.getDate() === inicio.getDate();
+  }
+  // Fallback: qualquer outro tipo — apenas no dia exato
+  return diaStr === l.dataInicio;
+}
 function skelList(n=3) {
   return Array.from({length:n},()=>`<div class="sk-row"><div class="sk sk-chip"></div><div style="flex:1"><div class="sk sk-line w80"></div><div class="sk sk-line w40" style="margin-bottom:0"></div></div></div>`).join('');
 }
@@ -1818,9 +1883,15 @@ function updateVinculoAuto() {
 async function salvarProfissional() {
   const id = document.getElementById('prof-edit-id').value;
   const vinculo = document.getElementById('prof-vinculo').value;
+  const tipoPessoa = document.getElementById('prof-tipo-pessoa')?.value || 'PF';
   const data = {
     nome: document.getElementById('prof-nome').value,
+    tipoPessoa,
     cpf: document.getElementById('prof-cpf').value,
+    cnpj: tipoPessoa === 'PJ' ? (document.getElementById('prof-cnpj')?.value || '') : '',
+    repNome: tipoPessoa === 'PJ' ? (document.getElementById('prof-rep-nome')?.value || '') : '',
+    repCpf: tipoPessoa === 'PJ' ? (document.getElementById('prof-rep-cpf')?.value || '') : '',
+    repCargo: tipoPessoa === 'PJ' ? (document.getElementById('prof-rep-cargo')?.value || '') : '',
     rg: document.getElementById('prof-rg').value,
     conselho: document.getElementById('prof-conselho').value,
     registro: document.getElementById('prof-registro').value,
@@ -1841,6 +1912,7 @@ async function salvarProfissional() {
     contratoInicio: document.getElementById('prof-contrato-inicio').value,
     contratoFim: document.getElementById('prof-contrato-fim').value,
     obs: document.getElementById('prof-obs').value,
+    vencLocacao: document.getElementById('prof-venc-locacao')?.value || '15',
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   if(!data.nome){showToast('Nome é obrigatório.','error');return;}
@@ -1911,6 +1983,15 @@ function editarProfissional(id) {
   document.getElementById('prof-contrato-inicio').value = p.contratoInicio||'';
   document.getElementById('prof-contrato-fim').value = p.contratoFim||'';
   document.getElementById('prof-obs').value = p.obs||'';
+  // Campos PF/PJ
+  const tipoPessoa = p.tipoPessoa || 'PF';
+  const tipoPessoaEl = document.getElementById('prof-tipo-pessoa');
+  if(tipoPessoaEl) { tipoPessoaEl.value = tipoPessoa; toggleTipoPessoa(); }
+  if(document.getElementById('prof-cnpj')) document.getElementById('prof-cnpj').value = p.cnpj||'';
+  if(document.getElementById('prof-rep-nome')) document.getElementById('prof-rep-nome').value = p.repNome||'';
+  if(document.getElementById('prof-rep-cpf')) document.getElementById('prof-rep-cpf').value = p.repCpf||'';
+  if(document.getElementById('prof-rep-cargo')) document.getElementById('prof-rep-cargo').value = p.repCargo||'';
+  if(document.getElementById('prof-venc-locacao')) document.getElementById('prof-venc-locacao').value = p.vencLocacao||'15';
   openModal('novo-prof');
 }
 
@@ -1964,20 +2045,86 @@ function updateDashboardProfs() {
   else
     document.getElementById('dash-profs-sub').textContent=`${ativos} ativo${ativos!==1?'s':''}`;
 
-  // Birthday check
-  const bdayProfs = profissionaisCache.filter(p=>{
+  // ── ANIVERSARIANTES ──
+  const mesHoje = hoje.getMonth();
+  const diaHoje = hoje.getDate();
+  const mesesNomesB = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  // Aniversariantes do mês atual
+  const bdayMes = profissionaisCache.filter(p => {
     if(!p.nascimento) return false;
-    const n=new Date(p.nascimento);
-    return n.getDate()===hoje.getDate()&&n.getMonth()===hoje.getMonth();
-  });
-  const bdayBanner=document.getElementById('bday-banner');
-  if(bdayProfs.length>0){
-    bdayBanner.innerHTML=`<div class="bday-alert"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8M4 16s1.5-2 4-2 4 2 4 2 1.5-2 4-2 4 2 4 2M12 7v4M12 7a2 2 0 1 0-2-2c0 1.1 2 2 2 2z"/></svg> <div><strong>Aniversário hoje:</strong> ${bdayProfs.map(p=>p.nome).join(', ')} — Lembre de parabenizar!</div></div>`;
-  } else { bdayBanner.innerHTML=''; }
+    const n = new Date(p.nascimento + 'T12:00:00');
+    return n.getMonth() === mesHoje;
+  }).sort((a,b) => new Date(a.nascimento+'T12:00:00').getDate() - new Date(b.nascimento+'T12:00:00').getDate());
+
+  // Próximos aniversários — 7 dias a partir de amanhã
+  const proximos7 = [];
+  for(let i = 1; i <= 7; i++) {
+    const d = new Date(hoje);
+    d.setDate(hoje.getDate() + i);
+    profissionaisCache.forEach(p => {
+      if(!p.nascimento) return;
+      const n = new Date(p.nascimento + 'T12:00:00');
+      if(n.getDate() === d.getDate() && n.getMonth() === d.getMonth()) {
+        proximos7.push({ ...p, _diasParaAniv: i, _dataAniv: d });
+      }
+    });
+  }
+  // Filtrar os do próximo mês (apenas se hoje é nos últimos dias do mês)
+  const diasRestantesNoMes = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).getDate() - diaHoje;
+  const mostrarProxMes = diasRestantesNoMes < 7;
+
+  const bdayBanner = document.getElementById('bday-banner');
+  let bannerHtml = '';
+
+  if(bdayMes.length > 0) {
+    const bdayRows = bdayMes.map(p => {
+      const n = new Date(p.nascimento + 'T12:00:00');
+      const isHoje = n.getDate() === diaHoje;
+      const dia = String(n.getDate()).padStart(2,'0') + '/' + String(mesHoje+1).padStart(2,'0');
+      return `<div style="display:flex;align-items:center;gap:8px;padding:.45rem 0;border-bottom:1px solid rgba(160,120,80,.15)">
+        <span style="font-size:.78rem;font-weight:700;min-width:36px;color:var(--gold)">${dia}</span>
+        <span style="font-size:.82rem;font-weight:${isHoje?'700':'500'};color:${isHoje?'var(--gold)':'var(--text)'}">${p.nome||'—'}</span>
+        ${isHoje?'<span class="badge badge-warning" style="margin-left:auto;font-size:.65rem">Hoje!</span>':''}
+      </div>`;
+    }).join('');
+    bannerHtml += `<div class="bday-alert" style="margin-bottom:${proximos7.length>0&&mostrarProxMes?'.5rem':'0'}">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:.5rem">
+        <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8M4 16s1.5-2 4-2 4 2 4 2 1.5-2 4-2 4 2 4 2M12 7v4M12 7a2 2 0 1 0-2-2c0 1.1 2 2 2 2z"/></svg>
+        <strong>Aniversariantes — ${mesesNomesB[mesHoje]}</strong>
+        <span class="badge badge-warning" style="font-size:.65rem">${bdayMes.length}</span>
+      </div>
+      ${bdayRows}
+    </div>`;
+  }
+
+  if(proximos7.length > 0 && mostrarProxMes) {
+    const proxRows = proximos7.map(p => {
+      const dia = String(p._dataAniv.getDate()).padStart(2,'0') + '/' + String(p._dataAniv.getMonth()+1).padStart(2,'0');
+      const label = p._diasParaAniv === 1 ? 'amanhã' : `em ${p._diasParaAniv} dias`;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:.35rem 0;border-bottom:1px solid rgba(160,120,80,.1)">
+        <span style="font-size:.76rem;font-weight:700;min-width:36px;color:var(--gold)">${dia}</span>
+        <span style="font-size:.8rem;font-weight:500">${p.nome||'—'}</span>
+        <span style="font-size:.72rem;color:var(--text-lighter);margin-left:auto">${label}</span>
+      </div>`;
+    }).join('');
+    bannerHtml += `<div class="bday-alert" style="background:var(--gold-pale);border-color:#d4b896">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:.5rem">
+        <svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <strong>Próximos Aniversários (7 dias)</strong>
+        <span class="badge badge-neutral" style="font-size:.65rem">${proximos7.length}</span>
+      </div>
+      ${proxRows}
+    </div>`;
+  }
+
+  bdayBanner.innerHTML = bannerHtml;
 
   // Alertas — inclui vencidos
   const alertas=[];
-  bdayProfs.forEach(p=>alertas.push({icon:'<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8M4 16s1.5-2 4-2 4 2 4 2 1.5-2 4-2 4 2 4 2M12 7v4M12 7a2 2 0 1 0-2-2c0 1.1 2 2 2 2z"/></svg>',title:`Aniversário hoje`,sub:p.nome}));
+  // Aniversário hoje nos alertas
+  bdayMes.filter(p=>{ const n=new Date(p.nascimento+'T12:00:00'); return n.getDate()===diaHoje; })
+    .forEach(p=>alertas.push({icon:'<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8M4 16s1.5-2 4-2 4 2 4 2 1.5-2 4-2 4 2 4 2M12 7v4M12 7a2 2 0 1 0-2-2c0 1.1 2 2 2 2z"/></svg>',title:'Aniversário hoje',sub:p.nome}));
   vencendo.forEach(p=>{
     const diff=Math.floor((new Date(p.contratoFim+'T12:00:00')-hoje)/(1000*60*60*24));
     const label=diff<0?`Contrato VENCIDO há ${Math.abs(diff)} dia(s)`:diff===0?'Contrato vence HOJE':`Contrato vence em ${diff} dia(s)`;
@@ -2573,6 +2720,24 @@ async function excluirDespesa() {
 }
 
 
+// ── PF / PJ toggle ──
+function toggleTipoPessoa() {
+  const tipo = document.getElementById('prof-tipo-pessoa')?.value || 'PF';
+  const cpfEl = document.getElementById('prof-cpf');
+  const cnpjWrap = document.getElementById('prof-cnpj-wrap');
+  const pjSection = document.getElementById('prof-pj-section');
+  const cpfLabel = cpfEl?.previousElementSibling;
+  if(tipo === 'PJ') {
+    if(cnpjWrap) cnpjWrap.style.display = '';
+    if(pjSection) pjSection.style.display = '';
+    if(cpfLabel) cpfLabel.textContent = 'CPF (representante)';
+  } else {
+    if(cnpjWrap) cnpjWrap.style.display = 'none';
+    if(pjSection) pjSection.style.display = 'none';
+    if(cpfLabel) cpfLabel.textContent = 'CPF';
+  }
+}
+
 // ── BACKUP EXCEL ──
 async function exportarBackupExcel() {
   showToast('Gerando backup... aguarde.', 'success');
@@ -2720,16 +2885,11 @@ function renderAgendaDia() {
   ];
   const s1=appConfig.sala1||'Áthos I';
   const s2=appConfig.sala2||'Áthos II';
-  const dataStr=currentAgendaDate.toISOString().split('T')[0];
+  const _cad=currentAgendaDate; const dataStr=`${_cad.getFullYear()}-${String(_cad.getMonth()+1).padStart(2,'0')}-${String(_cad.getDate()).padStart(2,'0')}`;
 
   // Buscar locações do dia no Firebase
   db.collection('locacoes').get().then(snap => {
-    const locacoesDia = snap.docs.map(d=>({id:d.id,...d.data()})).filter(l => {
-      if(!l.dataInicio) return false;
-      const ini = l.dataInicio;
-      const fim = l.dataFim || l.dataInicio;
-      return dataStr >= ini && dataStr <= fim;
-    });
+    const locacoesDia = snap.docs.map(d=>({id:d.id,...d.data()})).filter(l => locAtivaEmDia(l, dataStr));
 
     // Montar mapa: turno+sala → locação
     function getTurno(inicio) {
@@ -3160,22 +3320,8 @@ async function initRelatorios() {
           options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}
         });
 
-        // Ocupação
-        const s1n = appConfig.sala1||'Áthos I';
-        const s2n = appConfig.sala2||'Áthos II';
-        const occ = {manha_s1:0,tarde_s1:0,noite_s1:0,manha_s2:0,tarde_s2:0,noite_s2:0};
-        locacoes.forEach(l=>{
-          const tk=getTurnoKeyR(l.inicio);
-          const isS1=(l.sala||'').toLowerCase().includes('1')||((l.sala||'').includes('I')&&!(l.sala||'').includes('II'));
-          if(tk) occ[`${tk}_${isS1?'s1':'s2'}`]++;
-        });
-        destroyChart('chart-ocupacao');
-        chartInstances['chart-ocupacao'] = new Chart(document.getElementById('chart-ocupacao'),{
-          type:'bar',
-          data:{labels:[`Manhã ${s1n}`,`Tarde ${s1n}`,`Noite ${s1n}`,`Manhã ${s2n}`,`Tarde ${s2n}`,`Noite ${s2n}`],
-            datasets:[{label:'Locações',data:[occ.manha_s1,occ.tarde_s1,occ.noite_s1,occ.manha_s2,occ.tarde_s2,occ.noite_s2],backgroundColor:'rgba(34,197,94,.7)',borderRadius:6}]},
-          options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
-        });
+        // Ocupação — usa _atualizarOcupacaoChart que já aplica filtros de data e tipo
+        setTimeout(_atualizarOcupacaoChart, 50);
 
         // Semestral
         const semi6=[];
@@ -3486,6 +3632,55 @@ async function _buildGeralExtra(targetEl) {
   }
 }
 
+// ── 9. Filtro de tipo de locação nos relatórios ──
+let _relatTipoLoc = 'todos'; // 'todos' | 'turno' | 'avulsa'
+function setRelatTipoLoc(tipo) {
+  _relatTipoLoc = tipo;
+  document.querySelectorAll('.relat-loc-tipo-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tipo === tipo);
+  });
+  // Recarregar o gráfico de ocupação com filtro
+  if(_relDados) _atualizarOcupacaoChart();
+}
+
+function _atualizarOcupacaoChart() {
+  if(!_relDados) return;
+  const { locacoes } = _relDados;
+  const s1n = appConfig.sala1||'Áthos I';
+  const s2n = appConfig.sala2||'Áthos II';
+  function getTurnoKeyR(ini) {
+    if(!ini) return '';
+    const h=parseInt(ini.split(':')[0]),m=parseInt(ini.split(':')[1]||'0'),t=h*60+m;
+    if(t<13*60) return 'manha';
+    if(t<17*60+30) return 'tarde';
+    return 'noite';
+  }
+  const occ = {manha_s1:0,tarde_s1:0,noite_s1:0,manha_s2:0,tarde_s2:0,noite_s2:0};
+  locacoes.forEach(l=>{
+    // 8. Filtrar apenas locações efetivamente realizadas (com dataInicio no passado/hoje)
+    const hoje = new Date();
+    const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
+    if(!l.dataInicio || l.dataInicio > hojeStr) return;
+    // 9. Filtro de tipo de locação
+    const vinculo = (l.vinculo||'').toLowerCase();
+    if(_relatTipoLoc === 'turno' && !vinculo.includes('turno')) return;
+    if(_relatTipoLoc === 'avulsa' && !vinculo.includes('avulsa')) return;
+    const tk=getTurnoKeyR(l.inicio);
+    const isS1=(l.sala||'').toLowerCase().includes('1')||((l.sala||'').includes('I')&&!(l.sala||'').includes('II'));
+    if(tk) occ[`${tk}_${isS1?'s1':'s2'}`]++;
+  });
+  destroyChart('chart-ocupacao');
+  const canvas = document.getElementById('chart-ocupacao');
+  if(canvas) {
+    chartInstances['chart-ocupacao'] = new Chart(canvas, {
+      type:'bar',
+      data:{labels:[`Manhã ${s1n}`,`Tarde ${s1n}`,`Noite ${s1n}`,`Manhã ${s2n}`,`Tarde ${s2n}`,`Noite ${s2n}`],
+        datasets:[{label:'Locações realizadas',data:[occ.manha_s1,occ.tarde_s1,occ.noite_s1,occ.manha_s2,occ.tarde_s2,occ.noite_s2],backgroundColor:'rgba(34,197,94,.7)',borderRadius:6}]},
+      options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+    });
+  }
+}
+
 function setRelatTipo(tipo, el) {
   const finBtn = document.getElementById('relat-tipo-fin');
   const gerBtn = document.getElementById('relat-tipo-ger');
@@ -3500,7 +3695,7 @@ function setRelatTipo(tipo, el) {
   const isFin = tipo === 'financeiro';
 
   // Elementos exclusivos do Geral
-  ['chart-ocupacao','ind-ocup','ind-inadimp','ind-profs-r','ind-an-profs'].forEach(id=>{
+  ['chart-ocupacao','ind-inadimp','ind-profs-r','ind-an-profs'].forEach(id=>{
     const wrap = document.getElementById(id)?.closest('.chart-wrap,.ind-card');
     if(wrap) wrap.style.display = isFin ? 'none' : '';
   });
@@ -3614,9 +3809,12 @@ function openModal(id) {
     // reset handled by novoPlano()
   }
   if(id==='novo-prof'){
-    document.getElementById('prof-modal-title').textContent='Novo Profissional';
-    document.getElementById('prof-edit-id').value='';
-    document.getElementById('prof-vinculo-formal').value='Sem vínculo';
+    const profEditId = document.getElementById('prof-edit-id');
+    if(profEditId && !profEditId.value) {
+      // Só reseta se for novo cadastro (editarProfissional seta o id antes de openModal)
+      document.getElementById('prof-modal-title').textContent='Novo Profissional';
+      document.getElementById('prof-vinculo-formal').value='Sem vínculo';
+    }
   }
   if(id==='nova-despesa'){
     // Só reseta se não veio de editarDespesa (que seta despesa-edit-id antes de chamar openModal)
@@ -3687,16 +3885,30 @@ let movCache = [];
 
 async function loadMovimentacao() {
   try {
-    // Movimentação = somente lançamentos com status 'Pago'
+    // Movimentação filtrada pelo mês/ano do Financeiro
+    const hoje = new Date();
+    const mesAtivo = typeof _mesAtivo !== 'undefined' ? _mesAtivo : hoje.getMonth();
+    const anoAtivo = typeof _anoAtivo !== 'undefined' ? _anoAtivo : hoje.getFullYear();
+    const mesStr = String(mesAtivo + 1).padStart(2,'0');
+    const anoStr = String(anoAtivo);
+    const inicioPeriodo = `${anoStr}-${mesStr}-01`;
+    const ultimoDia = new Date(anoAtivo, mesAtivo + 1, 0).getDate();
+    const fimPeriodo = `${anoStr}-${mesStr}-${String(ultimoDia).padStart(2,'0')}`;
+
     const recSnap = await db.collection('receitas').get();
     const receitas = recSnap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Receita'}))
-      .filter(r => r.status === 'Pago');
+      .filter(r => r.status === 'Pago' && r.vencimento >= inicioPeriodo && r.vencimento <= fimPeriodo);
 
     const despSnap = await db.collection('despesas').get();
     const despesas = despSnap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Despesa'}))
-      .filter(d => d.status === 'Pago');
+      .filter(d => d.status === 'Pago' && d.vencimento >= inicioPeriodo && d.vencimento <= fimPeriodo);
 
     movCache = [...receitas, ...despesas].sort((a,b) => (a.vencimento||'').localeCompare(b.vencimento||''));
+
+    // Label do período
+    const mesesNomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const labelEl = document.getElementById('mov-periodo-label');
+    if(labelEl) labelEl.textContent = `${mesesNomes[mesAtivo]} ${anoAtivo}`;
 
     // Popular selects de categoria e subcategoria
     const cats = [...new Set(movCache.map(x=>x.categoria||x.tipo||'').filter(Boolean))].sort();
