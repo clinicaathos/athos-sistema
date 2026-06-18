@@ -642,6 +642,8 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="nav-item" onclick="showPage('planos',this)"><span class="nav-icon">◫</span>Planos e Pacotes</div>
       <div class="nav-item" onclick="showPage('financeiro',this)"><span class="nav-icon">⊟</span>Financeiro</div>
       <div class="nav-item" onclick="showPage('relatorios',this)"><span class="nav-icon">◈</span>Relatórios</div>
+      <div class="nav-item" onclick="showPage('lembretes',this)"><span class="nav-icon">◷</span>Lembretes</div>
+      <div class="nav-item" onclick="showPage('servicos',this)"><span class="nav-icon">⊗</span>Serviços</div>
       <div class="sb-group">Sistema</div>
       <div class="nav-item" onclick="showPage('configuracoes',this)"><span class="nav-icon">⊕</span>Configurações</div>
     </nav>
@@ -1158,6 +1160,43 @@ body.dark .tag{background:#111827;border-color:#374151;}
           </div>
         </div>
       </div>
+      <!-- ══ LEMBRETES ══ -->
+      <div class="page" id="page-lembretes">
+        <div class="sec-header">
+          <span class="sec-title">Lembretes</span>
+          <button class="btn btn-primary" onclick="openModal('novo-lembrete')">
+            <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Novo Lembrete
+          </button>
+        </div>
+        <div id="lembretes-lista" style="margin-top:.5rem"></div>
+      </div>
+
+      <!-- ══ SERVIÇOS ══ -->
+      <div class="page" id="page-servicos">
+        <div class="sec-header">
+          <span class="sec-title">Serviços</span>
+          <button class="btn btn-primary" onclick="openModal('novo-servico')">
+            <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Novo Serviço
+          </button>
+        </div>
+        <!-- Filtros -->
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+          <input class="form-input" id="srv-filtro-empresa" placeholder="Empresa / Prestador" style="max-width:180px" oninput="loadServicos()">
+          <select class="form-select" id="srv-filtro-status" style="max-width:150px" onchange="loadServicos()">
+            <option value="">Todos os status</option>
+            <option>Pendente</option><option>Em andamento</option><option>Concluído</option><option>Cancelado</option>
+          </select>
+          <input class="form-input" type="date" id="srv-filtro-ini" style="max-width:140px" onchange="loadServicos()">
+          <input class="form-input" type="date" id="srv-filtro-fim" style="max-width:140px" onchange="loadServicos()">
+        </div>
+        <!-- Indicadores -->
+        <div class="stats-grid" style="margin-bottom:1rem">
+          <div class="stat-card"><div class="stat-label">Total Gasto</div><div class="stat-value" id="srv-total">—</div></div>
+          <div class="stat-card"><div class="stat-label">Serviços Realizados</div><div class="stat-value" id="srv-count">—</div></div>
+        </div>
+        <div id="servicos-lista"></div>
+      </div>
+
       <div class="page" id="page-configuracoes">
         <div class="sec-header">
           <span class="sec-title">Configurações</span>
@@ -1247,14 +1286,27 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo"><option>Turno Fixo (4h)</option><option>Turno Duplo (8h — 2 turnos)</option><option>Pacote de Horas</option><option>Hora Avulsa</option></select></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Hora Início</label><select class="form-select" id="loc-inicio"><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>18:00</option><option>19:00</option><option>20:00</option><option>21:00</option></select></div>
-      <div class="form-group"><label class="form-label">Hora Fim</label><select class="form-select" id="loc-fim"><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>19:00</option><option>20:00</option><option>21:00</option><option>22:00</option></select></div>
+      <div class="form-group"><label class="form-label">Hora Início</label><select class="form-select" id="loc-inicio"><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:30</option><option>18:00</option><option>19:00</option><option>20:00</option><option>21:00</option><option>21:30</option></select></div>
+      <div class="form-group"><label class="form-label">Hora Fim</label><select class="form-select" id="loc-fim"><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>17:30</option><option>19:00</option><option>20:00</option><option>21:00</option><option>21:30</option><option>22:00</option></select></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Data Início</label><input class="form-input" type="date" id="loc-data-inicio"></div>
       <div class="form-group"><label class="form-label">Data Término</label><input class="form-input" type="date" id="loc-data-fim"></div>
     </div>
-    <div class="form-group"><label class="form-label">Recorrência</label><select class="form-select" id="loc-recorrencia"><option>Apenas este horário</option><option>Semanal</option><option>Quinzenal</option><option>Mensal</option></select></div>
+    <div class="form-group"><label class="form-label">Recorrência</label><select class="form-select" id="loc-recorrencia" onchange="toggleDiasSemana()"><option>Apenas este horário</option><option>Semanal</option><option>Quinzenal</option><option>Mensal</option></select></div>
+    <div class="form-group" id="loc-dias-semana-group" style="display:none">
+      <label class="form-label">Dias da semana</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+        <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="loc-dia-0" value="0"> Dom</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="loc-dia-1" value="1"> Seg</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="loc-dia-2" value="2"> Ter</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="loc-dia-3" value="3"> Qua</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="loc-dia-4" value="4"> Qui</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="loc-dia-5" value="5"> Sex</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="loc-dia-6" value="6"> Sáb</label>
+      </div>
+      <div style="font-size:.72rem;color:var(--text-lighter);margin-top:4px">Selecione os dias em que a locação se repete dentro do período.</div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Desconto (%)</label><input class="form-input" id="loc-desconto" type="number" min="0" max="100" placeholder="0" oninput="calcDescontoLocacao()"></div>
       <div class="form-group"><label class="form-label">Valor final</label><input class="form-input" id="loc-valor-final" readonly placeholder="Automático" style="background:#f9fafb;color:var(--success);font-weight:600"></div>
@@ -1406,6 +1458,73 @@ body.dark .tag{background:#111827;border-color:#374151;}
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('novo-plano')">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarPlano()">Criar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Histórico do Profissional -->
+<div class="modal-overlay" id="modal-historico-prof" onclick="closeModalBg(event,'historico-prof')">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-title" id="historico-prof-title">Histórico do Profissional</div>
+    <div id="historico-prof-indicadores" style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem"></div>
+    <div id="historico-prof-timeline" style="max-height:420px;overflow-y:auto"></div>
+    <div class="modal-actions" style="margin-top:1rem">
+      <button class="btn btn-secondary" onclick="closeModal('historico-prof')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Novo Lembrete -->
+<div class="modal-overlay" id="modal-novo-lembrete" onclick="closeModalBg(event,'novo-lembrete')">
+  <div class="modal modal-sm">
+    <div class="modal-title" id="lembrete-modal-title">Novo Lembrete</div>
+    <input type="hidden" id="lembrete-edit-id">
+    <div class="form-group"><label class="form-label">Título</label><input class="form-input" id="lembrete-titulo" placeholder="Ex: Renovar contrato, Ligar para fornecedor..."></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Data</label><input class="form-input" type="date" id="lembrete-data"></div>
+      <div class="form-group"><label class="form-label">Prioridade</label>
+        <select class="form-select" id="lembrete-prioridade">
+          <option>Normal</option><option>Alta</option><option>Urgente</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Observação</label><textarea class="form-input" id="lembrete-obs" rows="2" style="resize:vertical"></textarea></div>
+    <div class="form-group"><label class="form-label">Status</label>
+      <select class="form-select" id="lembrete-status"><option>Pendente</option><option>Concluído</option></select>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem">
+      <button class="btn btn-primary" style="flex:1" onclick="salvarLembrete()">Salvar</button>
+      <button class="btn btn-secondary" id="lembrete-excluir-btn" style="display:none;color:var(--danger)" onclick="excluirLembrete()">Excluir</button>
+      <button class="btn btn-secondary" onclick="closeModal('novo-lembrete')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Novo Serviço -->
+<div class="modal-overlay" id="modal-novo-servico" onclick="closeModalBg(event,'novo-servico')">
+  <div class="modal modal-sm">
+    <div class="modal-title" id="servico-modal-title">Novo Serviço</div>
+    <input type="hidden" id="servico-edit-id">
+    <div class="form-group"><label class="form-label">Tipo de Serviço</label><input class="form-input" id="servico-tipo" placeholder="Ex: Manutenção de Ar-condicionado, Pintura..."></div>
+    <div class="form-group"><label class="form-label">Empresa / Prestador</label><input class="form-input" id="servico-empresa" placeholder="Ex: Clima Forte"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Data</label><input class="form-input" type="date" id="servico-data"></div>
+      <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-input" id="servico-valor" type="number" min="0" step="0.01" placeholder="0,00"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Status</label>
+      <select class="form-select" id="servico-status">
+        <option>Pendente</option><option>Em andamento</option><option>Concluído</option><option>Cancelado</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-input" id="servico-obs" rows="2" style="resize:vertical"></textarea></div>
+    <div class="form-group" style="display:flex;align-items:center;gap:.5rem">
+      <input type="checkbox" id="servico-gerar-lancamento">
+      <label for="servico-gerar-lancamento" style="font-size:.82rem;cursor:pointer">Gerar lançamento financeiro automaticamente</label>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem">
+      <button class="btn btn-primary" style="flex:1" onclick="salvarServico()">Salvar</button>
+      <button class="btn btn-secondary" id="servico-excluir-btn" style="display:none;color:var(--danger)" onclick="excluirServico()">Excluir</button>
+      <button class="btn btn-secondary" onclick="closeModal('novo-servico')">Cancelar</button>
     </div>
   </div>
 </div>
@@ -1589,22 +1708,38 @@ function locAtivaEmDia(l, diaStr) {
     // Hora avulsa ou sem recorrência: só no dia exato
     return diaStr === l.dataInicio;
   }
+  // Suporte a diasSemana: array de números 0-6 (0=Dom)
+  const diasSemana = l.diasSemana && Array.isArray(l.diasSemana) && l.diasSemana.length > 0 ? l.diasSemana.map(Number) : null;
+  const diaObj = new Date(diaStr + 'T12:00:00');
+  const diaDaSemana = diaObj.getDay(); // 0=Dom
   if(rec === 'semanal') {
+    if(diasSemana) {
+      // Com dias da semana selecionados: qualquer ocorrência nos dias escolhidos dentro do período
+      return diasSemana.includes(diaDaSemana);
+    }
     const inicio = new Date(l.dataInicio + 'T12:00:00');
-    const dia    = new Date(diaStr + 'T12:00:00');
-    const diffDias = Math.round((dia - inicio) / (1000*60*60*24));
+    const diffDias = Math.round((diaObj - inicio) / (1000*60*60*24));
     return diffDias % 7 === 0;
   }
   if(rec === 'quinzenal') {
+    if(diasSemana) {
+      if(!diasSemana.includes(diaDaSemana)) return false;
+      // Verifica quinzena: a cada 2 semanas contando da data início
+      const inicio = new Date(l.dataInicio + 'T12:00:00');
+      const diffDias = Math.round((diaObj - inicio) / (1000*60*60*24));
+      const semana = Math.floor(diffDias / 7);
+      return semana % 2 === 0;
+    }
     const inicio = new Date(l.dataInicio + 'T12:00:00');
-    const dia    = new Date(diaStr + 'T12:00:00');
-    const diffDias = Math.round((dia - inicio) / (1000*60*60*24));
+    const diffDias = Math.round((diaObj - inicio) / (1000*60*60*24));
     return diffDias % 14 === 0;
   }
   if(rec === 'mensal') {
     const inicio = new Date(l.dataInicio + 'T12:00:00');
-    const dia    = new Date(diaStr + 'T12:00:00');
-    return dia.getDate() === inicio.getDate();
+    if(diasSemana) {
+      return diasSemana.includes(diaDaSemana) && diaObj.getDate() >= 1;
+    }
+    return diaObj.getDate() === inicio.getDate();
   }
   // Fallback: qualquer outro tipo — apenas no dia exato
   return diaStr === l.dataInicio;
@@ -1950,6 +2085,7 @@ function verProfissional(id) {
     <div class="modal-actions">
       <button class="btn btn-danger" onclick="excluirProfissional('${id}')">Excluir</button>
       <button class="btn btn-secondary" onclick="closeModal('ver-prof')">Fechar</button>
+      <button class="btn btn-secondary" onclick="closeModal('ver-prof');verHistoricoProf('${id}')">Histórico</button>
       <button class="btn btn-primary" onclick="closeModal('ver-prof');editarProfissional('${id}')">Editar Cadastro</button>
     </div>`;
   openModal('ver-prof');
@@ -2933,6 +3069,15 @@ function renderAgendaDia() {
       const l2 = mapa[`${tk}_s2`];
       const p1 = l1 ? (profissionaisCache.find(p=>p.id===l1.profId)?.nome || l1.profId || '?') : null;
       const p2 = l2 ? (profissionaisCache.find(p=>p.id===l2.profId)?.nome || l2.profId || '?') : null;
+      function tipoLabel(l, tRange) {
+        if(!l) return '';
+        const v = (l.vinculo||'').toLowerCase();
+        if(v.includes('turno') || v.includes('pacote')) return tRange;
+        // Hora avulsa: mostrar horário específico
+        return `${l.inicio||''} às ${l.fim||''}`;
+      }
+      const tipo1 = tipoLabel(l1, t.range);
+      const tipo2 = tipoLabel(l2, t.range);
       return `
       <div class="turno-sec">
         <div class="turno-bar-header">
@@ -2942,8 +3087,8 @@ function renderAgendaDia() {
         ${t.horas.map((h,i)=>`
         <div class="hora-row">
           <div class="hora-label">${h}</div>
-          ${i===0 && p1 ? `<div class="hora-cell" style="background:${l1.cor||'var(--gold)'};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer;grid-row:span 4" onclick="editarLocacao('${l1.id}')">${p1}<br><span style="font-size:.72rem;font-weight:400;opacity:.85">${t.range}</span></div>` : i===0 && !p1 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>` : i>0 && !p1 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"></div>` : ''}
-          ${i===0 && p2 ? `<div class="hora-cell" style="background:${l2.cor||'#3d8a7a'};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer" onclick="editarLocacao('${l2.id}')">${p2}<br><span style="font-size:.72rem;font-weight:400;opacity:.85">${t.range}</span></div>` : i===0 && !p2 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>` : i>0 && !p2 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"></div>` : ''}
+          ${i===0 && p1 ? `<div class="hora-cell" style="background:${l1.cor||'var(--gold)'};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer;grid-row:span 4" onclick="editarLocacao('${l1.id}')">${p1}<br><span style="font-size:.72rem;font-weight:400;opacity:.85">${tipo1}</span></div>` : i===0 && !p1 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>` : i>0 && !p1 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"></div>` : ''}
+          ${i===0 && p2 ? `<div class="hora-cell" style="background:${l2.cor||'#3d8a7a'};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer" onclick="editarLocacao('${l2.id}')">${p2}<br><span style="font-size:.72rem;font-weight:400;opacity:.85">${tipo2}</span></div>` : i===0 && !p2 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>` : i>0 && !p2 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"></div>` : ''}
         </div>`).join('')}
         <div class="hora-row" style="min-height:18px;border-bottom:2px solid #e9ecef">
           <div class="hora-label" style="font-size:.74rem;padding-top:2px;color:var(--gold);font-weight:600">${t.fechamento}</div>
@@ -2979,7 +3124,12 @@ function editarLocacao(id) {
     const dFim=document.getElementById('loc-data-fim');
     if(dFim) dFim.value=l.dataFim||'';
     const recSel=document.getElementById('loc-recorrencia');
-    if(recSel) recSel.value=l.recorrencia||'Apenas este horário';
+    if(recSel) { recSel.value=l.recorrencia||'Apenas este horário'; toggleDiasSemana(); }
+    // Restaurar dias da semana
+    for(let i=0;i<=6;i++) { const cb=document.getElementById(`loc-dia-${i}`); if(cb) cb.checked=false; }
+    if(l.diasSemana && Array.isArray(l.diasSemana)) {
+      l.diasSemana.forEach(d=>{ const cb=document.getElementById(`loc-dia-${d}`); if(cb) cb.checked=true; });
+    }
     const obsEl=document.getElementById('loc-obs');
     if(obsEl) obsEl.value=l.obs||'';
     // Selecionar cor
@@ -3007,6 +3157,15 @@ async function excluirLocacao() {
 
 async function salvarLocacao() {
   const editId=document.getElementById('loc-edit-id').value;
+  const rec = document.getElementById('loc-recorrencia').value;
+  // Capturar dias da semana selecionados
+  const diasSelecionados = [];
+  if(rec !== 'Apenas este horário') {
+    for(let i=0;i<=6;i++) {
+      const cb = document.getElementById(`loc-dia-${i}`);
+      if(cb && cb.checked) diasSelecionados.push(i);
+    }
+  }
   const data={
     profId:document.getElementById('loc-prof').value,
     sala:document.getElementById('loc-sala').value,
@@ -3015,12 +3174,28 @@ async function salvarLocacao() {
     fim:document.getElementById('loc-fim').value,
     dataInicio:document.getElementById('loc-data-inicio').value,
     dataFim:document.getElementById('loc-data-fim').value,
-    recorrencia:document.getElementById('loc-recorrencia').value,
+    recorrencia:rec,
+    diasSemana: diasSelecionados.length > 0 ? diasSelecionados : null,
     obs:document.getElementById('loc-obs').value,
     cor:selectedColor,
     updatedAt:firebase.firestore.FieldValue.serverTimestamp()
   };
   if(!data.profId){showToast('Selecione um profissional.','error');return;}
+  if(!data.dataInicio){showToast('Informe a data de início.','error');return;}
+
+  // Validação de conflito aprimorada
+  try {
+    const snap = await db.collection('locacoes').get();
+    const todas = snap.docs.map(d=>({id:d.id,...d.data()})).filter(l=>editId ? l.id !== editId : true);
+
+    // Verificar conflito em datas relevantes (checar pelo menos 60 dias)
+    const conflito = verificarConflito(data, todas);
+    if(conflito) {
+      showToast(conflito,'error');
+      return;
+    }
+  } catch(e){/* se falhar verificação, continua */}
+
   try {
     if(editId) {
       await db.collection('locacoes').doc(editId).update(data);
@@ -3034,6 +3209,54 @@ async function salvarLocacao() {
     renderAgendaDia();
     renderAgendaSemana();
   } catch(e){showToast('Erro ao salvar locação.','error');}
+}
+
+function verificarConflito(nova, todas) {
+  // Gera datas relevantes para verificar (até 90 dias ou até dataFim)
+  const dataIni = nova.dataInicio;
+  const dataFim = nova.dataFim || nova.dataInicio;
+  const ini = new Date(dataIni + 'T12:00:00');
+  const fim = new Date(dataFim + 'T12:00:00');
+  const diasVerif = [];
+  for(let d = new Date(ini); d <= fim && diasVerif.length < 90; d.setDate(d.getDate()+1)) {
+    const ds = d.toISOString().slice(0,10);
+    if(locAtivaEmDia(nova, ds)) diasVerif.push(ds);
+  }
+  const iniMin = timeToMin(nova.inicio);
+  const fimMin = timeToMin(nova.fim);
+
+  for(const diaStr of diasVerif) {
+    for(const loc of todas) {
+      if(!locAtivaEmDia(loc, diaStr)) continue;
+      const lIni = timeToMin(loc.inicio);
+      const lFim = timeToMin(loc.fim);
+      const horariosOverlap = iniMin < lFim && fimMin > lIni;
+      if(!horariosOverlap) continue;
+      const mesmaSala = String(loc.sala) === String(nova.sala);
+      const mesmoProf = loc.profId === nova.profId;
+      if(mesmaSala) {
+        const profNome = profissionaisCache.find(p=>p.id===loc.profId)?.nome || 'outro profissional';
+        return `Conflito de sala em ${formatDate(diaStr)}: ${profNome} já ocupa esta sala neste horário.`;
+      }
+      if(mesmoProf) {
+        return `Conflito de agenda em ${formatDate(diaStr)}: este profissional já possui locação em outro horário sobreposto.`;
+      }
+    }
+  }
+  return null;
+}
+
+function timeToMin(t) {
+  if(!t) return 0;
+  const [h,m] = t.split(':').map(Number);
+  return h*60+(m||0);
+}
+
+function toggleDiasSemana() {
+  const rec = document.getElementById('loc-recorrencia').value;
+  const grupo = document.getElementById('loc-dias-semana-group');
+  if(!grupo) return;
+  grupo.style.display = (rec !== 'Apenas este horário') ? '' : 'none';
 }
 
 function renderAgendaSemana() {
@@ -3779,7 +4002,7 @@ function closeMobileSidebar() {
 }
 
 // ══ NAV ══
-const pageTitles={dashboard:'Dashboard',agenda:'Agenda',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',configuracoes:'Configurações'};
+const pageTitles={dashboard:'Dashboard',agenda:'Agenda',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',servicos:'Serviços',configuracoes:'Configurações'};
 
 function showPage(n,el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -3788,6 +4011,8 @@ function showPage(n,el) {
   if(el) el.classList.add('active');
   document.getElementById('page-title').textContent=pageTitles[n]||n;
   closeMobileSidebar();
+  if(n==='lembretes') loadLembretes();
+  if(n==='servicos') loadServicos();
 }
 
 // ══ MODALS ══
@@ -3803,6 +4028,10 @@ function openModal(id) {
       if(obsEl) obsEl.value='';
       selectedColor='#a07850';
       document.querySelectorAll('.color-dot').forEach((d,i)=>d.classList.toggle('selected',i===0));
+      // Reset dias da semana
+      for(let i=0;i<=6;i++){const cb=document.getElementById(`loc-dia-${i}`);if(cb)cb.checked=false;}
+      const recSel=document.getElementById('loc-recorrencia');
+      if(recSel){recSel.value='Apenas este horário';toggleDiasSemana();}
     }
   }
   if(id==='novo-plano'){
@@ -3851,6 +4080,27 @@ function openModal(id) {
       if(wrapFinal) wrapFinal.style.display='none';
     }
   }
+  if(id==='novo-lembrete'){
+    const el=document.getElementById('lembrete-edit-id');
+    if(el && !el.value){
+      const t=document.getElementById('lembrete-modal-title');if(t)t.textContent='Novo Lembrete';
+      const b=document.getElementById('lembrete-excluir-btn');if(b)b.style.display='none';
+      ['lembrete-titulo','lembrete-obs'].forEach(i=>{const x=document.getElementById(i);if(x)x.value='';});
+      const d=document.getElementById('lembrete-data');if(d)d.value='';
+      const p=document.getElementById('lembrete-prioridade');if(p)p.value='Normal';
+      const s=document.getElementById('lembrete-status');if(s)s.value='Pendente';
+    }
+  }
+  if(id==='novo-servico'){
+    const el=document.getElementById('servico-edit-id');
+    if(el && !el.value){
+      const t=document.getElementById('servico-modal-title');if(t)t.textContent='Novo Serviço';
+      const b=document.getElementById('servico-excluir-btn');if(b)b.style.display='none';
+      ['servico-tipo','servico-empresa','servico-data','servico-valor','servico-obs'].forEach(i=>{const x=document.getElementById(i);if(x)x.value='';});
+      const s=document.getElementById('servico-status');if(s)s.value='Pendente';
+      const cb=document.getElementById('servico-gerar-lancamento');if(cb)cb.checked=false;
+    }
+  }
   document.getElementById('modal-'+id).classList.add('open');
 }
 
@@ -3868,6 +4118,14 @@ function closeModal(id){
   if(id==='nova-receita'){
     const editId=document.getElementById('receita-edit-id');
     if(editId) editId.value='';
+  }
+  if(id==='novo-lembrete'){
+    const el=document.getElementById('lembrete-edit-id');
+    if(el) el.value='';
+  }
+  if(id==='novo-servico'){
+    const el=document.getElementById('servico-edit-id');
+    if(el) el.value='';
   }
 }
 function closeModalBg(e,id){if(e.target===document.getElementById('modal-'+id))closeModal(id);}
@@ -5033,6 +5291,312 @@ if('serviceWorker' in navigator) {
       .catch(err => console.warn('[Áthos] SW falhou:', err));
   });
 }
+// ══════════════════════════════════════════
+// ══ LEMBRETES ══
+// ══════════════════════════════════════════
+async function loadLembretes() {
+  const lista = document.getElementById('lembretes-lista');
+  if(!lista) return;
+  lista.innerHTML = '<div style="color:var(--text-lighter);font-size:.83rem;padding:1rem">Carregando...</div>';
+  try {
+    const snap = await db.collection('lembretes').orderBy('data','asc').get();
+    const docs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(!docs.length) {
+      lista.innerHTML = '<div style="color:var(--text-lighter);font-size:.83rem;padding:1rem;text-align:center">Nenhum lembrete cadastrado.</div>';
+      return;
+    }
+    const hoje = new Date().toISOString().slice(0,10);
+    lista.innerHTML = docs.map(l => {
+      const vencido = l.data && l.data < hoje && l.status !== 'Concluído';
+      const priColor = l.prioridade==='Urgente' ? 'var(--danger)' : l.prioridade==='Alta' ? 'var(--warning)' : 'var(--text-lighter)';
+      const statusColor = l.status==='Concluído' ? 'var(--success)' : vencido ? 'var(--danger)' : 'var(--warning)';
+      return `<div class="card" style="margin-bottom:.6rem;opacity:${l.status==='Concluído'?.65:1}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:.88rem;margin-bottom:2px">${l.titulo||'—'}
+              ${l.prioridade&&l.prioridade!=='Normal'?`<span class="badge" style="background:${priColor};color:#fff;margin-left:4px;font-size:.68rem">${l.prioridade}</span>`:''}
+            </div>
+            ${l.obs?`<div style="font-size:.79rem;color:var(--text-light);margin-bottom:4px">${l.obs}</div>`:''}
+            <div style="font-size:.76rem;display:flex;gap:.75rem">
+              <span style="color:${statusColor}">${l.status||'Pendente'}</span>
+              ${l.data?`<span style="color:var(--text-lighter)">${formatDate(l.data)}</span>`:''}
+              ${vencido?`<span style="color:var(--danger);font-weight:600">Vencido</span>`:''}
+            </div>
+          </div>
+          <button class="btn btn-secondary" style="font-size:.72rem;padding:4px 9px" onclick="editarLembrete('${l.id}')">Editar</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    lista.innerHTML = '<div style="color:var(--danger);font-size:.83rem;padding:1rem">Erro ao carregar lembretes.</div>';
+  }
+}
+
+async function salvarLembrete() {
+  const editId = document.getElementById('lembrete-edit-id').value;
+  const data = {
+    titulo: document.getElementById('lembrete-titulo').value.trim(),
+    data: document.getElementById('lembrete-data').value,
+    prioridade: document.getElementById('lembrete-prioridade').value,
+    obs: document.getElementById('lembrete-obs').value.trim(),
+    status: document.getElementById('lembrete-status').value,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if(!data.titulo){showToast('Informe o título do lembrete.','error');return;}
+  try {
+    if(editId) {
+      await db.collection('lembretes').doc(editId).update(data);
+      showToast('Lembrete atualizado!','success');
+    } else {
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('lembretes').add(data);
+      showToast('Lembrete salvo!','success');
+    }
+    closeModal('novo-lembrete');
+    loadLembretes();
+  } catch(e){showToast('Erro ao salvar lembrete.','error');}
+}
+
+function editarLembrete(id) {
+  db.collection('lembretes').doc(id).get().then(doc=>{
+    if(!doc.exists) return;
+    const l = doc.data();
+    document.getElementById('lembrete-edit-id').value = id;
+    document.getElementById('lembrete-modal-title').textContent = 'Editar Lembrete';
+    document.getElementById('lembrete-excluir-btn').style.display = 'inline-flex';
+    document.getElementById('lembrete-titulo').value = l.titulo||'';
+    document.getElementById('lembrete-data').value = l.data||'';
+    document.getElementById('lembrete-prioridade').value = l.prioridade||'Normal';
+    document.getElementById('lembrete-obs').value = l.obs||'';
+    document.getElementById('lembrete-status').value = l.status||'Pendente';
+    openModal('novo-lembrete');
+  });
+}
+
+async function excluirLembrete() {
+  const id = document.getElementById('lembrete-edit-id').value;
+  if(!id || !confirm('Excluir este lembrete?')) return;
+  try {
+    await db.collection('lembretes').doc(id).delete();
+    closeModal('novo-lembrete');
+    showToast('Lembrete excluído!','success');
+    loadLembretes();
+  } catch(e){showToast('Erro ao excluir.','error');}
+}
+
+// ══════════════════════════════════════════
+// ══ SERVIÇOS ══
+// ══════════════════════════════════════════
+async function loadServicos() {
+  const lista = document.getElementById('servicos-lista');
+  if(!lista) return;
+  lista.innerHTML = '<div style="color:var(--text-lighter);font-size:.83rem;padding:1rem">Carregando...</div>';
+  try {
+    const snap = await db.collection('servicos').orderBy('data','desc').get();
+    let docs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    // Aplicar filtros
+    const fEmpresa = (document.getElementById('srv-filtro-empresa')?.value||'').toLowerCase();
+    const fStatus = document.getElementById('srv-filtro-status')?.value||'';
+    const fIni = document.getElementById('srv-filtro-ini')?.value||'';
+    const fFim = document.getElementById('srv-filtro-fim')?.value||'';
+    if(fEmpresa) docs = docs.filter(d=>(d.empresa||'').toLowerCase().includes(fEmpresa));
+    if(fStatus) docs = docs.filter(d=>d.status===fStatus);
+    if(fIni) docs = docs.filter(d=>d.data>=fIni);
+    if(fFim) docs = docs.filter(d=>d.data<=fFim);
+    // Indicadores
+    const total = docs.reduce((s,d)=>s+(parseFloat(d.valor)||0),0);
+    const el = document.getElementById('srv-total');
+    const cnt = document.getElementById('srv-count');
+    if(el) el.textContent = formatMoney(total);
+    if(cnt) cnt.textContent = docs.length;
+    if(!docs.length) {
+      lista.innerHTML = '<div style="color:var(--text-lighter);font-size:.83rem;padding:1rem;text-align:center">Nenhum serviço cadastrado.</div>';
+      return;
+    }
+    const statusColors = {'Concluído':'var(--success)','Em andamento':'var(--info)','Cancelado':'var(--text-lighter)','Pendente':'var(--warning)'};
+    lista.innerHTML = docs.map(s => `<div class="card" style="margin-bottom:.6rem">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:.88rem;margin-bottom:2px">${s.tipo||'—'}
+            <span class="badge" style="background:${statusColors[s.status]||'var(--text-lighter)'};color:#fff;font-size:.68rem;margin-left:4px">${s.status||'Pendente'}</span>
+          </div>
+          <div style="font-size:.79rem;color:var(--text-light);margin-bottom:4px">${s.empresa||'—'}</div>
+          <div style="font-size:.76rem;display:flex;gap:.75rem;flex-wrap:wrap">
+            ${s.data?`<span style="color:var(--text-lighter)">${formatDate(s.data)}</span>`:''}
+            ${s.valor?`<span style="color:var(--gold);font-weight:600">${formatMoney(parseFloat(s.valor))}</span>`:''}
+            ${s.obs?`<span style="color:var(--text-lighter)">${s.obs}</span>`:''}
+          </div>
+        </div>
+        <button class="btn btn-secondary" style="font-size:.72rem;padding:4px 9px" onclick="editarServico('${s.id}')">Editar</button>
+      </div>
+    </div>`).join('');
+  } catch(e) {
+    if(lista) lista.innerHTML = '<div style="color:var(--danger);font-size:.83rem;padding:1rem">Erro ao carregar serviços.</div>';
+  }
+}
+
+async function salvarServico() {
+  const editId = document.getElementById('servico-edit-id').value;
+  const gerarLanc = document.getElementById('servico-gerar-lancamento')?.checked;
+  const valor = parseFloat(document.getElementById('servico-valor').value)||0;
+  const data = {
+    tipo: document.getElementById('servico-tipo').value.trim(),
+    empresa: document.getElementById('servico-empresa').value.trim(),
+    data: document.getElementById('servico-data').value,
+    valor: valor,
+    status: document.getElementById('servico-status').value,
+    obs: document.getElementById('servico-obs').value.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if(!data.tipo){showToast('Informe o tipo de serviço.','error');return;}
+  try {
+    let docId = editId;
+    if(editId) {
+      await db.collection('servicos').doc(editId).update(data);
+      showToast('Serviço atualizado!','success');
+    } else {
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      const ref = await db.collection('servicos').add(data);
+      docId = ref.id;
+      showToast('Serviço registrado!','success');
+    }
+    // Gerar lançamento financeiro se solicitado
+    if(gerarLanc && valor > 0 && !editId) {
+      const descLanc = `Serviço: ${data.tipo}${data.empresa?' — '+data.empresa:''}`;
+      await db.collection('despesas').add({
+        descricao: descLanc,
+        valor: valor,
+        vencimento: data.data||'',
+        status: 'pendente',
+        categoria: 'Serviços',
+        servicoId: docId,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('Lançamento financeiro gerado!','success');
+    }
+    closeModal('novo-servico');
+    loadServicos();
+  } catch(e){showToast('Erro ao salvar serviço.','error');}
+}
+
+function editarServico(id) {
+  db.collection('servicos').doc(id).get().then(doc=>{
+    if(!doc.exists) return;
+    const s = doc.data();
+    document.getElementById('servico-edit-id').value = id;
+    document.getElementById('servico-modal-title').textContent = 'Editar Serviço';
+    document.getElementById('servico-excluir-btn').style.display = 'inline-flex';
+    document.getElementById('servico-tipo').value = s.tipo||'';
+    document.getElementById('servico-empresa').value = s.empresa||'';
+    document.getElementById('servico-data').value = s.data||'';
+    document.getElementById('servico-valor').value = s.valor||'';
+    document.getElementById('servico-status').value = s.status||'Pendente';
+    document.getElementById('servico-obs').value = s.obs||'';
+    const cb = document.getElementById('servico-gerar-lancamento');
+    if(cb) cb.checked = false;
+    openModal('novo-servico');
+  });
+}
+
+async function excluirServico() {
+  const id = document.getElementById('servico-edit-id').value;
+  if(!id || !confirm('Excluir este serviço?')) return;
+  try {
+    await db.collection('servicos').doc(id).delete();
+    closeModal('novo-servico');
+    showToast('Serviço excluído!','success');
+    loadServicos();
+  } catch(e){showToast('Erro ao excluir.','error');}
+}
+
+// ══════════════════════════════════════════
+// ══ HISTÓRICO DO PROFISSIONAL ══
+// ══════════════════════════════════════════
+async function verHistoricoProf(profId) {
+  const prof = profissionaisCache.find(p=>p.id===profId);
+  const titleEl = document.getElementById('historico-prof-title');
+  if(titleEl) titleEl.textContent = `Histórico — ${prof?.nome||'Profissional'}`;
+  const indEl = document.getElementById('historico-prof-indicadores');
+  const tlEl = document.getElementById('historico-prof-timeline');
+  if(indEl) indEl.innerHTML = '<span style="color:var(--text-lighter);font-size:.8rem">Carregando...</span>';
+  if(tlEl) tlEl.innerHTML = '';
+  openModal('historico-prof');
+
+  try {
+    const [locSnap, recSnap, despSnap] = await Promise.all([
+      db.collection('locacoes').where('profId','==',profId).get(),
+      db.collection('receitas').where('profId','==',profId).get(),
+      db.collection('despesas').where('profId','==',profId).get()
+    ]);
+
+    const locacoes = locSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const receitas = recSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const despesas = despSnap.docs.map(d=>({id:d.id,...d.data()}));
+
+    // Buscar também receitas vinculadas pelo nome/campo profissional
+    const recAll = receitas.concat(
+      (await db.collection('receitas').where('profissional','==',prof?.nome||'').get()).docs
+        .map(d=>({id:d.id,...d.data()}))
+        .filter(r=>!receitas.find(x=>x.id===r.id))
+    );
+
+    const totalFat = recAll.reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
+    const totalPago = recAll.filter(r=>r.status==='pago').reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
+    const totalHoras = locacoes.filter(l=>(l.vinculo||'').toLowerCase().includes('hora')).length;
+    const totalTurnos = locacoes.filter(l=>(l.vinculo||'').toLowerCase().includes('turno')).length;
+
+    if(indEl) indEl.innerHTML = `
+      <div class="stat-card" style="min-width:130px"><div class="stat-label">Total Faturado</div><div style="font-size:1rem;font-weight:700;color:var(--gold)">${formatMoney(totalFat)}</div></div>
+      <div class="stat-card" style="min-width:130px"><div class="stat-label">Total Recebido</div><div style="font-size:1rem;font-weight:700;color:var(--success)">${formatMoney(totalPago)}</div></div>
+      <div class="stat-card" style="min-width:110px"><div class="stat-label">Locações Turno</div><div style="font-size:1rem;font-weight:700">${totalTurnos}</div></div>
+      <div class="stat-card" style="min-width:110px"><div class="stat-label">Horas Avulsas</div><div style="font-size:1rem;font-weight:700">${totalHoras}</div></div>`;
+
+    // Montar linha do tempo
+    const eventos = [];
+    locacoes.forEach(l=>{
+      if(l.dataInicio) eventos.push({data:l.dataInicio, tipo:'locacao',
+        desc:`Locação — ${l.vinculo||'—'} | Sala ${l.sala||'?'} | ${l.inicio||''}–${l.fim||''}${l.recorrencia&&l.recorrencia!=='Apenas este horário'?' ('+l.recorrencia+')':''}`});
+      if(l.dataFim && l.dataFim !== l.dataInicio) eventos.push({data:l.dataFim, tipo:'fim',
+        desc:`Encerramento — ${l.vinculo||'—'} | Sala ${l.sala||'?'}`});
+    });
+    recAll.forEach(r=>{
+      if(r.vencimento) eventos.push({data:r.vencimento, tipo:'receita',
+        desc:`Lançamento ${r.status==='pago'?'pago':'pendente'} — ${r.descricao||'—'} — ${formatMoney(parseFloat(r.valor)||0)}`});
+    });
+    // Histórico de edições do cadastro
+    if(prof?.historico && Array.isArray(prof.historico)) {
+      prof.historico.forEach(h=>{
+        if(h.editadoEm) eventos.push({data:h.editadoEm.slice(0,10), tipo:'edicao', desc:`Cadastro editado por ${h.por||'admin'}`});
+      });
+    }
+    eventos.sort((a,b)=>a.data.localeCompare(b.data));
+
+    if(!eventos.length) {
+      if(tlEl) tlEl.innerHTML = '<div style="color:var(--text-lighter);font-size:.83rem;padding:1rem;text-align:center">Nenhuma movimentação registrada.</div>';
+      return;
+    }
+    const iconMap = {
+      locacao:'<svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+      fim:'<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+      receita:'<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+      edicao:'<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
+    };
+    const colorMap = {locacao:'var(--gold)',fim:'var(--danger)',receita:'var(--success)',edicao:'var(--info)'};
+    if(tlEl) tlEl.innerHTML = eventos.map(e=>`
+      <div style="display:flex;gap:.75rem;padding:.6rem 0;border-bottom:1px solid var(--border)">
+        <div style="width:28px;height:28px;border-radius:50%;background:${colorMap[e.tipo]||'var(--text-lighter)'};color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${iconMap[e.tipo]||''}</div>
+        <div>
+          <div style="font-size:.76rem;color:var(--text-lighter)">${formatDate(e.data)}</div>
+          <div style="font-size:.83rem;font-weight:500">${e.desc}</div>
+        </div>
+      </div>`).join('');
+  } catch(err) {
+    if(indEl) indEl.innerHTML = '';
+    if(tlEl) tlEl.innerHTML = '<div style="color:var(--danger);font-size:.83rem;padding:1rem">Erro ao carregar histórico.</div>';
+  }
+}
+
+
 </script>
 
 <!-- MODAL: Edição de recorrência -->
