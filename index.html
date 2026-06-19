@@ -1282,8 +1282,8 @@ body.dark .tag{background:#111827;border-color:#374151;}
     <input type="hidden" id="loc-edit-id">
     <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="loc-prof"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Sala</label><select class="form-select" id="loc-sala"><option value="1" id="loc-s1-opt">Sala 1</option><option value="2" id="loc-s2-opt">Sala 2</option></select></div>
-      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo"><option>Turno Fixo (4h)</option><option>Turno Duplo (8h — 2 turnos)</option><option>Pacote de Horas</option><option>Hora Avulsa</option></select></div>
+      <div class="form-group"><label class="form-label">Sala</label><select class="form-select" id="loc-sala" onchange="calcDescontoLocacao()"><option value="1" id="loc-s1-opt">Sala 1</option><option value="2" id="loc-s2-opt">Sala 2</option></select></div>
+      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao()"><option>Turno Fixo (4h)</option><option>Turno Duplo (8h — 2 turnos)</option><option>Pacote de Horas</option><option>Hora Avulsa</option></select></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Hora Início</label><select class="form-select" id="loc-inicio"><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:30</option><option>18:00</option><option>19:00</option><option>20:00</option><option>21:00</option><option>21:30</option></select></div>
@@ -1294,6 +1294,11 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="form-group"><label class="form-label">Data Término</label><input class="form-input" type="date" id="loc-data-fim"></div>
     </div>
     <div class="form-group"><label class="form-label">Recorrência</label><select class="form-select" id="loc-recorrencia" onchange="toggleDiasSemana()"><option>Apenas este horário</option><option>Semanal</option><option>Quinzenal</option><option>Mensal</option></select></div>
+    <div class="form-group" id="loc-venc-group" style="display:none">
+      <label class="form-label">Dia de vencimento (lançamento financeiro)</label>
+      <input class="form-input" type="number" id="loc-dia-vencimento" min="1" max="28" placeholder="Ex: 5 (todo dia 5 do mês)">
+      <div style="font-size:.72rem;color:var(--text-lighter);margin-top:4px">O sistema gera 1 lançamento por mês automaticamente nesta data, enquanto a locação estiver ativa.</div>
+    </div>
     <div class="form-group" id="loc-dias-semana-group" style="display:none">
       <label class="form-label">Dias da semana</label>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
@@ -1846,6 +1851,7 @@ async function initApp() {
   loadSubcats();
   renovarHorasMensais();
   verificarAlertasVencimento();
+  gerarLancamentosLocacoesMensais();
 }
 
 // ══ CONFIG ══
@@ -3125,6 +3131,8 @@ function editarLocacao(id) {
     if(dFim) dFim.value=l.dataFim||'';
     const recSel=document.getElementById('loc-recorrencia');
     if(recSel) { recSel.value=l.recorrencia||'Apenas este horário'; toggleDiasSemana(); }
+    const vencEl=document.getElementById('loc-dia-vencimento');
+    if(vencEl) vencEl.value=l.diaVencimento||'';
     // Restaurar dias da semana
     for(let i=0;i<=6;i++) { const cb=document.getElementById(`loc-dia-${i}`); if(cb) cb.checked=false; }
     if(l.diasSemana && Array.isArray(l.diasSemana)) {
@@ -3132,6 +3140,9 @@ function editarLocacao(id) {
     }
     const obsEl=document.getElementById('loc-obs');
     if(obsEl) obsEl.value=l.obs||'';
+    const descEl=document.getElementById('loc-desconto');
+    if(descEl) descEl.value=l.desconto||'';
+    calcDescontoLocacao();
     // Selecionar cor
     selectedColor=l.cor||'#a07850';
     document.querySelectorAll('.color-dot').forEach(d=>{
@@ -3166,10 +3177,19 @@ async function salvarLocacao() {
       if(cb && cb.checked) diasSelecionados.push(i);
     }
   }
+  const sala = document.getElementById('loc-sala').value;
+  const vinculo = document.getElementById('loc-vinculo').value;
+  const desconto = document.getElementById('loc-desconto').value || '0';
+  const valorFinalCampo = parseMoney(document.getElementById('loc-valor-final').value);
+  const valorBase = valorBaseLocacao(sala, vinculo);
+  // Se o campo de valor final estiver vazio (ex: sem desconto digitado), usa o valor base calculado
+  const valorLancamento = valorFinalCampo > 0 ? valorFinalCampo : valorBase;
+  const diaVencimento = parseInt(document.getElementById('loc-dia-vencimento').value) || null;
+
   const data={
     profId:document.getElementById('loc-prof').value,
-    sala:document.getElementById('loc-sala').value,
-    vinculo:document.getElementById('loc-vinculo').value,
+    sala:sala,
+    vinculo:vinculo,
     inicio:document.getElementById('loc-inicio').value,
     fim:document.getElementById('loc-fim').value,
     dataInicio:document.getElementById('loc-data-inicio').value,
@@ -3178,10 +3198,14 @@ async function salvarLocacao() {
     diasSemana: diasSelecionados.length > 0 ? diasSelecionados : null,
     obs:document.getElementById('loc-obs').value,
     cor:selectedColor,
+    desconto: desconto,
+    valorLancamento: valorLancamento ? valorLancamento.toFixed(2) : null,
+    diaVencimento: rec !== 'Apenas este horário' ? diaVencimento : null,
     updatedAt:firebase.firestore.FieldValue.serverTimestamp()
   };
   if(!data.profId){showToast('Selecione um profissional.','error');return;}
   if(!data.dataInicio){showToast('Informe a data de início.','error');return;}
+  if(rec !== 'Apenas este horário' && !diaVencimento){showToast('Informe o dia de vencimento do lançamento mensal.','error');return;}
 
   // Validação de conflito aprimorada
   try {
@@ -3197,18 +3221,99 @@ async function salvarLocacao() {
   } catch(e){/* se falhar verificação, continua */}
 
   try {
+    let locacaoId = editId;
     if(editId) {
       await db.collection('locacoes').doc(editId).update(data);
       showToast('Locação atualizada!','success');
     } else {
       data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
-      await db.collection('locacoes').add(data);
+      const ref = await db.collection('locacoes').add(data);
+      locacaoId = ref.id;
       showToast('Locação confirmada!','success');
+      // Gera o primeiro lançamento financeiro no momento da confirmação
+      await gerarLancamentoLocacao({...data, id: locacaoId});
     }
     closeModal('nova-locacao');
     renderAgendaDia();
     renderAgendaSemana();
+    loadFinanceiro();
   } catch(e){showToast('Erro ao salvar locação.','error');}
+}
+
+// ── GERAÇÃO DE LANÇAMENTO FINANCEIRO A PARTIR DE LOCAÇÃO ──
+// Gera o lançamento referente ao vencimento corrente (ou ao próximo vencimento
+// a partir da data de início, no caso de locação recorrente).
+async function gerarLancamentoLocacao(locacao, vencimentoStr) {
+  if(!locacao.valorLancamento || parseFloat(locacao.valorLancamento) <= 0) return; // sem valor cadastrado, não gera
+
+  let venc = vencimentoStr;
+  if(!venc) {
+    if(locacao.recorrencia !== 'Apenas este horário' && locacao.diaVencimento) {
+      // Próximo vencimento a partir da data de início, no dia configurado
+      const ini = new Date(locacao.dataInicio + 'T12:00:00');
+      const ano = ini.getFullYear(), mes = ini.getMonth();
+      const ultimoDiaMes = new Date(ano, mes+1, 0).getDate();
+      const dia = Math.min(locacao.diaVencimento, ultimoDiaMes);
+      venc = `${ano}-${String(mes+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+    } else {
+      venc = locacao.dataInicio;
+    }
+  }
+
+  // Evita duplicar: já existe lançamento para esta locação neste vencimento?
+  const existente = await db.collection('receitas')
+    .where('origemLocacaoId','==',locacao.id)
+    .where('vencimento','==',venc)
+    .limit(1).get();
+  if(!existente.empty) return;
+
+  const prof = profissionaisCache.find(p=>p.id===locacao.profId);
+  const salaNome = String(locacao.sala)==='2' ? (appConfig.sala2||'Áthos II') : (appConfig.sala1||'Áthos I');
+
+  await db.collection('receitas').add({
+    profissional: prof?.nome || 'Profissional',
+    profId: locacao.profId,
+    categoria: 'Locação de Sala',
+    tipo: 'Locação',
+    subcategoria: locacao.vinculo || '',
+    valor: locacao.valorLancamento,
+    desconto: locacao.desconto || '0',
+    valorFinal: locacao.valorLancamento,
+    vencimento: venc,
+    obs: `Locação ${salaNome} — gerado automaticamente`,
+    status: 'Pendente',
+    origemLocacaoId: locacao.id,
+    mes: new Date(venc+'T12:00:00').getMonth(),
+    ano: new Date(venc+'T12:00:00').getFullYear(),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+// ── GERAÇÃO MENSAL AUTOMÁTICA (locações recorrentes ativas) ──
+// Roda na inicialização: para cada locação recorrente ativa, garante que existe
+// o lançamento do mês vigente (1 mês por vez, conforme o tempo passa).
+async function gerarLancamentosLocacoesMensais() {
+  try {
+    const hoje = new Date();
+    const anoAtual = hoje.getFullYear(), mesAtual = hoje.getMonth();
+    const snap = await db.collection('locacoes').get();
+    for(const doc of snap.docs) {
+      const l = {id:doc.id, ...doc.data()};
+      if(!l.recorrencia || l.recorrencia === 'Apenas este horário') continue;
+      if(!l.diaVencimento || !l.valorLancamento) continue;
+      // Não gerar para locações já encerradas
+      if(l.dataFim) {
+        const fim = new Date(l.dataFim+'T12:00:00');
+        if(fim < new Date(anoAtual, mesAtual, 1)) continue;
+      }
+      const ini = new Date(l.dataInicio+'T12:00:00');
+      if(ini > hoje) continue; // ainda não começou
+      const ultimoDiaMes = new Date(anoAtual, mesAtual+1, 0).getDate();
+      const dia = Math.min(l.diaVencimento, ultimoDiaMes);
+      const vencStr = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+      await gerarLancamentoLocacao(l, vencStr);
+    }
+  } catch(e) { console.error('Erro ao gerar lançamentos mensais de locações:', e); }
 }
 
 function verificarConflito(nova, todas) {
@@ -3255,8 +3360,10 @@ function timeToMin(t) {
 function toggleDiasSemana() {
   const rec = document.getElementById('loc-recorrencia').value;
   const grupo = document.getElementById('loc-dias-semana-group');
-  if(!grupo) return;
-  grupo.style.display = (rec !== 'Apenas este horário') ? '' : 'none';
+  const vencGrupo = document.getElementById('loc-venc-group');
+  const isRecorrente = rec !== 'Apenas este horário';
+  if(grupo) grupo.style.display = isRecorrente ? '' : 'none';
+  if(vencGrupo) vencGrupo.style.display = isRecorrente ? '' : 'none';
 }
 
 function renderAgendaSemana() {
@@ -4297,13 +4404,31 @@ function showToast(msg,type='success') {
   setTimeout(()=>toast.remove(),3000);
 }
 
+// ── VALOR BASE DA LOCAÇÃO (por sala + vínculo) ──
+function valorBaseLocacao(sala, vinculo) {
+  const config = appConfig;
+  const s = String(sala) === '2' ? '2' : '1';
+  const num = (v) => parseFloat((v||'0').toString().replace(/[^\d,]/g,'').replace(',','.')) || 0;
+  if(vinculo === 'Turno Duplo (8h — 2 turnos)') {
+    return s === '2' ? num(config.precoTurno8hS2) : num(config.precoTurno8hS1);
+  }
+  if(vinculo === 'Pacote de Horas') {
+    return num(config.preco10h);
+  }
+  if(vinculo === 'Hora Avulsa') {
+    return num(config.precoAvulsa);
+  }
+  // Turno Fixo (4h) — padrão
+  return s === '2' ? num(config.precoTurnoS2) : num(config.precoTurnoS1);
+}
+
 // ── DESCONTO LOCAÇÃO ──
 function calcDescontoLocacao() {
+  const sala = document.getElementById('loc-sala').value;
+  const vinculo = document.getElementById('loc-vinculo').value;
   const desconto = parseFloat(document.getElementById('loc-desconto').value) || 0;
-  const config = appConfig;
-  // Use turno fixo price as base if available
-  const base = parseFloat((config.precoTurno||'0').replace(/[^\d,]/g,'').replace(',','.')) || 0;
-  if(base > 0 && desconto > 0) {
+  const base = valorBaseLocacao(sala, vinculo);
+  if(base > 0) {
     const final = base * (1 - desconto/100);
     document.getElementById('loc-valor-final').value = formatMoney(final);
   } else {
