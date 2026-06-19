@@ -1280,6 +1280,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
   <div class="modal">
     <div class="modal-title" id="loc-modal-title">Nova Locação</div>
     <input type="hidden" id="loc-edit-id">
+    <input type="hidden" id="loc-clicked-date">
     <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="loc-prof"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Sala</label><select class="form-select" id="loc-sala" onchange="calcDescontoLocacao()"><option value="1" id="loc-s1-opt">Sala 1</option><option value="2" id="loc-s2-opt">Sala 2</option></select></div>
@@ -1405,10 +1406,9 @@ body.dark .tag{background:#111827;border-color:#374151;}
     <div class="form-group">
       <label class="form-label">Vencimento da Locação</label>
       <select class="form-select" id="prof-venc-locacao">
-        <option value="sem_vencimento">Sem data de vencimento</option>
-        <option value="5">5 dias</option>
-        <option value="15" selected>15 dias</option>
-        <option value="30">30 dias</option>
+        <option value="5">5</option>
+        <option value="15" selected>15</option>
+        <option value="30">30</option>
       </select>
     </div>
     <div class="form-group"><label class="form-label">Observações</label><textarea class="form-textarea" id="prof-obs" placeholder="Observações gerais sobre o profissional..."></textarea></div>
@@ -1708,6 +1708,7 @@ function locAtivaEmDia(l, diaStr) {
   if(!l.dataInicio) return false;
   if(diaStr < l.dataInicio) return false;
   if(l.dataFim && diaStr > l.dataFim) return false;
+  if(l.datasExcecao && Array.isArray(l.datasExcecao) && l.datasExcecao.includes(diaStr)) return false;
   const rec = (l.recorrencia||'').toLowerCase().trim();
   if(!rec || rec === 'apenas este horário' || rec === 'apenas este horario' || rec === 'nenhuma' || !l.dataFim || l.dataFim === l.dataInicio) {
     // Hora avulsa ou sem recorrência: só no dia exato
@@ -2316,34 +2317,7 @@ function loadDashboard() {
   // Locações de hoje
   db.collection('locacoes').get().then(snap=>{
     const all = snap.docs.map(d=>({id:d.id,...d.data()}));
-    const hoje_loc = all.filter(l=>{
-      if(!l.dataInicio) return false;
-      // Fora do período do contrato
-      if(hojeStr < l.dataInicio) return false;
-      if(l.dataFim && hojeStr > l.dataFim) return false;
-
-      const rec = (l.recorrencia||'').toLowerCase().trim();
-
-      // Sem recorrência: só aparece no dia exato
-      if(!rec || rec === 'apenas este horário' || rec === 'apenas este horario') {
-        return hojeStr === l.dataInicio;
-      }
-
-      // Com recorrência: verifica se hoje cai no ciclo correto
-      const inicio = new Date(l.dataInicio + 'T12:00:00');
-      const hj    = new Date(hojeStr + 'T12:00:00');
-      const diffDias = Math.round((hj - inicio) / (1000*60*60*24));
-
-      if(rec === 'semanal')    return diffDias % 7  === 0;
-      if(rec === 'quinzenal')  return diffDias % 14 === 0;
-      if(rec === 'mensal') {
-        // Mesmo dia do mês que o dataInicio
-        return hj.getDate() === inicio.getDate();
-      }
-
-      // Fallback: qualquer outra string — cai no dia exato
-      return hojeStr === l.dataInicio;
-    });
+    const hoje_loc = all.filter(l=>locAtivaEmDia(l, hojeStr));
     const s1 = appConfig.sala1||'Áthos I';
     const s2 = appConfig.sala2||'Áthos II';
     const turnos = [{k:'manha',n:'Manhã'},{k:'tarde',n:'Tarde'},{k:'noite',n:'Noite'}];
@@ -2363,12 +2337,12 @@ function loadDashboard() {
       return 's1';
     }
     let miniItems = [];
-    hoje_loc.forEach(l=>{
-      const tn = turnos.find(t=>t.k===getTurnoKey(l.inicio))?.n||'—';
+    hoje_loc.sort((a,b)=>(a.inicio||'').localeCompare(b.inicio||'')).forEach(l=>{
       const sala = getSalaKey(l.sala);
       const salaLabel = sala==='s1' ? s1 : s2;
       const prof = profissionaisCache.find(p=>p.id===l.profId)?.nome || l.profId || '?';
-      miniItems.push(`<div class="mini-item"><span class="mini-time">${tn}</span><span class="mini-room">${salaLabel}</span><span class="mini-name">${prof}</span></div>`);
+      const horario = l.inicio && l.fim ? `${l.inicio}–${l.fim}` : (l.inicio || '—');
+      miniItems.push(`<div class="mini-item"><span class="mini-time" style="width:auto;min-width:78px">${horario}</span><span class="mini-room">${salaLabel}</span><span class="mini-name">${prof}</span></div>`);
     });
     const ocupados = Math.min(hoje_loc.length, 6);
     document.getElementById('dash-turnos').textContent=`${ocupados} / 6`;
@@ -2378,23 +2352,7 @@ function loadDashboard() {
     document.getElementById('dash-hoje-list').innerHTML=miniItems.length?miniItems.join(''):emptyState('calendar','Nenhuma locação hoje','As duas salas estão livres.','Nova locação',"openModal('nova-locacao')");
 
     // Barras de ocupação — conta locações ativas para cada dia da semana atual
-    // usando a mesma lógica de recorrência do filtro de hoje
-    function locAtivaEmDia(l, diaStr) {
-      if(!l.dataInicio) return false;
-      if(diaStr < l.dataInicio) return false;
-      if(l.dataFim && diaStr > l.dataFim) return false;
-      const rec = (l.recorrencia||'').toLowerCase().trim();
-      if(!rec || rec === 'apenas este horário' || rec === 'apenas este horario') {
-        return diaStr === l.dataInicio;
-      }
-      const inicio = new Date(l.dataInicio + 'T12:00:00');
-      const dia    = new Date(diaStr + 'T12:00:00');
-      const diffDias = Math.round((dia - inicio) / (1000*60*60*24));
-      if(rec === 'semanal')   return diffDias % 7  === 0;
-      if(rec === 'quinzenal') return diffDias % 14 === 0;
-      if(rec === 'mensal')    return dia.getDate() === inicio.getDate();
-      return diaStr === l.dataInicio;
-    }
+    // usando a mesma lógica de recorrência global (locAtivaEmDia), incluindo diasSemana e exceções
     // Gerar os 7 dias da semana atual (Dom–Sáb)
     const semanaAtual = Array.from({length:7}, (_,i)=>{
       const d = new Date(hoje);
@@ -3013,6 +2971,11 @@ function switchView(v,el) {
   document.getElementById('view-'+v).classList.add('active');
   const pills=document.getElementById('day-pills-wrap');
   pills.style.display=v==='dia'?'flex':'none';
+  if(v==='dia') {
+    // Sempre que acessar a visualização "Dia", a referência inicial é o dia atual
+    currentAgendaDate=new Date();
+    renderAgendaDia();
+  }
   renderDayPills();
 }
 
@@ -3057,7 +3020,7 @@ function renderAgendaDia() {
     });
 
     function slotHtml(turno, sala, profNome, cor, locId) {
-      if(profNome) return `<div class="hora-cell" style="background:${cor||'var(--gold)'};opacity:.85;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer" onclick="editarLocacao('${locId}')">${profNome}</div>`;
+      if(profNome) return `<div class="hora-cell" style="background:${cor||'var(--gold)'};opacity:.85;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer" onclick="editarLocacao('${locId}','${dataStr}')">${profNome}</div>`;
       return `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>`;
     }
 
@@ -3093,8 +3056,8 @@ function renderAgendaDia() {
         ${t.horas.map((h,i)=>`
         <div class="hora-row">
           <div class="hora-label">${h}</div>
-          ${i===0 && p1 ? `<div class="hora-cell" style="background:${l1.cor||'var(--gold)'};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer;grid-row:span 4" onclick="editarLocacao('${l1.id}')">${p1}<br><span style="font-size:.72rem;font-weight:400;opacity:.85">${tipo1}</span></div>` : i===0 && !p1 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>` : i>0 && !p1 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"></div>` : ''}
-          ${i===0 && p2 ? `<div class="hora-cell" style="background:${l2.cor||'#3d8a7a'};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer" onclick="editarLocacao('${l2.id}')">${p2}<br><span style="font-size:.72rem;font-weight:400;opacity:.85">${tipo2}</span></div>` : i===0 && !p2 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>` : i>0 && !p2 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"></div>` : ''}
+          ${i===0 && p1 ? `<div class="hora-cell" style="background:${l1.cor||'var(--gold)'};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer;grid-row:span 4" onclick="editarLocacao('${l1.id}','${dataStr}')">${p1}<br><span style="font-size:.72rem;font-weight:400;opacity:.85">${tipo1}</span></div>` : i===0 && !p1 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>` : i>0 && !p1 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"></div>` : ''}
+          ${i===0 && p2 ? `<div class="hora-cell" style="background:${l2.cor||'#3d8a7a'};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer" onclick="editarLocacao('${l2.id}','${dataStr}')">${p2}<br><span style="font-size:.72rem;font-weight:400;opacity:.85">${tipo2}</span></div>` : i===0 && !p2 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>` : i>0 && !p2 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"></div>` : ''}
         </div>`).join('')}
         <div class="hora-row" style="min-height:18px;border-bottom:2px solid #e9ecef">
           <div class="hora-label" style="font-size:.74rem;padding-top:2px;color:var(--gold);font-weight:600">${t.fechamento}</div>
@@ -3107,12 +3070,13 @@ function renderAgendaDia() {
   });
 }
 
-function editarLocacao(id) {
+function editarLocacao(id, dataClicada) {
   // Carregar dados e preencher modal
   db.collection('locacoes').doc(id).get().then(doc=>{
     if(!doc.exists) return;
     const l=doc.data();
     document.getElementById('loc-edit-id').value=id;
+    document.getElementById('loc-clicked-date').value=dataClicada||l.dataInicio||'';
     document.getElementById('loc-modal-title').textContent='Editar Locação';
     document.getElementById('loc-excluir-btn').style.display='inline-flex';
     const profSel=document.getElementById('loc-prof');
@@ -3152,14 +3116,50 @@ function editarLocacao(id) {
   openModal('nova-locacao');
 }
 
+// ── EXCLUSÃO DE LOCAÇÃO ──
+// Se a locação for recorrente, oferece escolha: apenas esta ocorrência (adiciona
+// exceção de data) ou toda a série (apaga o documento inteiro).
 async function excluirLocacao() {
   const id=document.getElementById('loc-edit-id').value;
   if(!id) return;
-  if(!confirm('Excluir esta locação da agenda?')) return;
   try {
+    const doc = await db.collection('locacoes').doc(id).get();
+    if(!doc.exists) return;
+    const l = doc.data();
+    const isRecorrente = l.recorrencia && l.recorrencia !== 'Apenas este horário';
+    if(isRecorrente) {
+      closeModal('nova-locacao');
+      openModal('loc-excluir-confirm');
+      return;
+    }
+    if(!confirm('Excluir esta locação da agenda?')) return;
     await db.collection('locacoes').doc(id).delete();
     closeModal('nova-locacao');
     showToast('Locação excluída!','success');
+    renderAgendaDia();
+    renderAgendaSemana();
+    renderAgendaMes();
+  } catch(e){showToast('Erro ao excluir locação.','error');}
+}
+
+async function confirmarExclusaoLocacao() {
+  const id=document.getElementById('loc-edit-id').value;
+  const dataClicada=document.getElementById('loc-clicked-date').value;
+  const escopo=document.querySelector('input[name="loc-excl-scope"]:checked')?.value || 'single';
+  if(!id) { closeModal('loc-excluir-confirm'); return; }
+  try {
+    if(escopo === 'all') {
+      await db.collection('locacoes').doc(id).delete();
+      showToast('Série excluída!','success');
+    } else {
+      // Exclusão de ocorrência única: grava a data como exceção, sem apagar a série
+      if(!dataClicada) { showToast('Não foi possível identificar a data da ocorrência.','error'); return; }
+      await db.collection('locacoes').doc(id).update({
+        datasExcecao: firebase.firestore.FieldValue.arrayUnion(dataClicada)
+      });
+      showToast('Ocorrência removida!','success');
+    }
+    closeModal('loc-excluir-confirm');
     renderAgendaDia();
     renderAgendaSemana();
     renderAgendaMes();
@@ -3409,21 +3409,20 @@ function renderAgendaSemana() {
 
   db.collection('locacoes').get().then(snap=>{
     const all = snap.docs.map(d=>({id:d.id,...d.data()}));
-    // Filtrar locações que sobrepõem a semana
+    // Filtrar locações que sobrepõem a semana (filtro grosseiro, refinado abaixo por dia)
     const semLocacoes = all.filter(l=>{
       if(!l.dataInicio) return false;
       const fim = l.dataFim||l.dataInicio;
       return l.dataInicio <= diasStr[5] && fim >= diasStr[0];
     });
 
-    // Mapa: turno_sala_dataStr → locação
+    // Mapa: turno_sala_dataStr → locação (somente nos dias em que a locação de fato ocorre)
     const mapa = {};
     semLocacoes.forEach(l=>{
       const tk=getTurnoKey(l.inicio);
       const sk=getSk(l.sala);
-      const ini=l.dataInicio, fim=l.dataFim||l.dataInicio;
       diasStr.forEach(ds=>{
-        if(ds>=ini&&ds<=fim) mapa[`${tk}_${sk}_${ds}`]=l;
+        if(locAtivaEmDia(l, ds)) mapa[`${tk}_${sk}_${ds}`]=l;
       });
     });
 
@@ -3441,7 +3440,7 @@ function renderAgendaSemana() {
             const isH=ds===hoje;
             if(loc){
               const prof=profissionaisCache.find(p=>p.id===loc.profId)?.nome||loc.profId||'?';
-              return `<div class="wg-cell${isH?' wg-today':''}" style="background:${loc.cor||'var(--gold)'};opacity:.85;cursor:pointer" onclick="editarLocacao('${loc.id}')">
+              return `<div class="wg-cell${isH?' wg-today':''}" style="background:${loc.cor||'var(--gold)'};opacity:.85;cursor:pointer" onclick="editarLocacao('${loc.id}','${ds}')">
                 <span style="font-size:.72rem;font-weight:600;color:#fff;padding:2px 4px">${prof}</span>
               </div>`;
             }
@@ -3466,7 +3465,7 @@ function renderAgendaMes() {
 
   db.collection('locacoes').get().then(snap=>{
     const all=snap.docs.map(d=>({id:d.id,...d.data()}));
-    // Mapa: dataStr → count de locações
+    // Mapa: dataStr → count de locações (somente nos dias em que cada locação de fato ocorre)
     const ocupMap={};
     all.forEach(l=>{
       if(!l.dataInicio) return;
@@ -3475,7 +3474,7 @@ function renderAgendaMes() {
       for(let d=new Date(ini);d<=fim;d.setDate(d.getDate()+1)){
         if(d.getMonth()===mes&&d.getFullYear()===ano){
           const k=d.toISOString().split('T')[0];
-          ocupMap[k]=(ocupMap[k]||0)+1;
+          if(locAtivaEmDia(l, k)) ocupMap[k]=(ocupMap[k]||0)+1;
         }
       }
     });
@@ -5750,6 +5749,36 @@ async function verHistoricoProf(profId) {
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('rec-confirm')">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmarEdicaoRecorrente()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Exclusão de Locação Recorrente -->
+<div class="modal-overlay" id="modal-loc-excluir-confirm" onclick="closeModalBg(event,'loc-excluir-confirm')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">Excluir locação</div>
+    <p style="font-size:.88rem;color:var(--text-light);margin-bottom:1.25rem;line-height:1.6">
+      Esta locação se repete em vários dias. O que você deseja excluir?
+    </p>
+    <div style="display:flex;flex-direction:column;gap:.625rem;margin-bottom:1.5rem">
+      <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px;transition:border-color .15s" id="loc-excl-opt-single-wrap">
+        <input type="radio" name="loc-excl-scope" id="loc-excl-opt-single" value="single" style="margin-top:2px;accent-color:var(--gold)" checked>
+        <div>
+          <div style="font-size:.88rem;font-weight:600">Somente esta ocorrência</div>
+          <div style="font-size:.78rem;color:var(--text-lighter);margin-top:2px">Remove apenas o dia selecionado. As demais datas da série continuam normalmente.</div>
+        </div>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px;transition:border-color .15s" id="loc-excl-opt-all-wrap">
+        <input type="radio" name="loc-excl-scope" id="loc-excl-opt-all" value="all" style="margin-top:2px;accent-color:var(--gold)">
+        <div>
+          <div style="font-size:.88rem;font-weight:600">Toda a série</div>
+          <div style="font-size:.78rem;color:var(--text-lighter);margin-top:2px">Exclui o lançamento e todas as ocorrências futuras vinculadas a esta configuração.</div>
+        </div>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('loc-excluir-confirm')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarExclusaoLocacao()">Excluir</button>
     </div>
   </div>
 </div>
