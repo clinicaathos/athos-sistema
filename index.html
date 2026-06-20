@@ -231,6 +231,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .view-btn{padding:6px 14px;font-size:.76rem;font-weight:500;color:var(--text-light);background:transparent;border:none;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif;}
 .view-btn:hover{background:#f3f4f6;color:var(--text);}
 .view-btn.active{background:var(--gold);color:#fff;}
+.sala-tab-btn{padding:6px 14px;font-size:.76rem;font-weight:500;color:var(--text-light);background:#f3f4f6;border:1.5px solid var(--border);border-radius:7px;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif;}
+.sala-tab-btn:hover{background:#e9ecef;}
+.sala-tab-btn.active{background:var(--gold);color:#fff;border-color:var(--gold);}
 .agenda-view{display:none;}
 .agenda-view.active{display:block;animation:fadeIn .2s ease;}
 .sala-occ{display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;}
@@ -251,6 +254,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .turno-filler{border-right:1px solid var(--border);}
 .turno-filler:last-child{border-right:none;}
 .hora-row{display:grid;grid-template-columns:80px 1fr 1fr;border-bottom:1px solid var(--border);min-height:50px;min-width:480px;}
+#view-dia.filtro-s1 .hora-row>:nth-child(3),#view-dia.filtro-s1 .turno-bar-header>:nth-child(3){display:none!important}
+#view-dia.filtro-s2 .hora-row>:nth-child(2),#view-dia.filtro-s2 .turno-bar-header>:nth-child(2){display:none!important}
 .hora-row:last-child{border-bottom:none;}
 .hora-label{padding:0 .875rem;font-size:.7rem;font-weight:500;color:var(--text-lighter);border-right:1px solid var(--border);display:flex;align-items:flex-start;padding-top:6px;background:#fafafa;}
 .hora-cell{border-right:1px solid var(--border);min-height:50px;cursor:pointer;transition:background .1s;display:flex;align-items:stretch;padding:3px;}
@@ -769,17 +774,26 @@ body.dark .tag{background:#111827;border-color:#374151;}
               <button class="view-btn" onclick="switchView('semana',this)">Semana</button>
               <button class="view-btn" onclick="switchView('mes',this)">Mês</button>
             </div>
+            <button class="btn btn-secondary" style="font-size:.78rem;padding:.5rem .875rem" onclick="abrirModalBloqueio()">
+              <svg class="ic ic-sm" viewBox="0 0 24 24" style="margin-right:4px"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+              Bloquear Turno
+            </button>
           </div>
         </div>
 
         <!-- DIA -->
         <div class="agenda-view active" id="view-dia">
+          <div class="sala-tabs" id="dia-sala-tabs" style="display:flex;gap:.4rem;margin-bottom:.6rem">
+            <button class="sala-tab-btn active" onclick="setSalaFiltroDia('todas',this)">Ambas as salas</button>
+            <button class="sala-tab-btn" onclick="setSalaFiltroDia('1',this)" id="dia-tab-s1">Áthos I</button>
+            <button class="sala-tab-btn" onclick="setSalaFiltroDia('2',this)" id="dia-tab-s2">Áthos II</button>
+          </div>
           <div class="sala-occ" id="sala-occ-badges"></div>
           <div class="agenda-wrap">
-            <div class="ag-cols">
+            <div class="ag-cols" id="ag-cols-head">
               <div class="ag-col-head" style="align-items:flex-start;font-size:.74rem;padding-left:.875rem">Horário</div>
-              <div class="ag-col-head"><span class="ag-room-num">1</span><span class="ag-room-label" id="ag-s1">Sala 1</span></div>
-              <div class="ag-col-head"><span class="ag-room-num">2</span><span class="ag-room-label" id="ag-s2">Sala 2</span></div>
+              <div class="ag-col-head" id="ag-col-s1"><span class="ag-room-num">1</span><span class="ag-room-label" id="ag-s1">Sala 1</span></div>
+              <div class="ag-col-head" id="ag-col-s2"><span class="ag-room-num">2</span><span class="ag-room-label" id="ag-s2">Sala 2</span></div>
             </div>
             <div id="agenda-dia-body"></div>
           </div>
@@ -789,11 +803,17 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div class="legend-item"><div class="legend-dot" style="background:#6d5aac"></div>Hora Avulsa</div>
             <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div>Último dia</div>
             <div class="legend-item"><div class="legend-dot" style="border:1.5px dashed #d1d5db;background:transparent"></div>Disponível</div>
+            <div class="legend-item"><div class="legend-dot" style="background:repeating-linear-gradient(45deg,#9ca3af,#9ca3af 3px,#d1d5db 3px,#d1d5db 6px)"></div>Bloqueado</div>
           </div>
         </div>
 
         <!-- SEMANA -->
         <div class="agenda-view" id="view-semana">
+          <div class="sala-tabs" id="semana-sala-tabs" style="display:flex;gap:.4rem;margin-bottom:.6rem">
+            <button class="sala-tab-btn active" onclick="setSalaFiltroSemana('todas',this)">Ambas as salas</button>
+            <button class="sala-tab-btn" onclick="setSalaFiltroSemana('1',this)" id="semana-tab-s1">Áthos I</button>
+            <button class="sala-tab-btn" onclick="setSalaFiltroSemana('2',this)" id="semana-tab-s2">Áthos II</button>
+          </div>
           <div class="week-grid">
             <div class="wg-head">
               <div class="wg-head-cell"></div>
@@ -811,6 +831,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div class="legend-item"><div class="legend-dot" style="background:#3d8a7a"></div>Pacote de Horas</div>
             <div class="legend-item"><div class="legend-dot" style="background:#6d5aac"></div>Hora Avulsa</div>
             <div class="legend-item"><div class="legend-dot" style="border:1.5px dashed #d1d5db;background:transparent"></div>Disponível</div>
+            <div class="legend-item"><div class="legend-dot" style="background:repeating-linear-gradient(45deg,#9ca3af,#9ca3af 3px,#d1d5db 3px,#d1d5db 6px)"></div>Bloqueado</div>
           </div>
         </div>
 
@@ -1164,9 +1185,32 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="page" id="page-lembretes">
         <div class="sec-header">
           <span class="sec-title">Lembretes</span>
-          <button class="btn btn-primary" onclick="openModal('novo-lembrete')">
-            <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Novo Lembrete
-          </button>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn btn-secondary" onclick="exportarLembretesCSV()">↓ Exportar CSV</button>
+            <button class="btn btn-primary" onclick="openModal('novo-lembrete')">
+              <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Novo Lembrete
+            </button>
+          </div>
+        </div>
+        <!-- Filtros -->
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+          <input class="form-input" id="lmb-filtro-busca" placeholder="Buscar por título" style="max-width:180px" oninput="loadLembretes()">
+          <select class="form-select" id="lmb-filtro-status" style="max-width:150px" onchange="loadLembretes()">
+            <option value="">Todos os status</option>
+            <option>Pendente</option><option>Concluído</option>
+          </select>
+          <select class="form-select" id="lmb-filtro-prioridade" style="max-width:150px" onchange="loadLembretes()">
+            <option value="">Toda prioridade</option>
+            <option>Normal</option><option>Alta</option><option>Urgente</option>
+          </select>
+          <input class="form-input" type="date" id="lmb-filtro-ini" style="max-width:140px" onchange="loadLembretes()">
+          <input class="form-input" type="date" id="lmb-filtro-fim" style="max-width:140px" onchange="loadLembretes()">
+        </div>
+        <!-- Indicadores -->
+        <div class="stats-grid" style="margin-bottom:1rem">
+          <div class="stat-card"><div class="stat-label">Total no filtro</div><div class="stat-value" id="lmb-total">—</div></div>
+          <div class="stat-card"><div class="stat-label">Pendentes</div><div class="stat-value" id="lmb-pendentes">—</div></div>
+          <div class="stat-card"><div class="stat-label">Vencidos</div><div class="stat-value" style="color:var(--danger)" id="lmb-vencidos">—</div></div>
         </div>
         <div id="lembretes-lista" style="margin-top:.5rem"></div>
       </div>
@@ -1175,9 +1219,12 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="page" id="page-servicos">
         <div class="sec-header">
           <span class="sec-title">Serviços</span>
-          <button class="btn btn-primary" onclick="openModal('novo-servico')">
-            <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Novo Serviço
-          </button>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn btn-secondary" onclick="exportarServicosCSV()">↓ Exportar CSV</button>
+            <button class="btn btn-primary" onclick="openModal('novo-servico')">
+              <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Novo Serviço
+            </button>
+          </div>
         </div>
         <!-- Filtros -->
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
@@ -1216,6 +1263,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .5rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Turno Duplo (8h) — por sala</div>
             <div class="cfg-row"><div><div class="cfg-label">Áthos I — Turno 8h</div><div class="cfg-sub">equivalente a 2 turnos</div></div><input class="cfg-input" id="preco-turno8h-s1" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Áthos II — Turno 8h</div><div class="cfg-sub">equivalente a 2 turnos</div></div><input class="cfg-input" id="preco-turno8h-s2" placeholder="R$ 0,00"></div>
+            <div class="cfg-row"><div><div class="cfg-label">Sala Mista — Turno 8h</div><div class="cfg-sub">valor independente, não usa Áthos I nem Áthos II</div></div><input class="cfg-input" id="preco-turno8h-mista" placeholder="R$ 0,00"></div>
             <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .5rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Outros</div>
             <div class="cfg-row"><div><div class="cfg-label">Hora Avulsa</div></div><input class="cfg-input" id="preco-avulsa" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Pacote 5h / mês</div></div><input class="cfg-input" id="preco-5h" placeholder="R$ 0,00"></div>
@@ -1281,10 +1329,13 @@ body.dark .tag{background:#111827;border-color:#374151;}
     <div class="modal-title" id="loc-modal-title">Nova Locação</div>
     <input type="hidden" id="loc-edit-id">
     <input type="hidden" id="loc-clicked-date">
-    <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="loc-prof"><option value="">Selecionar...</option></select></div>
+    <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="loc-prof" onchange="toggleSaldoPacote()"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Sala</label><select class="form-select" id="loc-sala" onchange="calcDescontoLocacao()"><option value="1" id="loc-s1-opt">Sala 1</option><option value="2" id="loc-s2-opt">Sala 2</option></select></div>
-      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao()"><option>Turno Fixo (4h)</option><option>Turno Duplo (8h — 2 turnos)</option><option>Pacote de Horas</option><option>Hora Avulsa</option></select></div>
+      <div class="form-group" id="loc-sala-group"><label class="form-label">Sala</label><select class="form-select" id="loc-sala" onchange="calcDescontoLocacao()"><option value="1" id="loc-s1-opt">Sala 1</option><option value="2" id="loc-s2-opt">Sala 2</option></select></div>
+      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option>Pacote de 5 Horas</option><option>Pacote de 10 Horas</option><option>Hora Avulsa</option></select></div>
+    </div>
+    <div class="form-group" id="loc-saldo-pacote-group" style="display:none">
+      <div style="background:#f3f4f6;border-radius:8px;padding:.6rem .75rem;font-size:.78rem;color:var(--text-light)" id="loc-saldo-pacote-info">—</div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Hora Início</label><select class="form-select" id="loc-inicio"><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:30</option><option>18:00</option><option>19:00</option><option>20:00</option><option>21:00</option><option>21:30</option></select></div>
@@ -1885,10 +1936,12 @@ function applyConfig() {
   if(appConfig.precoTurnoS2) document.getElementById('preco-turno-s2').value = appConfig.precoTurnoS2;
   if(appConfig.precoTurno8hS1) document.getElementById('preco-turno8h-s1').value = appConfig.precoTurno8hS1;
   if(appConfig.precoTurno8hS2) document.getElementById('preco-turno8h-s2').value = appConfig.precoTurno8hS2;
+  if(appConfig.precoTurno8hMista) document.getElementById('preco-turno8h-mista').value = appConfig.precoTurno8hMista;
   // compat legado
   if(appConfig.precoTurno && !appConfig.precoTurnoS1) { document.getElementById('preco-turno-s1').value = appConfig.precoTurno; document.getElementById('preco-turno-s2').value = appConfig.precoTurno; }
   if(appConfig.precoAvulsa) document.getElementById('preco-avulsa').value = appConfig.precoAvulsa;
   if(appConfig.preco10h) document.getElementById('preco-10h').value = appConfig.preco10h;
+  if(appConfig.preco5h) document.getElementById('preco-5h').value = appConfig.preco5h;
 }
 
 async function saveConfig() {
@@ -1902,8 +1955,10 @@ async function saveConfig() {
     precoTurnoS2: document.getElementById('preco-turno-s2').value,
     precoTurno8hS1: document.getElementById('preco-turno8h-s1').value,
     precoTurno8hS2: document.getElementById('preco-turno8h-s2').value,
+    precoTurno8hMista: document.getElementById('preco-turno8h-mista').value,
     precoAvulsa: document.getElementById('preco-avulsa').value,
     preco10h: document.getElementById('preco-10h').value,
+    preco5h: document.getElementById('preco-5h').value,
     alertaDias: [document.getElementById('alerta-d1').value],
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
@@ -1963,9 +2018,10 @@ function renderProfissionais(profs, filtro='todos') {
     let horasBar = '';
     if(p.vinculo==='Pacote de Horas' && p.horasTotal) {
       const usadas = p.horasUsadas||0;
+      const saldo = Math.max(0, p.horasTotal - usadas);
       const pct = Math.min(100,Math.round(usadas/p.horasTotal*100));
       const cls = pct>=80?'danger':pct>=60?'warning':'';
-      horasBar = `<div class="horas-bar-wrap"><div class="horas-bar-label" style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text-light);margin-bottom:3px"><span>Horas usadas</span><span style="font-weight:600">${usadas}h / ${p.horasTotal}h</span></div><div class="horas-bar"><div class="horas-bar-fill ${cls}" style="width:${pct}%"></div></div></div>`;
+      horasBar = `<div class="horas-bar-wrap"><div class="horas-bar-label" style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text-light);margin-bottom:3px"><span>Saldo: ${saldo}h disponíveis</span><span style="font-weight:600">${usadas}h / ${p.horasTotal}h</span></div><div class="horas-bar"><div class="horas-bar-fill ${cls}" style="width:${pct}%"></div></div><button class="btn btn-secondary" style="font-size:.68rem;padding:.3rem .6rem;margin-top:.4rem" onclick="event.stopPropagation();abrirModalUsoPacote('${p.id}','${(p.nome||'').replace(/'/g,"\\'")}',${saldo})">Registrar uso</button></div>`;
     }
 
     return `<div class="prof-card" onclick="verProfissional('${p.id}')">
@@ -2909,6 +2965,30 @@ function exportarFinanceiro() {
 
 // ══ LOCAÇÕES / AGENDA ══
 let currentAgendaDate=new Date();
+let salaFiltroDia='todas';
+let salaFiltroSemana='todas';
+
+function setSalaFiltroDia(sala, el) {
+  salaFiltroDia = sala;
+  document.querySelectorAll('#dia-sala-tabs .sala-tab-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const colS1 = document.getElementById('ag-col-s1');
+  const colS2 = document.getElementById('ag-col-s2');
+  if(colS1) colS1.style.display = sala==='2' ? 'none' : '';
+  if(colS2) colS2.style.display = sala==='1' ? 'none' : '';
+  const viewDia = document.getElementById('view-dia');
+  viewDia.classList.remove('filtro-s1','filtro-s2');
+  if(sala==='1') viewDia.classList.add('filtro-s1');
+  if(sala==='2') viewDia.classList.add('filtro-s2');
+  renderAgendaDia();
+}
+
+function setSalaFiltroSemana(sala, el) {
+  salaFiltroSemana = sala;
+  document.querySelectorAll('#semana-sala-tabs .sala-tab-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderAgendaSemana();
+}
 let currentAgendaView='dia';
 
 function initAgenda() {
@@ -2992,31 +3072,32 @@ function renderAgendaDia() {
   const s2=appConfig.sala2||'Áthos II';
   const _cad=currentAgendaDate; const dataStr=`${_cad.getFullYear()}-${String(_cad.getMonth()+1).padStart(2,'0')}-${String(_cad.getDate()).padStart(2,'0')}`;
 
-  // Buscar locações do dia no Firebase
-  db.collection('locacoes').get().then(snap => {
+  // Buscar locações e bloqueios do dia no Firebase
+  Promise.all([
+    db.collection('locacoes').get(),
+    db.collection('bloqueios').where('data','==',dataStr).get()
+  ]).then(([snap, snapBloq]) => {
     const locacoesDia = snap.docs.map(d=>({id:d.id,...d.data()})).filter(l => locAtivaEmDia(l, dataStr));
+    const bloqueiosDia = snapBloq.docs.map(d=>({id:d.id,...d.data()}));
 
     // Montar mapa: turno+sala → locação
-    function getTurno(inicio) {
-      if(!inicio) return '';
-      const [h,m] = inicio.split(':').map(Number);
-      const tot = h*60+(m||0);
-      if(tot < 13*60) return 'manha';
-      if(tot < 17*60+30) return 'tarde';
-      return 'noite';
-    }
-    function getSk(sala) {
-      if(!sala) return 's1';
-      const s = sala.toLowerCase().trim();
-      if(s.includes('ii') || s.includes('2') || s === (appConfig.sala2||'áthos ii').toLowerCase()) return 's2';
-      return 's1';
-    }
+    function getTurno(inicio) { return getTurnoKeyGlobal(inicio); }
 
     const mapa = {};
     locacoesDia.forEach(l => {
-      const t = getTurno(l.inicio);
-      const salaKey = getSk(l.sala);
-      mapa[`${t}_${salaKey}`] = l;
+      const salaKey = getSalaKeyGlobal(l.sala, l.vinculo);
+      const turnosOcup = getTurnosOcupados(l);
+      if(salaKey === 'mista') {
+        // Sala Mista ocupa as duas colunas (Áthos I e Áthos II) simultaneamente
+        turnosOcup.forEach(t => { mapa[`${t}_s1`] = l; mapa[`${t}_s2`] = l; });
+      } else {
+        turnosOcup.forEach(t => { mapa[`${t}_${salaKey}`] = l; });
+      }
+    });
+    const mapaBloq = {};
+    bloqueiosDia.forEach(b => {
+      const salaKey = b.sala==='2' ? 's2' : 's1';
+      mapaBloq[`${b.turno}_${salaKey}`] = b;
     });
 
     function slotHtml(turno, sala, profNome, cor, locId) {
@@ -3032,10 +3113,14 @@ function renderAgendaDia() {
       <div class="sala-occ-card"><div><div class="sala-occ-name">${s2}</div><div style="font-size:.73rem;color:var(--text-light)">${s2Count} turno(s) ocupado(s)</div></div><span class="badge ${s2Count>0?'badge-success':'badge-neutral'}" style="margin-left:auto">${s2Count}/3</span></div>`;
 
     const turnoKeys = ['manha','tarde','noite'];
+    const bloqStyle = 'background:repeating-linear-gradient(45deg,#9ca3af,#9ca3af 4px,#e5e7eb 4px,#e5e7eb 9px);border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#4b5563;cursor:pointer;display:flex;align-items:center;gap:5px';
+    const cadeadoSvg = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
     document.getElementById('agenda-dia-body').innerHTML=turnos.map((t,ti)=>{
       const tk = turnoKeys[ti];
       const l1 = mapa[`${tk}_s1`];
       const l2 = mapa[`${tk}_s2`];
+      const b1 = mapaBloq[`${tk}_s1`];
+      const b2 = mapaBloq[`${tk}_s2`];
       const p1 = l1 ? (profissionaisCache.find(p=>p.id===l1.profId)?.nome || l1.profId || '?') : null;
       const p2 = l2 ? (profissionaisCache.find(p=>p.id===l2.profId)?.nome || l2.profId || '?') : null;
       function tipoLabel(l, tRange) {
@@ -3047,6 +3132,16 @@ function renderAgendaDia() {
       }
       const tipo1 = tipoLabel(l1, t.range);
       const tipo2 = tipoLabel(l2, t.range);
+      function celula(i, prof, loc, bloq, tipo, corPadrao, sala) {
+        if(i!==0) {
+          if(bloq) return ''; // já coberto pelo grid-row:span da primeira linha
+          if(prof) return '';
+          return `<div class="hora-cell" onclick="openModal('nova-locacao')"></div>`;
+        }
+        if(bloq) return `<div class="hora-cell" style="${bloqStyle};grid-row:span 4" title="${bloq.motivo}${bloq.obs?' — '+bloq.obs:''}" onclick="editarBloqueio('${bloq.id}')">${cadeadoSvg}<span>Bloqueado<br><span style="font-size:.68rem;font-weight:400">${bloq.motivo}</span></span></div>`;
+        if(prof) return `<div class="hora-cell" style="background:${corPadrao};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer;grid-row:span 4" onclick="editarLocacao('${loc.id}','${dataStr}')">${prof}<br><span style="font-size:.72rem;font-weight:400;opacity:.85">${tipo}</span></div>`;
+        return `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>`;
+      }
       return `
       <div class="turno-sec">
         <div class="turno-bar-header">
@@ -3056,8 +3151,8 @@ function renderAgendaDia() {
         ${t.horas.map((h,i)=>`
         <div class="hora-row">
           <div class="hora-label">${h}</div>
-          ${i===0 && p1 ? `<div class="hora-cell" style="background:${l1.cor||'var(--gold)'};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer;grid-row:span 4" onclick="editarLocacao('${l1.id}','${dataStr}')">${p1}<br><span style="font-size:.72rem;font-weight:400;opacity:.85">${tipo1}</span></div>` : i===0 && !p1 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>` : i>0 && !p1 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"></div>` : ''}
-          ${i===0 && p2 ? `<div class="hora-cell" style="background:${l2.cor||'#3d8a7a'};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer" onclick="editarLocacao('${l2.id}','${dataStr}')">${p2}<br><span style="font-size:.72rem;font-weight:400;opacity:.85">${tipo2}</span></div>` : i===0 && !p2 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>` : i>0 && !p2 ? `<div class="hora-cell" onclick="openModal('nova-locacao')"></div>` : ''}
+          ${celula(i, p1, l1, b1, tipo1, l1?.cor||'var(--gold)', '1')}
+          ${celula(i, p2, l2, b2, tipo2, l2?.cor||'#3d8a7a', '2')}
         </div>`).join('')}
         <div class="hora-row" style="min-height:18px;border-bottom:2px solid #e9ecef">
           <div class="hora-label" style="font-size:.74rem;padding-top:2px;color:var(--gold);font-weight:600">${t.fechamento}</div>
@@ -3082,9 +3177,10 @@ function editarLocacao(id, dataClicada) {
     const profSel=document.getElementById('loc-prof');
     if(profSel) profSel.value=l.profId||'';
     const salaSel=document.getElementById('loc-sala');
-    if(salaSel) salaSel.value=l.sala||'1';
+    if(salaSel) salaSel.value=(l.sala==='mista'?'1':l.sala)||'1';
     const vincSel=document.getElementById('loc-vinculo');
     if(vincSel) vincSel.value=l.vinculo||'Turno Fixo (4h)';
+    toggleSalaMista();
     const iniSel=document.getElementById('loc-inicio');
     if(iniSel) iniSel.value=l.inicio||'08:00';
     const fimSel=document.getElementById('loc-fim');
@@ -3107,6 +3203,7 @@ function editarLocacao(id, dataClicada) {
     const descEl=document.getElementById('loc-desconto');
     if(descEl) descEl.value=l.desconto||'';
     calcDescontoLocacao();
+    toggleSaldoPacote();
     // Selecionar cor
     selectedColor=l.cor||'#a07850';
     document.querySelectorAll('.color-dot').forEach(d=>{
@@ -3166,6 +3263,134 @@ async function confirmarExclusaoLocacao() {
   } catch(e){showToast('Erro ao excluir locação.','error');}
 }
 
+// ══════════════ BLOQUEIO DE TURNOS ══════════════
+// Coleção separada 'bloqueios': {sala, turno, data, motivo, obs, createdAt}
+// Um bloqueio é por sala+turno+data específica (não recorrente).
+
+function abrirModalBloqueio(salaPreSel, dataPreSel, turnoPreSel) {
+  document.getElementById('bloq-edit-id').value='';
+  document.getElementById('bloq-modal-title').textContent='Bloquear Turno';
+  document.getElementById('bloq-excluir-btn').style.display='none';
+  document.getElementById('bloq-sala').value=salaPreSel||'1';
+  document.getElementById('bloq-data').value=dataPreSel || (()=>{const d=currentAgendaDate||new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
+  document.getElementById('bloq-turno').value=turnoPreSel||'manha';
+  document.getElementById('bloq-motivo').value='Manutenção';
+  document.getElementById('bloq-obs').value='';
+  openModal('bloqueio-turno');
+}
+
+function editarBloqueio(id) {
+  db.collection('bloqueios').doc(id).get().then(doc=>{
+    if(!doc.exists) return;
+    const b=doc.data();
+    document.getElementById('bloq-edit-id').value=id;
+    document.getElementById('bloq-modal-title').textContent='Editar Bloqueio';
+    document.getElementById('bloq-excluir-btn').style.display='inline-flex';
+    document.getElementById('bloq-sala').value=b.sala||'1';
+    document.getElementById('bloq-data').value=b.data||'';
+    document.getElementById('bloq-turno').value=b.turno||'manha';
+    document.getElementById('bloq-motivo').value=b.motivo||'Manutenção';
+    document.getElementById('bloq-obs').value=b.obs||'';
+    openModal('bloqueio-turno');
+  }).catch(()=>{});
+}
+
+async function salvarBloqueio() {
+  const editId=document.getElementById('bloq-edit-id').value;
+  const sala=document.getElementById('bloq-sala').value;
+  const data=document.getElementById('bloq-data').value;
+  const turno=document.getElementById('bloq-turno').value;
+  const motivo=document.getElementById('bloq-motivo').value;
+  const obs=document.getElementById('bloq-obs').value;
+  if(!data){showToast('Informe a data do bloqueio.','error');return;}
+
+  // Checar se já existe locação confirmada nesse turno+sala+data
+  try {
+    const snapLoc = await db.collection('locacoes').get();
+    const ocupado = snapLoc.docs.some(d=>{
+      const l=d.data();
+      if(!locAtivaEmDia(l, data)) return false;
+      const turnosOcup = getTurnosOcupados(l);
+      if(!turnosOcup.includes(turno)) return false;
+      const lSala = getSalaKeyGlobal(l.sala, l.vinculo);
+      const salaAlvo = sala==='2' ? 's2' : 's1';
+      return lSala === salaAlvo || lSala === 'mista';
+    });
+    if(ocupado) { showToast('Este turno já está locado por um profissional. Não é possível bloquear.','error'); return; }
+  } catch(e){/* segue mesmo se a checagem falhar */}
+
+  const payload = { sala, data, turno, motivo, obs, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  try {
+    if(editId) {
+      await db.collection('bloqueios').doc(editId).update(payload);
+      showToast('Bloqueio atualizado!','success');
+    } else {
+      // Evitar duplicar bloqueio no mesmo turno+sala+data
+      const existente = await db.collection('bloqueios').where('sala','==',sala).where('data','==',data).where('turno','==',turno).limit(1).get();
+      if(!existente.empty) { showToast('Já existe um bloqueio para este turno.','error'); return; }
+      payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('bloqueios').add(payload);
+      showToast('Turno bloqueado!','success');
+    }
+    closeModal('bloqueio-turno');
+    renderAgendaDia();
+    renderAgendaSemana();
+    renderAgendaMes();
+  } catch(e){showToast('Erro ao salvar bloqueio.','error');}
+}
+
+async function excluirBloqueio() {
+  const id=document.getElementById('bloq-edit-id').value;
+  if(!id) return;
+  if(!confirm('Remover este bloqueio?')) return;
+  try {
+    await db.collection('bloqueios').doc(id).delete();
+    closeModal('bloqueio-turno');
+    showToast('Bloqueio removido!','success');
+    renderAgendaDia();
+    renderAgendaSemana();
+    renderAgendaMes();
+  } catch(e){showToast('Erro ao remover bloqueio.','error');}
+}
+
+// Helpers globais de classificação de turno/sala (usados em várias views)
+function getTurnoKeyGlobal(inicio) {
+  if(!inicio) return '';
+  const [h,m] = inicio.split(':').map(Number);
+  const tot = h*60+(m||0);
+  if(tot < 13*60) return 'manha';
+  if(tot < 17*60+30) return 'tarde';
+  return 'noite';
+}
+function getSalaKeyGlobal(sala, vinculo) {
+  // Sala Mista é um espaço lógico independente de Áthos I/II
+  if(vinculo === 'Turno 8h — Sala Mista') return 'mista';
+  if(!sala) return 's1';
+  const s = String(sala).toLowerCase().trim();
+  const s2nome = (appConfig.sala2||'áthos ii').toLowerCase();
+  if(s.includes('ii') || s==='2' || s===s2nome) return 's2';
+  return 's1';
+}
+
+// Retorna os turnos efetivamente ocupados por uma locação num dia.
+// Locações normais ocupam 1 turno (derivado do horário de início).
+// Vínculos de "Turno 8h" (Áthos I, Áthos II ou Sala Mista) ocupam 2 turnos
+// consecutivos, derivados de início E fim (ex: 08:00–17:00 = Manhã+Tarde).
+function getTurnosOcupados(l) {
+  const tInicio = getTurnoKeyGlobal(l.inicio);
+  const v = l.vinculo||'';
+  const isDuplo = v.includes('Turno Duplo') || v.startsWith('Turno 8h');
+  if(!isDuplo || !l.fim) return [tInicio];
+  const tFim = getTurnoKeyGlobal(l.fim==='12:00'?'11:59':(l.fim==='17:00'?'16:59':(l.fim==='17:30'?'17:29':l.fim)));
+  if(tFim === tInicio) return [tInicio];
+  const ordem = ['manha','tarde','noite'];
+  const iA = ordem.indexOf(tInicio), iB = ordem.indexOf(tFim);
+  if(iA<0||iB<0) return [tInicio];
+  const turnos = [];
+  for(let i=Math.min(iA,iB); i<=Math.max(iA,iB); i++) turnos.push(ordem[i]);
+  return turnos; // ex: ['manha','tarde'] ou ['tarde','noite']
+}
+
 async function salvarLocacao() {
   const editId=document.getElementById('loc-edit-id').value;
   const rec = document.getElementById('loc-recorrencia').value;
@@ -3188,7 +3413,7 @@ async function salvarLocacao() {
 
   const data={
     profId:document.getElementById('loc-prof').value,
-    sala:sala,
+    sala: vinculo === 'Turno 8h — Sala Mista' ? 'mista' : sala,
     vinculo:vinculo,
     inicio:document.getElementById('loc-inicio').value,
     fim:document.getElementById('loc-fim').value,
@@ -3220,6 +3445,19 @@ async function salvarLocacao() {
     }
   } catch(e){/* se falhar verificação, continua */}
 
+  // Verificar se algum dos turnos ocupados está bloqueado na data de início
+  try {
+    const turnosOcup = getTurnosOcupados(data);
+    const isMista = data.vinculo === 'Turno 8h — Sala Mista';
+    const salasParaChecar = isMista ? ['1','2'] : [String(data.sala)];
+    let bloqueado = false;
+    for(const s of salasParaChecar) {
+      const snapBloq = await db.collection('bloqueios').where('sala','==',s).where('data','==',data.dataInicio).get();
+      if(snapBloq.docs.some(d=>turnosOcup.includes(d.data().turno))) { bloqueado = true; break; }
+    }
+    if(bloqueado) { showToast('Um dos turnos selecionados está bloqueado nesta data. Remova o bloqueio antes de locar.','error'); return; }
+  } catch(e){/* se falhar verificação, continua */}
+
   try {
     let locacaoId = editId;
     if(editId) {
@@ -3232,6 +3470,11 @@ async function salvarLocacao() {
       showToast('Locação confirmada!','success');
       // Gera o primeiro lançamento financeiro no momento da confirmação
       await gerarLancamentoLocacao({...data, id: locacaoId});
+      // Se for vínculo de pacote de horas, inicia/atualiza o saldo do profissional
+      const horasPacote = horasDoPacote(vinculo);
+      if(horasPacote > 0) {
+        await iniciarOuAtualizarPacoteHoras(data.profId, horasPacote, locacaoId);
+      }
     }
     closeModal('nova-locacao');
     renderAgendaDia();
@@ -3337,7 +3580,11 @@ function verificarConflito(nova, todas) {
       const lFim = timeToMin(loc.fim);
       const horariosOverlap = iniMin < lFim && fimMin > lIni;
       if(!horariosOverlap) continue;
-      const mesmaSala = String(loc.sala) === String(nova.sala);
+      // Sala Mista ocupa fisicamente as duas salas — conflita com qualquer locação,
+      // de qualquer sala, no mesmo horário. O mesmo vale na direção inversa.
+      const novaEhMista = nova.vinculo === 'Turno 8h — Sala Mista';
+      const locEhMista = loc.vinculo === 'Turno 8h — Sala Mista';
+      const mesmaSala = novaEhMista || locEhMista ? true : String(loc.sala) === String(nova.sala);
       const mesmoProf = loc.profId === nova.profId;
       if(mesmaSala) {
         const profNome = profissionaisCache.find(p=>p.id===loc.profId)?.nome || 'outro profissional';
@@ -3407,7 +3654,10 @@ function renderAgendaSemana() {
     }).join('')}
   </div>`;
 
-  db.collection('locacoes').get().then(snap=>{
+  Promise.all([
+    db.collection('locacoes').get(),
+    db.collection('bloqueios').where('data','in', diasStr.length<=10?diasStr:diasStr.slice(0,10)).get().catch(()=>({docs:[]}))
+  ]).then(([snap, snapBloq])=>{
     const all = snap.docs.map(d=>({id:d.id,...d.data()}));
     // Filtrar locações que sobrepõem a semana (filtro grosseiro, refinado abaixo por dia)
     const semLocacoes = all.filter(l=>{
@@ -3419,25 +3669,44 @@ function renderAgendaSemana() {
     // Mapa: turno_sala_dataStr → locação (somente nos dias em que a locação de fato ocorre)
     const mapa = {};
     semLocacoes.forEach(l=>{
-      const tk=getTurnoKey(l.inicio);
-      const sk=getSk(l.sala);
+      const sk=getSalaKeyGlobal(l.sala, l.vinculo);
+      const turnosOcup = getTurnosOcupados(l);
       diasStr.forEach(ds=>{
-        if(locAtivaEmDia(l, ds)) mapa[`${tk}_${sk}_${ds}`]=l;
+        if(!locAtivaEmDia(l, ds)) return;
+        turnosOcup.forEach(tk => {
+          if(sk==='mista') { mapa[`${tk}_s1_${ds}`]=l; mapa[`${tk}_s2_${ds}`]=l; }
+          else mapa[`${tk}_${sk}_${ds}`]=l;
+        });
       });
     });
 
+    // Mapa de bloqueios: turno_sala_dataStr → bloqueio
+    const mapaBloq = {};
+    (snapBloq.docs||[]).forEach(d=>{
+      const b={id:d.id,...d.data()};
+      const sk = b.sala==='2'?'s2':'s1';
+      mapaBloq[`${b.turno}_${sk}_${b.data}`]=b;
+    });
+
+    const salasParaExibir = salaFiltroSemana==='1' ? [{k:'s1',n:s1}] : salaFiltroSemana==='2' ? [{k:'s2',n:s2}] : [{k:'s1',n:s1},{k:'s2',n:s2}];
     const body = turnos.map(t=>`
       <div class="wg-turno-sec">
         <div class="wg-turno-label">
           <div class="wg-turno-name">${t.nome} <span>${t.range}</span></div>
           ${diasStr.map(()=>'<div class="wg-turno-fill"></div>').join('')}
         </div>
-        ${[{k:'s1',n:s1},{k:'s2',n:s2}].map(sala=>`
+        ${salasParaExibir.map(sala=>`
         <div class="wg-row">
           <div class="wg-time">${sala.n}</div>
           ${diasStr.map((ds,di)=>{
             const loc=mapa[`${t.key}_${sala.k}_${ds}`];
+            const bloq=mapaBloq[`${t.key}_${sala.k}_${ds}`];
             const isH=ds===hoje;
+            if(bloq){
+              return `<div class="wg-cell${isH?' wg-today':''}" style="background:repeating-linear-gradient(45deg,#9ca3af,#9ca3af 4px,#e5e7eb 4px,#e5e7eb 9px);cursor:pointer" title="${bloq.motivo}" onclick="editarBloqueio('${bloq.id}')">
+                <span style="font-size:.68rem;font-weight:600;color:#4b5563;padding:2px 4px">🔒 ${bloq.motivo}</span>
+              </div>`;
+            }
             if(loc){
               const prof=profissionaisCache.find(p=>p.id===loc.profId)?.nome||loc.profId||'?';
               return `<div class="wg-cell${isH?' wg-today':''}" style="background:${loc.cor||'var(--gold)'};opacity:.85;cursor:pointer" onclick="editarLocacao('${loc.id}','${ds}')">
@@ -4408,11 +4677,22 @@ function valorBaseLocacao(sala, vinculo) {
   const config = appConfig;
   const s = String(sala) === '2' ? '2' : '1';
   const num = (v) => parseFloat((v||'0').toString().replace(/[^\d,]/g,'').replace(',','.')) || 0;
-  if(vinculo === 'Turno Duplo (8h — 2 turnos)') {
+  if(vinculo === 'Turno 8h — Sala Mista') {
+    return num(config.precoTurno8hMista);
+  }
+  if(vinculo === 'Turno 8h — Áthos II') {
+    return num(config.precoTurno8hS2);
+  }
+  if(vinculo === 'Turno 8h — Áthos I' || vinculo === 'Turno Duplo (8h — 2 turnos)') {
+    // 'Turno Duplo (8h — 2 turnos)' mantido por compatibilidade com locações antigas;
+    // nesse caso o valor segue pela sala selecionada no campo Sala.
     return s === '2' ? num(config.precoTurno8hS2) : num(config.precoTurno8hS1);
   }
-  if(vinculo === 'Pacote de Horas') {
+  if(vinculo === 'Pacote de 10 Horas' || vinculo === 'Pacote de Horas') {
     return num(config.preco10h);
+  }
+  if(vinculo === 'Pacote de 5 Horas') {
+    return num(config.preco5h);
   }
   if(vinculo === 'Hora Avulsa') {
     return num(config.precoAvulsa);
@@ -4433,6 +4713,47 @@ function calcDescontoLocacao() {
   } else {
     document.getElementById('loc-valor-final').value = '';
   }
+}
+
+// ── PACOTE DE HORAS: exibir saldo do profissional no modal de locação ──
+function horasDoPacote(vinculo) {
+  if(vinculo === 'Pacote de 5 Horas') return 5;
+  if(vinculo === 'Pacote de 10 Horas' || vinculo === 'Pacote de Horas') return 10;
+  return 0;
+}
+
+async function toggleSaldoPacote() {
+  const vinculo = document.getElementById('loc-vinculo').value;
+  const grupo = document.getElementById('loc-saldo-pacote-group');
+  const isPacote = vinculo.startsWith('Pacote de');
+  if(!grupo) return;
+  if(!isPacote) { grupo.style.display='none'; return; }
+  grupo.style.display='';
+  const profId = document.getElementById('loc-prof').value;
+  const info = document.getElementById('loc-saldo-pacote-info');
+  if(!profId) { info.textContent = 'Selecione um profissional para ver o saldo de horas.'; return; }
+  try {
+    const doc = await db.collection('profissionais').doc(profId).get();
+    if(!doc.exists) { info.textContent='—'; return; }
+    const p = doc.data();
+    const total = p.horasTotal || 0;
+    const usadas = p.horasUsadas || 0;
+    const saldo = Math.max(0, total - usadas);
+    if(total > 0) {
+      info.innerHTML = `<strong>Saldo atual:</strong> ${saldo}h disponíveis de ${total}h contratadas (${usadas}h já utilizadas neste ciclo).`;
+    } else {
+      info.innerHTML = `Este profissional ainda não tem pacote de horas ativo. Ao confirmar, será iniciado um pacote de <strong>${horasDoPacote(vinculo)}h</strong>.`;
+    }
+  } catch(e) { info.textContent='Não foi possível carregar o saldo.'; }
+}
+
+// ── SALA MISTA: oculta o seletor de Sala, já que o vínculo já define o espaço ──
+function toggleSalaMista() {
+  const vinculo = document.getElementById('loc-vinculo').value;
+  const grupo = document.getElementById('loc-sala-group');
+  if(!grupo) return;
+  const isMista = vinculo === 'Turno 8h — Sala Mista';
+  grupo.style.display = isMista ? 'none' : '';
 }
 
 // ── DESCONTO RECEITA ──
@@ -4631,7 +4952,33 @@ async function excluirSubcat(id) {
 }
 
 // ── PACOTE DE HORAS — FLUXO ──
-async function descontarHorasPacote(profId, horas) {
+// Coleção 'historicoPacotes': {profId, tipo:'inicio'|'uso'|'renovacao', horas, obs, locacaoId, createdAt}
+
+// Inicia o pacote no profissional quando uma locação por pacote é confirmada.
+// Se o profissional já tiver um pacote ativo, soma as horas ao total contratado.
+async function iniciarOuAtualizarPacoteHoras(profId, horas, locacaoId) {
+  if(!profId || !horas) return;
+  try {
+    const ref = db.collection('profissionais').doc(profId);
+    const doc = await ref.get();
+    if(!doc.exists) return;
+    const atual = doc.data().horasTotal || 0;
+    await ref.update({
+      horasTotal: atual + horas,
+      horasUsadas: doc.data().horasUsadas || 0,
+      vinculo: 'Pacote de Horas',
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection('historicoPacotes').add({
+      profId, tipo:'inicio', horas, locacaoId: locacaoId||null,
+      obs: `Pacote de ${horas}h contratado`,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch(e) { console.error('Erro ao iniciar pacote de horas:', e); }
+}
+
+// Desconta horas usadas do saldo do profissional e grava no histórico.
+async function descontarHorasPacote(profId, horas, obs) {
   if(!profId || !horas) return;
   try {
     const ref = db.collection('profissionais').doc(profId);
@@ -4639,6 +4986,10 @@ async function descontarHorasPacote(profId, horas) {
     if(doc.exists) {
       const atual = doc.data().horasUsadas || 0;
       await ref.update({horasUsadas: atual + horas, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+      await db.collection('historicoPacotes').add({
+        profId, tipo:'uso', horas, obs: obs||`${horas}h utilizadas`,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
     }
   } catch(e) { console.error('Erro ao descontar horas:', e); }
 }
@@ -4654,8 +5005,50 @@ async function renovarHorasMensais() {
     const batch = db.batch();
     snap.docs.forEach(d => batch.update(d.ref, {horasUsadas: 0}));
     await batch.commit();
+    for(const d of snap.docs) {
+      await db.collection('historicoPacotes').add({
+        profId: d.id, tipo:'renovacao', horas: d.data().horasTotal||0,
+        obs: 'Renovação mensal do pacote', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
     console.log('Horas mensais renovadas.');
   } catch(e) { console.error(e); }
+}
+
+// ── Modal de registro de uso manual (chamado a partir do card do profissional) ──
+function abrirModalUsoPacote(profId, profNome, saldo) {
+  document.getElementById('uso-pacote-prof-id').value = profId;
+  document.getElementById('uso-pacote-titulo').textContent = `Registrar uso de horas — ${profNome}`;
+  document.getElementById('uso-pacote-saldo').textContent = `Saldo disponível: ${saldo}h`;
+  document.getElementById('uso-pacote-horas').value = '';
+  document.getElementById('uso-pacote-obs').value = '';
+  openModal('uso-pacote');
+}
+
+async function confirmarUsoPacote() {
+  const profId = document.getElementById('uso-pacote-prof-id').value;
+  const horas = parseFloat(document.getElementById('uso-pacote-horas').value);
+  const obs = document.getElementById('uso-pacote-obs').value;
+  if(!horas || horas<=0) { showToast('Informe a quantidade de horas utilizadas.','error'); return; }
+  await descontarHorasPacote(profId, horas, obs);
+  closeModal('uso-pacote');
+  showToast('Uso registrado!','success');
+  if(typeof verProfissional==='function') {
+    const modalAberto = document.getElementById('modal-ver-profissional');
+    if(modalAberto && modalAberto.classList.contains('active')) verProfissional(profId);
+  }
+  loadProfissionais();
+}
+
+// Retorna histórico de uso de pacote de um profissional, mais recente primeiro
+async function getHistoricoPacote(profId) {
+  try {
+    const snap = await db.collection('historicoPacotes').where('profId','==',profId).get();
+    return snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
+      const ta=a.createdAt?.toMillis?.()||0, tb=b.createdAt?.toMillis?.()||0;
+      return tb-ta;
+    });
+  } catch(e) { return []; }
 }
 
 // ── DESPESAS PARCELADAS — VENCIMENTOS CORRETOS ──
@@ -5424,12 +5817,30 @@ async function loadLembretes() {
   lista.innerHTML = '<div style="color:var(--text-lighter);font-size:.83rem;padding:1rem">Carregando...</div>';
   try {
     const snap = await db.collection('lembretes').orderBy('data','asc').get();
-    const docs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    let docs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    // Aplicar filtros
+    const fBusca = (document.getElementById('lmb-filtro-busca')?.value||'').toLowerCase();
+    const fStatus = document.getElementById('lmb-filtro-status')?.value||'';
+    const fPrioridade = document.getElementById('lmb-filtro-prioridade')?.value||'';
+    const fIni = document.getElementById('lmb-filtro-ini')?.value||'';
+    const fFim = document.getElementById('lmb-filtro-fim')?.value||'';
+    if(fBusca) docs = docs.filter(d=>(d.titulo||'').toLowerCase().includes(fBusca));
+    if(fStatus) docs = docs.filter(d=>d.status===fStatus);
+    if(fPrioridade) docs = docs.filter(d=>(d.prioridade||'Normal')===fPrioridade);
+    if(fIni) docs = docs.filter(d=>d.data>=fIni);
+    if(fFim) docs = docs.filter(d=>d.data<=fFim);
+    // Indicadores
+    const hoje = new Date().toISOString().slice(0,10);
+    const totalEl = document.getElementById('lmb-total');
+    const pendEl = document.getElementById('lmb-pendentes');
+    const vencEl = document.getElementById('lmb-vencidos');
+    if(totalEl) totalEl.textContent = docs.length;
+    if(pendEl) pendEl.textContent = docs.filter(d=>d.status!=='Concluído').length;
+    if(vencEl) vencEl.textContent = docs.filter(d=>d.data && d.data<hoje && d.status!=='Concluído').length;
     if(!docs.length) {
-      lista.innerHTML = '<div style="color:var(--text-lighter);font-size:.83rem;padding:1rem;text-align:center">Nenhum lembrete cadastrado.</div>';
+      lista.innerHTML = '<div style="color:var(--text-lighter);font-size:.83rem;padding:1rem;text-align:center">Nenhum lembrete encontrado.</div>';
       return;
     }
-    const hoje = new Date().toISOString().slice(0,10);
     lista.innerHTML = docs.map(l => {
       const vencido = l.data && l.data < hoje && l.status !== 'Concluído';
       const priColor = l.prioridade==='Urgente' ? 'var(--danger)' : l.prioridade==='Alta' ? 'var(--warning)' : 'var(--text-lighter)';
@@ -5633,6 +6044,72 @@ async function excluirServico() {
   } catch(e){showToast('Erro ao excluir.','error');}
 }
 
+// ── EXPORTAÇÃO CSV — Serviços e Lembretes ──
+function csvEscape(v) {
+  const s = (v===null||v===undefined) ? '' : String(v);
+  if(s.includes(';') || s.includes('"') || s.includes('\n')) {
+    return '"' + s.replace(/"/g,'""') + '"';
+  }
+  return s;
+}
+
+function baixarCSV(linhas, nomeArquivo) {
+  const conteudo = '\uFEFF' + linhas.map(l=>l.map(csvEscape).join(';')).join('\r\n');
+  const blob = new Blob([conteudo], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nomeArquivo;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function exportarServicosCSV() {
+  try {
+    const snap = await db.collection('servicos').orderBy('data','desc').get();
+    let docs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    // Respeita os filtros ativos na tela
+    const fEmpresa = (document.getElementById('srv-filtro-empresa')?.value||'').toLowerCase();
+    const fStatus = document.getElementById('srv-filtro-status')?.value||'';
+    const fIni = document.getElementById('srv-filtro-ini')?.value||'';
+    const fFim = document.getElementById('srv-filtro-fim')?.value||'';
+    if(fEmpresa) docs = docs.filter(d=>(d.empresa||'').toLowerCase().includes(fEmpresa));
+    if(fStatus) docs = docs.filter(d=>d.status===fStatus);
+    if(fIni) docs = docs.filter(d=>d.data>=fIni);
+    if(fFim) docs = docs.filter(d=>d.data<=fFim);
+    if(!docs.length) { showToast('Nenhum serviço para exportar com os filtros atuais.','error'); return; }
+    const linhas = [['Tipo','Empresa/Prestador','Data','Valor (R$)','Status','Observação']];
+    docs.forEach(s=>linhas.push([s.tipo||'', s.empresa||'', s.data?formatDate(s.data):'', s.valor?parseFloat(s.valor).toFixed(2).replace('.',','):'0,00', s.status||'Pendente', s.obs||'']));
+    baixarCSV(linhas, `servicos_${new Date().toISOString().slice(0,10)}.csv`);
+    showToast('Exportação gerada!','success');
+  } catch(e) { showToast('Erro ao exportar serviços.','error'); }
+}
+
+async function exportarLembretesCSV() {
+  try {
+    const snap = await db.collection('lembretes').orderBy('data','asc').get();
+    let docs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const fBusca = (document.getElementById('lmb-filtro-busca')?.value||'').toLowerCase();
+    const fStatus = document.getElementById('lmb-filtro-status')?.value||'';
+    const fPrioridade = document.getElementById('lmb-filtro-prioridade')?.value||'';
+    const fIni = document.getElementById('lmb-filtro-ini')?.value||'';
+    const fFim = document.getElementById('lmb-filtro-fim')?.value||'';
+    if(fBusca) docs = docs.filter(d=>(d.titulo||'').toLowerCase().includes(fBusca));
+    if(fStatus) docs = docs.filter(d=>d.status===fStatus);
+    if(fPrioridade) docs = docs.filter(d=>(d.prioridade||'Normal')===fPrioridade);
+    if(fIni) docs = docs.filter(d=>d.data>=fIni);
+    if(fFim) docs = docs.filter(d=>d.data<=fFim);
+    if(!docs.length) { showToast('Nenhum lembrete para exportar com os filtros atuais.','error'); return; }
+    const hoje = new Date().toISOString().slice(0,10);
+    const linhas = [['Título','Data','Prioridade','Status','Vencido','Observação']];
+    docs.forEach(l=>{
+      const vencido = l.data && l.data<hoje && l.status!=='Concluído' ? 'Sim' : 'Não';
+      linhas.push([l.titulo||'', l.data?formatDate(l.data):'', l.prioridade||'Normal', l.status||'Pendente', vencido, l.obs||'']);
+    });
+    baixarCSV(linhas, `lembretes_${new Date().toISOString().slice(0,10)}.csv`);
+    showToast('Exportação gerada!','success');
+  } catch(e) { showToast('Erro ao exportar lembretes.','error'); }
+}
+
 // ══════════════════════════════════════════
 // ══ HISTÓRICO DO PROFISSIONAL ══
 // ══════════════════════════════════════════
@@ -5779,6 +6256,50 @@ async function verHistoricoProf(profId) {
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('loc-excluir-confirm')">Cancelar</button>
       <button class="btn btn-danger" onclick="confirmarExclusaoLocacao()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bloqueio de Turno -->
+<div class="modal-overlay" id="modal-bloqueio-turno" onclick="closeModalBg(event,'bloqueio-turno')">
+  <div class="modal">
+    <div class="modal-title" id="bloq-modal-title">Bloquear Turno</div>
+    <input type="hidden" id="bloq-edit-id">
+    <div class="form-group"><label class="form-label">Sala</label><select class="form-select" id="bloq-sala"><option value="1">Sala 1</option><option value="2">Sala 2</option></select></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Data</label><input class="form-input" type="date" id="bloq-data"></div>
+      <div class="form-group"><label class="form-label">Turno</label><select class="form-select" id="bloq-turno"><option value="manha">Manhã</option><option value="tarde">Tarde</option><option value="noite">Noite</option></select></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Motivo</label>
+      <select class="form-select" id="bloq-motivo">
+        <option>Manutenção</option>
+        <option>Uso interno</option>
+        <option>Férias</option>
+        <option>Treinamento</option>
+        <option>Outro</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Observação (opcional)</label><textarea class="form-input" id="bloq-obs" rows="2"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="bloq-excluir-btn" style="display:none;margin-right:auto" onclick="excluirBloqueio()">Remover bloqueio</button>
+      <button class="btn btn-secondary" onclick="closeModal('bloqueio-turno')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarBloqueio()">Bloquear</button>
+    </div>
+  </div>
+</div>
+
+<!-- Registrar Uso de Pacote de Horas -->
+<div class="modal-overlay" id="modal-uso-pacote" onclick="closeModalBg(event,'uso-pacote')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title" id="uso-pacote-titulo">Registrar uso de horas</div>
+    <input type="hidden" id="uso-pacote-prof-id">
+    <div style="font-size:.82rem;color:var(--text-light);margin-bottom:.75rem" id="uso-pacote-saldo">—</div>
+    <div class="form-group"><label class="form-label">Horas utilizadas</label><input class="form-input" type="number" min="0.5" step="0.5" id="uso-pacote-horas" placeholder="Ex: 1"></div>
+    <div class="form-group"><label class="form-label">Observação (opcional)</label><input class="form-input" id="uso-pacote-obs" placeholder="Ex: Sessão avulsa em 19/06"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('uso-pacote')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarUsoPacote()">Registrar</button>
     </div>
   </div>
 </div>
