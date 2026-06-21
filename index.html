@@ -2084,11 +2084,23 @@ function updateVinculoAuto() {
 // Combina os campos já preenchidos com os campos pendentes, destacados para preenchimento.
 function copiarDadosProfissional() {
   const v = (id) => document.getElementById(id)?.value?.trim() || '';
+  const ehPJ = v('prof-tipo-pessoa') === 'PJ';
   const campos = [
     { label: 'Nome completo', val: v('prof-nome') },
-    { label: 'Tipo de pessoa', val: v('prof-tipo-pessoa')==='PJ' ? 'Pessoa Jurídica (PJ)' : 'Pessoa Física (PF)' },
+    { label: 'Tipo de pessoa', val: ehPJ ? 'Pessoa Jurídica (PJ)' : 'Pessoa Física (PF)' },
     { label: 'RG', val: v('prof-rg') },
     { label: 'CPF', val: v('prof-cpf') },
+    { label: 'CNPJ', val: ehPJ ? v('prof-cnpj') : '' },
+  ];
+  // Dados do representante legal — só se aplicam a Pessoa Jurídica
+  if(ehPJ) {
+    campos.push(
+      { label: 'Representante legal', val: v('prof-rep-nome') },
+      { label: 'CPF do representante', val: v('prof-rep-cpf') },
+      { label: 'Cargo do representante', val: v('prof-rep-cargo') }
+    );
+  }
+  campos.push(
     { label: 'Conselho', val: v('prof-conselho') },
     { label: 'Nº de Registro', val: v('prof-registro') },
     { label: 'Especialidade', val: v('prof-especialidade') },
@@ -2101,21 +2113,18 @@ function copiarDadosProfissional() {
     { label: 'Número', val: v('prof-numero') },
     { label: 'Bairro', val: v('prof-bairro') },
     { label: 'Cidade/UF', val: v('prof-cidade') },
-    { label: 'CEP', val: v('prof-cep') },
-  ];
-  const pendentes = campos.filter(c => !c.val);
+    { label: 'CEP', val: v('prof-cep') }
+  );
+
+  // Exibe somente os campos preenchidos — sem traços ou marcadores de pendência
   const preenchidos = campos.filter(c => c.val);
 
-  let texto = 'Olá! Para finalizar seu cadastro na Clínica Áthos, precisamos das seguintes informações:\n\n';
-  if(preenchidos.length) {
-    texto += '✅ Já temos:\n' + preenchidos.map(c=>`${c.label}: ${c.val}`).join('\n') + '\n\n';
+  if(!preenchidos.length) {
+    showToast('Preencha ao menos um campo antes de copiar.','error');
+    return;
   }
-  if(pendentes.length) {
-    texto += '📋 Ainda faltam:\n' + pendentes.map(c=>`${c.label}: _____________`).join('\n') + '\n\n';
-  } else {
-    texto += 'Todos os campos já estão preenchidos. Por favor, confira se as informações acima estão corretas.\n\n';
-  }
-  texto += 'Pode responder esta mensagem com os dados preenchidos. Obrigada!';
+
+  const texto = preenchidos.map(c=>`${c.label}: ${c.val}`).join('\n');
 
   navigator.clipboard.writeText(texto).then(()=>{
     showToast('Dados copiados! Cole no WhatsApp, e-mail ou onde preferir.','success');
@@ -3283,6 +3292,10 @@ async function excluirLocacao() {
     const l = doc.data();
     const isRecorrente = l.recorrencia && l.recorrencia !== 'Apenas este horário';
     if(isRecorrente) {
+      // Guarda o id e a data clicada ANTES de fechar o modal de edição, pois
+      // closeModal('nova-locacao') limpa loc-edit-id como efeito colateral.
+      document.getElementById('loc-excl-pending-id').value = id;
+      document.getElementById('loc-excl-pending-date').value = document.getElementById('loc-clicked-date').value || '';
       closeModal('nova-locacao');
       openModal('loc-excluir-confirm');
       return;
@@ -3298,14 +3311,32 @@ async function excluirLocacao() {
 }
 
 async function confirmarExclusaoLocacao() {
-  const id=document.getElementById('loc-edit-id').value;
-  const dataClicada=document.getElementById('loc-clicked-date').value;
+  const id=document.getElementById('loc-excl-pending-id').value;
+  const dataClicada=document.getElementById('loc-excl-pending-date').value;
   const escopo=document.querySelector('input[name="loc-excl-scope"]:checked')?.value || 'single';
-  if(!id) { closeModal('loc-excluir-confirm'); return; }
+  if(!id) { showToast('Não foi possível identificar a locação a excluir.','error'); closeModal('loc-excluir-confirm'); return; }
   try {
     if(escopo === 'all') {
       await db.collection('locacoes').doc(id).delete();
       showToast('Série excluída!','success');
+    } else if(escopo === 'future') {
+      // Encerra a série um dia antes da ocorrência selecionada — preserva o
+      // histórico passado e remove esta e todas as ocorrências futuras.
+      if(!dataClicada) { showToast('Não foi possível identificar a data da ocorrência.','error'); return; }
+      const doc = await db.collection('locacoes').doc(id).get();
+      const locAtual = doc.exists ? doc.data() : null;
+      if(locAtual && dataClicada <= locAtual.dataInicio) {
+        // Se a ocorrência selecionada é a primeira da série, não há "passado"
+        // a preservar — excluir a série inteira é o resultado equivalente.
+        await db.collection('locacoes').doc(id).delete();
+        showToast('Série excluída!','success');
+      } else {
+        const dClicada = new Date(dataClicada+'T12:00:00');
+        dClicada.setDate(dClicada.getDate()-1);
+        const novoFim = toDateStrLocal(dClicada);
+        await db.collection('locacoes').doc(id).update({ dataFim: novoFim });
+        showToast('Série encerrada a partir desta data!','success');
+      }
     } else {
       // Exclusão de ocorrência única: grava a data como exceção, sem apagar a série
       if(!dataClicada) { showToast('Não foi possível identificar a data da ocorrência.','error'); return; }
@@ -3314,6 +3345,8 @@ async function confirmarExclusaoLocacao() {
       });
       showToast('Ocorrência removida!','success');
     }
+    document.getElementById('loc-excl-pending-id').value='';
+    document.getElementById('loc-excl-pending-date').value='';
     closeModal('loc-excluir-confirm');
     renderAgendaDia();
     renderAgendaSemana();
@@ -4595,46 +4628,51 @@ function showFinTab(t,el) {
 }
 
 // ── ABA MOVIMENTAÇÃO FINANCEIRA ──
-let movCache = [];
+let movCache = [];       // resultado já filtrado (o que está sendo exibido)
+let movCacheTodos = [];  // todos os lançamentos pagos, sem nenhum filtro
 
 async function loadMovimentacao() {
   try {
-    // Movimentação filtrada pelo mês/ano do Financeiro
     const hoje = new Date();
     const mesAtivo = typeof _mesAtivo !== 'undefined' ? _mesAtivo : hoje.getMonth();
     const anoAtivo = typeof _anoAtivo !== 'undefined' ? _anoAtivo : hoje.getFullYear();
-    const mesStr = String(mesAtivo + 1).padStart(2,'0');
-    const anoStr = String(anoAtivo);
-    const inicioPeriodo = `${anoStr}-${mesStr}-01`;
-    const ultimoDia = new Date(anoAtivo, mesAtivo + 1, 0).getDate();
-    const fimPeriodo = `${anoStr}-${mesStr}-${String(ultimoDia).padStart(2,'0')}`;
 
-    const recSnap = await db.collection('receitas').get();
+    // Para registros pagos antes da existência do campo dataBaixa, usamos a data
+    // da última atualização (updatedAt) como melhor estimativa de quando a baixa
+    // ocorreu — usar o vencimento nesses casos é errado quando ele é futuro.
+    function dataMovDe(x) {
+      if(x.dataBaixa) return x.dataBaixa;
+      if(x.updatedAt && typeof x.updatedAt.toDate === 'function') return toDateStrLocal(x.updatedAt.toDate());
+      return x.vencimento;
+    }
+
+    // Carrega TODOS os lançamentos pagos (sem recortar por mês no banco) — o
+    // recorte de mês é só mais um filtro aplicado depois, igual busca/tipo/período.
+    // Isso permite que uma pesquisa por data fora do mês ativo encontre resultados.
+    const recSnap = await db.collection('receitas').where('status','==','Pago').get();
     const receitas = recSnap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Receita'}))
-      .filter(r => r.status === 'Pago').map(r => ({...r, _dataMov: r.dataBaixa || r.vencimento}))
-      .filter(r => r._dataMov >= inicioPeriodo && r._dataMov <= fimPeriodo);
+      .map(r => ({...r, _dataMov: dataMovDe(r)}));
 
-    const despSnap = await db.collection('despesas').get();
+    const despSnap = await db.collection('despesas').where('status','==','Pago').get();
     const despesas = despSnap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Despesa'}))
-      .filter(d => d.status === 'Pago').map(d => ({...d, _dataMov: d.dataBaixa || d.vencimento}))
-      .filter(d => d._dataMov >= inicioPeriodo && d._dataMov <= fimPeriodo);
+      .map(d => ({...d, _dataMov: dataMovDe(d)}));
 
-    movCache = [...receitas, ...despesas].sort((a,b) => (a._dataMov||'').localeCompare(b._dataMov||''));
+    movCacheTodos = [...receitas, ...despesas].sort((a,b) => (a._dataMov||'').localeCompare(b._dataMov||''));
 
     // Label do período
     const mesesNomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     const labelEl = document.getElementById('mov-periodo-label');
     if(labelEl) labelEl.textContent = `${mesesNomes[mesAtivo]} ${anoAtivo}`;
 
-    // Popular selects de categoria e subcategoria
-    const cats = [...new Set(movCache.map(x=>x.categoria||x.tipo||'').filter(Boolean))].sort();
-    const subcats = [...new Set(movCache.map(x=>x.subcategoria||'').filter(Boolean))].sort();
+    // Popular selects de categoria e subcategoria (a partir de tudo, não só do mês)
+    const cats = [...new Set(movCacheTodos.map(x=>x.categoria||x.tipo||'').filter(Boolean))].sort();
+    const subcats = [...new Set(movCacheTodos.map(x=>x.subcategoria||'').filter(Boolean))].sort();
     const catSel = document.getElementById('mov-filtro-cat');
     const subSel = document.getElementById('mov-filtro-subcat');
     if(catSel) catSel.innerHTML = '<option value="">Todas as categorias</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
     if(subSel) subSel.innerHTML = '<option value="">Todas as subcategorias</option>' + subcats.map(s=>`<option value="${s}">${s}</option>`).join('');
 
-    _renderMovData(movCache);
+    aplicarFiltrosMov();
   } catch(e) { showToast('Erro ao carregar movimentação.','error'); console.error(e); }
 }
 
@@ -5455,7 +5493,9 @@ function initSwipe() {
         const novoStatus = status === 'Pago' ? 'Pendente' : 'Pago';
         try {
           const col = tipo === 'rec' ? 'receitas' : 'despesas';
-          await db.collection(col).doc(id).update({status: novoStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+          const payload = {status: novoStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
+          payload.dataBaixa = novoStatus==='Pago' ? toDateStrLocal(new Date()) : null;
+          await db.collection(col).doc(id).update(payload);
           card.dataset.status = novoStatus;
           showToast(`Marcado como ${novoStatus}!`, 'success');
           loadFinanceiro();
@@ -5627,14 +5667,35 @@ function aplicarFiltrosMov() {
   const ini = document.getElementById('mov-filtro-ini')?.value;
   const fim = document.getElementById('mov-filtro-fim')?.value;
   const busca = (document.getElementById('mov-busca-input')?.value||'').trim().toLowerCase();
-  let filtrados = movCache;
+  const temPeriodoCustom = !!(ini || fim);
+
+  let filtrados = movCacheTodos;
+
+  if(temPeriodoCustom) {
+    // Período customizado tem prioridade sobre o recorte de mês ativo —
+    // permite pesquisar uma baixa em qualquer data, mesmo fora do mês exibido.
+    if(ini) filtrados = filtrados.filter(x=>x._dataMov && x._dataMov>=ini);
+    if(fim) filtrados = filtrados.filter(x=>x._dataMov && x._dataMov<=fim);
+  } else {
+    // Sem período customizado: aplica o recorte do mês/ano ativo no Financeiro
+    const hoje = new Date();
+    const mesAtivo = typeof _mesAtivo !== 'undefined' ? _mesAtivo : hoje.getMonth();
+    const anoAtivo = typeof _anoAtivo !== 'undefined' ? _anoAtivo : hoje.getFullYear();
+    const mesStr = String(mesAtivo + 1).padStart(2,'0');
+    const anoStr = String(anoAtivo);
+    const inicioPeriodo = `${anoStr}-${mesStr}-01`;
+    const ultimoDia = new Date(anoAtivo, mesAtivo + 1, 0).getDate();
+    const fimPeriodo = `${anoStr}-${mesStr}-${String(ultimoDia).padStart(2,'0')}`;
+    filtrados = filtrados.filter(x => x._dataMov >= inicioPeriodo && x._dataMov <= fimPeriodo);
+  }
+
   if(movFiltroTipo === 'receitas') filtrados = filtrados.filter(x=>x._tipo==='Receita');
   else if(movFiltroTipo === 'despesas') filtrados = filtrados.filter(x=>x._tipo==='Despesa');
   if(busca) filtrados = filtrados.filter(x => (x.profissional||x.descricao||'').toLowerCase().includes(busca));
-  if(ini) filtrados = filtrados.filter(x=>x._dataMov && x._dataMov>=ini);
-  if(fim) filtrados = filtrados.filter(x=>x._dataMov && x._dataMov<=fim);
+
+  movCache = filtrados;
   _renderMovData(filtrados);
-  _updateMovTotalizador((ini||fim||busca) ? filtrados : null);
+  _updateMovTotalizador((temPeriodoCustom||busca) ? filtrados : null);
 }
 function limparFiltroMovData() {
   const ini = document.getElementById('mov-filtro-ini');
@@ -5644,8 +5705,7 @@ function limparFiltroMovData() {
   movFiltroTipo = 'todos';
   document.querySelectorAll('#fin-mov .qf-btn[id^="mov-qf-"]').forEach(b=>b.classList.remove('active'));
   document.getElementById('mov-qf-todos')?.classList.add('active');
-  _renderMovData(movCache);
-  _updateMovTotalizador(null);
+  aplicarFiltrosMov();
 }
 function _updateMovTotalizador(lista) {
   const el = document.getElementById('mov-totalizador');
@@ -6330,6 +6390,8 @@ async function verHistoricoProf(profId) {
 <div class="modal-overlay" id="modal-loc-excluir-confirm" onclick="closeModalBg(event,'loc-excluir-confirm')">
   <div class="modal" style="max-width:420px">
     <div class="modal-title">Excluir locação</div>
+    <input type="hidden" id="loc-excl-pending-id">
+    <input type="hidden" id="loc-excl-pending-date">
     <p style="font-size:.88rem;color:var(--text-light);margin-bottom:1.25rem;line-height:1.6">
       Esta locação se repete em vários dias. O que você deseja excluir?
     </p>
@@ -6341,11 +6403,18 @@ async function verHistoricoProf(profId) {
           <div style="font-size:.78rem;color:var(--text-lighter);margin-top:2px">Remove apenas o dia selecionado. As demais datas da série continuam normalmente.</div>
         </div>
       </label>
+      <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px;transition:border-color .15s" id="loc-excl-opt-future-wrap">
+        <input type="radio" name="loc-excl-scope" id="loc-excl-opt-future" value="future" style="margin-top:2px;accent-color:var(--gold)">
+        <div>
+          <div style="font-size:.88rem;font-weight:600">Esta ocorrência e as futuras</div>
+          <div style="font-size:.78rem;color:var(--text-lighter);margin-top:2px">Encerra a série nesta data. As ocorrências anteriores à data selecionada são preservadas.</div>
+        </div>
+      </label>
       <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px;transition:border-color .15s" id="loc-excl-opt-all-wrap">
         <input type="radio" name="loc-excl-scope" id="loc-excl-opt-all" value="all" style="margin-top:2px;accent-color:var(--gold)">
         <div>
           <div style="font-size:.88rem;font-weight:600">Toda a série</div>
-          <div style="font-size:.78rem;color:var(--text-lighter);margin-top:2px">Exclui o lançamento e todas as ocorrências futuras vinculadas a esta configuração.</div>
+          <div style="font-size:.78rem;color:var(--text-lighter);margin-top:2px">Exclui a locação por completo, incluindo todas as ocorrências passadas e futuras.</div>
         </div>
       </label>
     </div>
