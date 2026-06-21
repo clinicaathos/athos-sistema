@@ -988,18 +988,19 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem">
               <div class="fin-search" style="flex:1;min-width:180px">
                 <span class="fin-search-icon">🔍</span>
-                <input class="fin-search-input" type="text" placeholder="Buscar..." oninput="buscarMov(this.value)">
+                <input class="fin-search-input" type="text" id="mov-busca-input" placeholder="Buscar..." onkeydown="if(event.key==='Enter')aplicarFiltrosMov()">
               </div>
               <span style="font-size:.72rem;color:var(--text-lighter)">De</span>
-              <input type="date" id="mov-filtro-ini" class="form-input" style="padding:4px 8px;font-size:.72rem;width:130px" onchange="aplicarFiltroMovData()">
+              <input type="date" id="mov-filtro-ini" class="form-input" style="padding:4px 8px;font-size:.72rem;width:130px">
               <span style="font-size:.72rem;color:var(--text-lighter)">até</span>
-              <input type="date" id="mov-filtro-fim" class="form-input" style="padding:4px 8px;font-size:.72rem;width:130px" onchange="aplicarFiltroMovData()">
-              <button class="qf-btn" onclick="limparFiltroMovData()" style="font-size:.74rem">✕</button>
+              <input type="date" id="mov-filtro-fim" class="form-input" style="padding:4px 8px;font-size:.72rem;width:130px">
+              <button class="btn btn-primary" onclick="aplicarFiltrosMov()" style="font-size:.74rem;padding:5px 14px">🔍 Pesquisar</button>
+              <button class="qf-btn" onclick="limparFiltroMovData()" style="font-size:.74rem">✕ Limpar</button>
             </div>
             <div class="quick-filters">
-              <button class="qf-btn active" onclick="filtrarMov('todos',this)">Todos</button>
-              <button class="qf-btn" onclick="filtrarMov('receitas',this)">Receitas</button>
-              <button class="qf-btn" onclick="filtrarMov('despesas',this)">Despesas</button>
+              <button class="qf-btn active" id="mov-qf-todos" onclick="filtrarMov('todos',this)">Todos</button>
+              <button class="qf-btn" id="mov-qf-receitas" onclick="filtrarMov('receitas',this)">Receitas</button>
+              <button class="qf-btn" id="mov-qf-despesas" onclick="filtrarMov('despesas',this)">Despesas</button>
             </div>
             <div id="mov-totalizador" style="display:none;background:var(--info-bg);border:1px solid #bfdbfe;border-radius:8px;padding:.6rem 1rem;margin-bottom:.5rem;font-size:.82rem;font-weight:600;color:var(--info)"></div>
             <div class="data-table fin-table-desktop" id="mov-table">
@@ -1464,6 +1465,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
     </div>
     <div class="form-group"><label class="form-label">Observações</label><textarea class="form-textarea" id="prof-obs" placeholder="Observações gerais sobre o profissional..."></textarea></div>
     <div class="modal-actions">
+      <button class="btn btn-secondary" style="margin-right:auto" onclick="copiarDadosProfissional()">📋 Copiar Dados</button>
       <button class="btn btn-secondary" onclick="closeModal('novo-prof')">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarProfissional()">Cadastrar</button>
     </div>
@@ -2078,6 +2080,50 @@ function updateVinculoAuto() {
   f.value = v==='Turno Fixo' ? 'Com vínculo' : 'Sem vínculo';
 }
 
+// ── COPIAR DADOS — gera texto pronto para enviar ao profissional (WhatsApp, e-mail etc.) ──
+// Combina os campos já preenchidos com os campos pendentes, destacados para preenchimento.
+function copiarDadosProfissional() {
+  const v = (id) => document.getElementById(id)?.value?.trim() || '';
+  const campos = [
+    { label: 'Nome completo', val: v('prof-nome') },
+    { label: 'Tipo de pessoa', val: v('prof-tipo-pessoa')==='PJ' ? 'Pessoa Jurídica (PJ)' : 'Pessoa Física (PF)' },
+    { label: 'RG', val: v('prof-rg') },
+    { label: 'CPF', val: v('prof-cpf') },
+    { label: 'Conselho', val: v('prof-conselho') },
+    { label: 'Nº de Registro', val: v('prof-registro') },
+    { label: 'Especialidade', val: v('prof-especialidade') },
+    { label: 'Abordagem', val: v('prof-abordagem') },
+    { label: 'Público-alvo', val: v('prof-publico') },
+    { label: 'Data de nascimento', val: v('prof-nascimento') ? formatDate(v('prof-nascimento')) : '' },
+    { label: 'Telefone', val: v('prof-telefone') },
+    { label: 'E-mail', val: v('prof-email') },
+    { label: 'Rua/Av.', val: v('prof-rua') },
+    { label: 'Número', val: v('prof-numero') },
+    { label: 'Bairro', val: v('prof-bairro') },
+    { label: 'Cidade/UF', val: v('prof-cidade') },
+    { label: 'CEP', val: v('prof-cep') },
+  ];
+  const pendentes = campos.filter(c => !c.val);
+  const preenchidos = campos.filter(c => c.val);
+
+  let texto = 'Olá! Para finalizar seu cadastro na Clínica Áthos, precisamos das seguintes informações:\n\n';
+  if(preenchidos.length) {
+    texto += '✅ Já temos:\n' + preenchidos.map(c=>`${c.label}: ${c.val}`).join('\n') + '\n\n';
+  }
+  if(pendentes.length) {
+    texto += '📋 Ainda faltam:\n' + pendentes.map(c=>`${c.label}: _____________`).join('\n') + '\n\n';
+  } else {
+    texto += 'Todos os campos já estão preenchidos. Por favor, confira se as informações acima estão corretas.\n\n';
+  }
+  texto += 'Pode responder esta mensagem com os dados preenchidos. Obrigada!';
+
+  navigator.clipboard.writeText(texto).then(()=>{
+    showToast('Dados copiados! Cole no WhatsApp, e-mail ou onde preferir.','success');
+  }).catch(()=>{
+    showToast('Não foi possível copiar automaticamente. Selecione o texto manualmente.','error');
+  });
+}
+
 async function salvarProfissional() {
   const id = document.getElementById('prof-edit-id').value;
   const vinculo = document.getElementById('prof-vinculo').value;
@@ -2510,7 +2556,7 @@ async function loadFinanceiro() {
   document.getElementById('fin-mes-label').textContent=`Financeiro — ${meses[hoje.getMonth()]} ${hoje.getFullYear()}`;
 
   try {
-    const hoje2 = new Date().toISOString().split('T')[0];
+    const hoje2 = toDateStrLocal(new Date());
 
     // Resumo do topo: buscar TODOS os pagos (sem filtro de mês)
     const [recTodosSnap, despTodosSnap] = await Promise.all([
@@ -2547,6 +2593,14 @@ async function loadFinanceiro() {
 let receitasCache = [];
 let despesasCache = [];
 
+// ── Mensagem do botão "Avisar" — texto padrão solicitado pela Beverly ──
+function montarMensagemAvisar(r) {
+  const nome = r.profissional || 'Profissional';
+  const venc = r.vencimento ? formatDate(r.vencimento) : '';
+  const valor = formatMoney(r.valor);
+  return `Olá, ${nome}! Tudo bem?\n\nEste é um lembrete referente à sua locação na Áthos. O vencimento do pagamento será no dia ${venc}.\n\nValor da locação: ${valor}\n\nApós a realização do pagamento, pedimos a gentileza de encaminhar o comprovante para confirmação.\n\nFicamos à disposição. Obrigada!`;
+}
+
 function renderReceitas(receitas) {
   receitasCache = [...receitas].sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||''));
   _renderReceitasData(receitas);
@@ -2565,7 +2619,7 @@ function _renderReceitasData(receitas) {
     receitas.map(r=>{
       const prof = profissionaisCache.find(p=>p.id===r.profId);
       const tel = prof?.telefone?.replace(/\D/g,'')||'';
-      const msg = encodeURIComponent(`Olá, ${r.profissional}! Lembramos que o pagamento da sua locação na Áthos vence hoje, ${r.vencimento?formatDate(r.vencimento):''}. Valor: ${formatMoney(r.valor)}. Obrigada!`);
+      const msg = encodeURIComponent(montarMensagemAvisar(r));
       const wppLink = tel ? `https://wa.me/55${tel}?text=${msg}` : '';
       return `<div class="dt-row" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 80px 40px">
         <span><input type="checkbox" class="rec-sel-cb" data-id="${r.id}" onchange="updateLoteBtn('rec')"></span>
@@ -2580,7 +2634,7 @@ function _renderReceitasData(receitas) {
   if(mobileEl) mobileEl.innerHTML = receitas.map(r=>{
     const prof = profissionaisCache.find(p=>p.id===r.profId);
     const tel = prof?.telefone?.replace(/\D/g,'')||'';
-    const msg = encodeURIComponent(`Olá, ${r.profissional}! O pagamento da sua locação na Áthos vence hoje. Valor: ${formatMoney(r.valor)}.`);
+    const msg = encodeURIComponent(montarMensagemAvisar(r));
     const wppLink = tel ? `https://wa.me/55${tel}?text=${msg}` : '';
     return `<div class="fin-card-item" data-id="${r.id}" data-tipo="rec" data-status="${r.status||'Pendente'}">
       <div class="swipe-action ${r.status==='Pago'?'warning':'success'}">${r.status==='Pago'?'Pendente':'Pago ✓'}</div>
@@ -2761,7 +2815,9 @@ async function renderPrevisao() {
 async function toggleStatusRec(el,id) {
   const novoStatus=el.textContent.trim()==='Pago'?'Pendente':'Pago';
   try {
-    await db.collection('receitas').doc(id).update({status:novoStatus, updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    const payload={status:novoStatus, updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    payload.dataBaixa = novoStatus==='Pago' ? toDateStrLocal(new Date()) : null;
+    await db.collection('receitas').doc(id).update(payload);
     el.textContent=novoStatus;
     el.className=`badge ${novoStatus==='Pago'?'badge-success':'badge-warning'} status-click`;
     showToast(`Status atualizado: ${novoStatus}`,'success');
@@ -2774,7 +2830,9 @@ async function toggleStatusRec(el,id) {
 async function toggleStatusDesp(el,id) {
   const novoStatus=el.textContent.trim()==='Pago'?'Pendente':'Pago';
   try {
-    await db.collection('despesas').doc(id).update({status:novoStatus,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    const payload={status:novoStatus, updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    payload.dataBaixa = novoStatus==='Pago' ? toDateStrLocal(new Date()) : null;
+    await db.collection('despesas').doc(id).update(payload);
     el.textContent=novoStatus;
     el.className=`badge ${novoStatus==='Pago'?'badge-success':'badge-warning'} status-click`;
     showToast(`Status atualizado: ${novoStatus}`,'success');
@@ -3354,6 +3412,13 @@ async function excluirBloqueio() {
 }
 
 // Helpers globais de classificação de turno/sala (usados em várias views)
+// Converte um objeto Date para string "yyyy-mm-dd" usando o fuso horário LOCAL,
+// nunca UTC. toISOString() converte para UTC e pode deslocar a data em até 1 dia
+// dependendo do horário — por isso não deve ser usado para datas de calendário.
+function toDateStrLocal(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function getTurnoKeyGlobal(inicio) {
   if(!inicio) return '';
   const [h,m] = inicio.split(':').map(Number);
@@ -3492,9 +3557,15 @@ async function gerarLancamentoLocacao(locacao, vencimentoStr) {
   let venc = vencimentoStr;
   if(!venc) {
     if(locacao.recorrencia !== 'Apenas este horário' && locacao.diaVencimento) {
-      // Próximo vencimento a partir da data de início, no dia configurado
+      // Primeiro vencimento a partir da data de início, no dia configurado.
+      // Se o dia de vencimento já passou no mês da contratação, pula para o
+      // próximo mês — evita gerar o primeiro lançamento já atrasado.
       const ini = new Date(locacao.dataInicio + 'T12:00:00');
-      const ano = ini.getFullYear(), mes = ini.getMonth();
+      let ano = ini.getFullYear(), mes = ini.getMonth();
+      if(ini.getDate() > locacao.diaVencimento) {
+        mes += 1;
+        if(mes > 11) { mes = 0; ano += 1; }
+      }
       const ultimoDiaMes = new Date(ano, mes+1, 0).getDate();
       const dia = Math.min(locacao.diaVencimento, ultimoDiaMes);
       venc = `${ano}-${String(mes+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
@@ -3554,6 +3625,14 @@ async function gerarLancamentosLocacoesMensais() {
       const ultimoDiaMes = new Date(anoAtual, mesAtual+1, 0).getDate();
       const dia = Math.min(l.diaVencimento, ultimoDiaMes);
       const vencStr = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+      // Não gerar vencimento de mês anterior ao mês de contratação quando o dia
+      // de vencimento já havia passado na contratação (mesma regra do 1º lançamento)
+      let primeiroAno = ini.getFullYear(), primeiroMes = ini.getMonth();
+      if(ini.getDate() > l.diaVencimento) {
+        primeiroMes += 1;
+        if(primeiroMes > 11) { primeiroMes = 0; primeiroAno += 1; }
+      }
+      if(anoAtual < primeiroAno || (anoAtual === primeiroAno && mesAtual < primeiroMes)) continue;
       await gerarLancamentoLocacao(l, vencStr);
     }
   } catch(e) { console.error('Erro ao gerar lançamentos mensais de locações:', e); }
@@ -3628,8 +3707,8 @@ function renderAgendaSemana() {
     const d=new Date(monday); d.setDate(d.getDate()+i);
     return d;
   });
-  const diasStr = diasSemana.map(d=>d.toISOString().split('T')[0]);
-  const hoje = new Date().toISOString().split('T')[0];
+  const diasStr = diasSemana.map(d=>toDateStrLocal(d));
+  const hoje = toDateStrLocal(new Date());
 
   function getTurnoKey(ini) {
     if(!ini) return '';
@@ -3709,8 +3788,10 @@ function renderAgendaSemana() {
             }
             if(loc){
               const prof=profissionaisCache.find(p=>p.id===loc.profId)?.nome||loc.profId||'?';
-              return `<div class="wg-cell${isH?' wg-today':''}" style="background:${loc.cor||'var(--gold)'};opacity:.85;cursor:pointer" onclick="editarLocacao('${loc.id}','${ds}')">
-                <span style="font-size:.72rem;font-weight:600;color:#fff;padding:2px 4px">${prof}</span>
+              const ehHoraAvulsa = (loc.vinculo||'')==='Hora Avulsa';
+              const horarioLabel = ehHoraAvulsa && loc.inicio && loc.fim ? `<br><span style="font-size:.65rem;font-weight:400;opacity:.9">${loc.inicio}–${loc.fim}</span>` : '';
+              return `<div class="wg-cell${isH?' wg-today':''}" style="background:${loc.cor||'var(--gold)'};opacity:.85;cursor:pointer" onclick="editarLocacao('${loc.id}','${ds}')" title="${prof}${ehHoraAvulsa&&loc.inicio&&loc.fim?' — '+loc.inicio+' às '+loc.fim:''}">
+                <span style="font-size:.72rem;font-weight:600;color:#fff;padding:2px 4px">${prof}${horarioLabel}</span>
               </div>`;
             }
             return `<div class="wg-cell${isH?' wg-today':''}" onclick="openModal('nova-locacao')"><button class="wg-add">+</button></div>`;
@@ -3742,7 +3823,7 @@ function renderAgendaMes() {
       const fim=new Date((l.dataFim||l.dataInicio)+'T12:00:00');
       for(let d=new Date(ini);d<=fim;d.setDate(d.getDate()+1)){
         if(d.getMonth()===mes&&d.getFullYear()===ano){
-          const k=d.toISOString().split('T')[0];
+          const k=toDateStrLocal(d);
           if(locAtivaEmDia(l, k)) ocupMap[k]=(ocupMap[k]||0)+1;
         }
       }
@@ -4170,7 +4251,7 @@ async function _buildGeralExtra(targetEl) {
     ]);
     const profs  = profSnap.docs.map(d=>({id:d.id,...d.data()}));
     const planos = planosSnap.docs.map(d=>({id:d.id,...d.data()}));
-    const hoje   = new Date().toISOString().split('T')[0];
+    const hoje   = toDateStrLocal(new Date());
     const locs   = locSnap.docs.map(d=>({id:d.id,...d.data()}))
       .filter(l=>l.data && l.data >= hoje)
       .sort((a,b)=>(a.data||'').localeCompare(b.data||''))
@@ -4530,13 +4611,15 @@ async function loadMovimentacao() {
 
     const recSnap = await db.collection('receitas').get();
     const receitas = recSnap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Receita'}))
-      .filter(r => r.status === 'Pago' && r.vencimento >= inicioPeriodo && r.vencimento <= fimPeriodo);
+      .filter(r => r.status === 'Pago').map(r => ({...r, _dataMov: r.dataBaixa || r.vencimento}))
+      .filter(r => r._dataMov >= inicioPeriodo && r._dataMov <= fimPeriodo);
 
     const despSnap = await db.collection('despesas').get();
     const despesas = despSnap.docs.map(d=>({id:d.id,...d.data(),_tipo:'Despesa'}))
-      .filter(d => d.status === 'Pago' && d.vencimento >= inicioPeriodo && d.vencimento <= fimPeriodo);
+      .filter(d => d.status === 'Pago').map(d => ({...d, _dataMov: d.dataBaixa || d.vencimento}))
+      .filter(d => d._dataMov >= inicioPeriodo && d._dataMov <= fimPeriodo);
 
-    movCache = [...receitas, ...despesas].sort((a,b) => (a.vencimento||'').localeCompare(b.vencimento||''));
+    movCache = [...receitas, ...despesas].sort((a,b) => (a._dataMov||'').localeCompare(b._dataMov||''));
 
     // Label do período
     const mesesNomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -4564,12 +4647,12 @@ function _renderMovData(lista) {
     if(mobileEl) mobileEl.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);text-align:center;padding:1rem">Nenhum lançamento realizado.</div>';
     return;
   }
-  table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 90px 40px"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Data</span><span>Valor</span><span>Ação</span><span></span></div>` +
+  table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 90px 40px"><span>Descrição</span><span>Tipo</span><span>Categoria</span><span>Data da baixa</span><span>Valor</span><span>Ação</span><span></span></div>` +
     lista.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 90px 40px">
       <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="${x._tipo==='Receita'?`editarReceita('${x.id}')`:`editarDespesa('${x.id}')`}">${x.profissional||x.descricao||'—'}${x.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> ${x.obs}</span>`:''}</span>
       <span><span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.7rem">${x._tipo}</span></span>
       <span style="color:var(--text-light)">${x.categoria||x.tipo||'—'}</span>
-      <span>${x.vencimento?formatDate(x.vencimento):'—'}</span>
+      <span>${x._dataMov?formatDate(x._dataMov):'—'}${x.dataBaixa && x.vencimento && x.dataBaixa!==x.vencimento?`<br><span style="font-size:.68rem;color:var(--text-lighter)">venc. ${formatDate(x.vencimento)}</span>`:''}</span>
       <span style="font-weight:600;color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</span>
       <span>${x.status==='Pago'?`<button class="btn btn-secondary btn-sm" onclick="devolverParaPagar('${x.id}','${x._tipo==='Receita'?'receitas':'despesas'}')">↩ Devolver</button>`:'—'}</span>
       <span><button class="fin-del-btn" style="opacity:1" onclick="excluirLancamento('${x.id}','${x._tipo==='Receita'?'receitas':'despesas'}')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></span>
@@ -4582,7 +4665,7 @@ function _renderMovData(lista) {
       </div>
       <div class="fin-card-item-meta">
         <span>${x.categoria||x.tipo||'—'}</span>
-        ${x.vencimento?`<span><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> ${formatDate(x.vencimento)}</span>`:''}
+        ${x._dataMov?`<span><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Baixa: ${formatDate(x._dataMov)}</span>`:''}
         ${x.obs?`<span title="${x.obs}"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> ${x.obs.substring(0,30)}${x.obs.length>30?'...':''}</span>`:''}
       </div>
       <div class="fin-card-item-actions">
@@ -4596,7 +4679,7 @@ function _renderMovData(lista) {
 async function devolverParaPagar(id, colecao) {
   if(!confirm('Retornar para "Contas a Pagar"? O status será alterado para Pendente.')) return;
   try {
-    await db.collection(colecao).doc(id).update({status:'Pendente', updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    await db.collection(colecao).doc(id).update({status:'Pendente', dataBaixa:null, updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
     showToast('Lançamento devolvido para Contas a Pagar!','success');
     loadFinanceiro();
     loadDashboard();
@@ -4604,18 +4687,19 @@ async function devolverParaPagar(id, colecao) {
   } catch(e){ showToast('Erro ao devolver lançamento.','error'); }
 }
 
+// ── Movimentação: estado de filtro combinado (tipo + busca + período) ──
+let movFiltroTipo = 'todos';
+
 function filtrarMov(tipo, el) {
-  document.querySelectorAll('#fin-mov .qf-btn').forEach(b=>b.classList.remove('active'));
+  movFiltroTipo = tipo;
+  document.querySelectorAll('#fin-mov .qf-btn[id^="mov-qf-"]').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
-  let filtrados = movCache;
-  if(tipo === 'receitas') filtrados = movCache.filter(x=>x._tipo==='Receita');
-  else if(tipo === 'despesas') filtrados = movCache.filter(x=>x._tipo==='Despesa');
-  _renderMovData(filtrados);
+  aplicarFiltrosMov();
 }
 
 function buscarMov(q) {
-  const filtrados = q ? movCache.filter(x => (x.profissional||x.descricao||'').toLowerCase().includes(q.toLowerCase())) : movCache;
-  _renderMovData(filtrados);
+  // mantido por compatibilidade; a busca agora é aplicada via aplicarFiltrosMov()
+  aplicarFiltrosMov();
 }
 
 function selectColor(el) {
@@ -5425,7 +5509,9 @@ function buscarDesp(q) {
 async function toggleStatusRecById(id, el) {
   const novoStatus = el.textContent.trim() === 'Pago' ? 'Pendente' : 'Pago';
   try {
-    await db.collection('receitas').doc(id).update({status: novoStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+    const payload={status: novoStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
+    payload.dataBaixa = novoStatus==='Pago' ? toDateStrLocal(new Date()) : null;
+    await db.collection('receitas').doc(id).update(payload);
     el.textContent = novoStatus;
     el.className = `badge ${novoStatus==='Pago'?'badge-success':'badge-warning'}`;
     showToast(`Status: ${novoStatus}`, 'success');
@@ -5438,7 +5524,9 @@ async function toggleStatusRecById(id, el) {
 async function toggleStatusDespById(id, el) {
   const novoStatus = el.textContent.trim() === 'Pago' ? 'Pendente' : 'Pago';
   try {
-    await db.collection('despesas').doc(id).update({status: novoStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+    const payload={status: novoStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
+    payload.dataBaixa = novoStatus==='Pago' ? toDateStrLocal(new Date()) : null;
+    await db.collection('despesas').doc(id).update(payload);
     el.textContent = novoStatus;
     el.className = `badge ${novoStatus==='Pago'?'badge-success':'badge-warning'}`;
     showToast(`Status: ${novoStatus}`, 'success');
@@ -5535,19 +5623,27 @@ function _updateDespTotalizador(lista) {
 }
 
 // ── FILTRO POR DATA — MOVIMENTAÇÃO ──
-function aplicarFiltroMovData() {
+function aplicarFiltrosMov() {
   const ini = document.getElementById('mov-filtro-ini')?.value;
   const fim = document.getElementById('mov-filtro-fim')?.value;
+  const busca = (document.getElementById('mov-busca-input')?.value||'').trim().toLowerCase();
   let filtrados = movCache;
-  if(ini) filtrados = filtrados.filter(x=>x.vencimento&&x.vencimento>=ini);
-  if(fim) filtrados = filtrados.filter(x=>x.vencimento&&x.vencimento<=fim);
+  if(movFiltroTipo === 'receitas') filtrados = filtrados.filter(x=>x._tipo==='Receita');
+  else if(movFiltroTipo === 'despesas') filtrados = filtrados.filter(x=>x._tipo==='Despesa');
+  if(busca) filtrados = filtrados.filter(x => (x.profissional||x.descricao||'').toLowerCase().includes(busca));
+  if(ini) filtrados = filtrados.filter(x=>x._dataMov && x._dataMov>=ini);
+  if(fim) filtrados = filtrados.filter(x=>x._dataMov && x._dataMov<=fim);
   _renderMovData(filtrados);
-  _updateMovTotalizador(filtrados);
+  _updateMovTotalizador((ini||fim||busca) ? filtrados : null);
 }
 function limparFiltroMovData() {
   const ini = document.getElementById('mov-filtro-ini');
   const fim = document.getElementById('mov-filtro-fim');
-  if(ini) ini.value=''; if(fim) fim.value='';
+  const busca = document.getElementById('mov-busca-input');
+  if(ini) ini.value=''; if(fim) fim.value=''; if(busca) busca.value='';
+  movFiltroTipo = 'todos';
+  document.querySelectorAll('#fin-mov .qf-btn[id^="mov-qf-"]').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mov-qf-todos')?.classList.add('active');
   _renderMovData(movCache);
   _updateMovTotalizador(null);
 }
