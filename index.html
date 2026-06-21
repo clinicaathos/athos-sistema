@@ -1343,7 +1343,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="form-group"><label class="form-label">Hora Fim</label><select class="form-select" id="loc-fim"><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>17:30</option><option>19:00</option><option>20:00</option><option>21:00</option><option>21:30</option><option>22:00</option></select></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Data Início</label><input class="form-input" type="date" id="loc-data-inicio"></div>
+      <div class="form-group"><label class="form-label">Data Início</label><input class="form-input" type="date" id="loc-data-inicio" onchange="toggleDiasSemana()"></div>
       <div class="form-group"><label class="form-label">Data Término</label><input class="form-input" type="date" id="loc-data-fim"></div>
     </div>
     <div class="form-group"><label class="form-label">Recorrência</label><select class="form-select" id="loc-recorrencia" onchange="toggleDiasSemana()"><option>Apenas este horário</option><option>Semanal</option><option>Quinzenal</option><option>Mensal</option></select></div>
@@ -1352,9 +1352,10 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <input class="form-input" type="number" id="loc-dia-vencimento" min="1" max="28" placeholder="Ex: 5 (todo dia 5 do mês)">
       <div style="font-size:.72rem;color:var(--text-lighter);margin-top:4px">O sistema gera 1 lançamento por mês automaticamente nesta data, enquanto a locação estiver ativa.</div>
     </div>
-    <div class="form-group" id="loc-dias-semana-group" style="display:none">
-      <label class="form-label">Dias da semana</label>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+    <div class="form-group" id="loc-dias-semana-group">
+      <label class="form-label">Dia(s) da semana do turno</label>
+      <div id="loc-dia-semana-info" style="font-size:.82rem;color:var(--text);background:#f3f4f6;border-radius:8px;padding:.5rem .7rem;margin-top:4px;display:none"></div>
+      <div id="loc-dias-semana-checkboxes" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
         <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="loc-dia-0" value="0"> Dom</label>
         <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="loc-dia-1" value="1"> Seg</label>
         <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="loc-dia-2" value="2"> Ter</label>
@@ -1363,7 +1364,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
         <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="loc-dia-5" value="5"> Sex</label>
         <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="loc-dia-6" value="6"> Sáb</label>
       </div>
-      <div style="font-size:.72rem;color:var(--text-lighter);margin-top:4px">Selecione os dias em que a locação se repete dentro do período.</div>
+      <div style="font-size:.72rem;color:var(--text-lighter);margin-top:4px" id="loc-dias-semana-hint">Selecione os dias em que a locação se repete dentro do período.</div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Desconto (%)</label><input class="form-input" id="loc-desconto" type="number" min="0" max="100" placeholder="0" oninput="calcDescontoLocacao()"></div>
@@ -2116,15 +2117,9 @@ function copiarDadosProfissional() {
     { label: 'CEP', val: v('prof-cep') }
   );
 
-  // Exibe somente os campos preenchidos — sem traços ou marcadores de pendência
-  const preenchidos = campos.filter(c => c.val);
-
-  if(!preenchidos.length) {
-    showToast('Preencha ao menos um campo antes de copiar.','error');
-    return;
-  }
-
-  const texto = preenchidos.map(c=>`${c.label}: ${c.val}`).join('\n');
+  // Exibe TODOS os campos necessários ao cadastro — preenchidos com o valor,
+  // pendentes apenas com o nome do campo (sem traço ou marcador de preenchimento).
+  const texto = campos.map(c => c.val ? `${c.label}: ${c.val}` : `${c.label}:`).join('\n');
 
   navigator.clipboard.writeText(texto).then(()=>{
     showToast('Dados copiados! Cole no WhatsApp, e-mail ou onde preferir.','success');
@@ -3718,11 +3713,34 @@ function timeToMin(t) {
 
 function toggleDiasSemana() {
   const rec = document.getElementById('loc-recorrencia').value;
-  const grupo = document.getElementById('loc-dias-semana-group');
   const vencGrupo = document.getElementById('loc-venc-group');
   const isRecorrente = rec !== 'Apenas este horário';
-  if(grupo) grupo.style.display = isRecorrente ? '' : 'none';
   if(vencGrupo) vencGrupo.style.display = isRecorrente ? '' : 'none';
+
+  const infoEl = document.getElementById('loc-dia-semana-info');
+  const checkboxesEl = document.getElementById('loc-dias-semana-checkboxes');
+  const hintEl = document.getElementById('loc-dias-semana-hint');
+  if(!infoEl || !checkboxesEl) return;
+
+  if(isRecorrente) {
+    // Recorrente: mostra os checkboxes para o usuário escolher os dias
+    infoEl.style.display = 'none';
+    checkboxesEl.style.display = 'flex';
+    if(hintEl) hintEl.style.display = '';
+  } else {
+    // Avulsa: mostra automaticamente o dia da semana correspondente à Data Início
+    checkboxesEl.style.display = 'none';
+    if(hintEl) hintEl.style.display = 'none';
+    const dataIni = document.getElementById('loc-data-inicio')?.value;
+    const nomesDias = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+    if(dataIni) {
+      const d = new Date(dataIni + 'T12:00:00');
+      infoEl.textContent = `Este turno será considerado em uma ${nomesDias[d.getDay()]} (${formatDate(dataIni)}).`;
+    } else {
+      infoEl.textContent = 'Selecione a Data Início para ver o dia da semana correspondente.';
+    }
+    infoEl.style.display = '';
+  }
 }
 
 function renderAgendaSemana() {
