@@ -757,6 +757,32 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div id="dash-parcelas-venc-list"></div>
           </div>
         </div>
+
+        <!-- ── ITEM 4: Lembretes e Vencimentos Próximos ── -->
+        <div style="margin-top:.75rem">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
+              <span style="font-size:.85rem;font-weight:600">📋 Lembretes e Próximos Vencimentos</span>
+              <span class="badge badge-neutral" id="dash-agenda-count">0</span>
+            </div>
+            <div id="dash-agenda-list">
+              <div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0">Carregando...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── ITEM 5: Capacidade x Ocupação por Sala (mês corrente) ── -->
+        <div style="margin-top:.75rem;margin-bottom:1.5rem">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
+              <span style="font-size:.85rem;font-weight:600">📊 Capacidade x Ocupação — Mês Atual</span>
+              <span class="badge badge-neutral" id="dash-cap-mes-label">—</span>
+            </div>
+            <div id="dash-capacidade-list">
+              <div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0">Carregando...</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ══ AGENDA ══ -->
@@ -2128,6 +2154,19 @@ function copiarDadosProfissional() {
   });
 }
 
+// Mapa de campo → rótulo legível para o histórico de alterações
+const PROF_CAMPOS_LABEL = {
+  nome:'Nome', tipoPessoa:'Tipo de pessoa', cpf:'CPF', cnpj:'CNPJ', rg:'RG',
+  repNome:'Representante legal', repCpf:'CPF do representante', repCargo:'Cargo do representante',
+  conselho:'Conselho', registro:'Nº de registro', especialidade:'Especialidade',
+  abordagem:'Abordagem', publicoAlvo:'Público-alvo', valorSessao:'Valor de sessão',
+  nascimento:'Data de nascimento', telefone:'Telefone', email:'E-mail',
+  rua:'Rua/Av.', numero:'Número', bairro:'Bairro', cidade:'Cidade/UF', cep:'CEP',
+  vinculo:'Vínculo', status:'Status', vinculoFormal:'Vínculo formal',
+  contratoInicio:'Contrato início', contratoFim:'Contrato fim', obs:'Observações',
+  vencLocacao:'Vencimento da locação'
+};
+
 async function salvarProfissional() {
   const id = document.getElementById('prof-edit-id').value;
   const vinculo = document.getElementById('prof-vinculo').value;
@@ -2165,8 +2204,35 @@ async function salvarProfissional() {
   };
   if(!data.nome){showToast('Nome é obrigatório.','error');return;}
   try {
-    if(id) { await db.collection('profissionais').doc(id).update(data); }
-    else { data.createdAt=firebase.firestore.FieldValue.serverTimestamp(); data.renovacoes=0; await db.collection('profissionais').add(data); }
+    if(id) {
+      // Comparar com os dados anteriores para registrar o histórico de alterações
+      const docAtual = await db.collection('profissionais').doc(id).get();
+      const anterior = docAtual.exists ? docAtual.data() : {};
+      const camposAlterados = Object.entries(PROF_CAMPOS_LABEL)
+        .filter(([campo]) => {
+          const de = (anterior[campo]??'').toString().trim();
+          const para = (data[campo]??'').toString().trim();
+          return de !== para;
+        })
+        .map(([campo]) => ({
+          campo: PROF_CAMPOS_LABEL[campo],
+          de: (anterior[campo]??'').toString() || '(vazio)',
+          para: (data[campo]??'').toString() || '(vazio)'
+        }));
+      await db.collection('profissionais').doc(id).update(data);
+      if(camposAlterados.length > 0) {
+        await db.collection('historicoProf').add({
+          profId: id,
+          profNome: data.nome,
+          alteradoEm: firebase.firestore.FieldValue.serverTimestamp(),
+          campos: camposAlterados
+        });
+      }
+    } else {
+      data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
+      data.renovacoes=0;
+      await db.collection('profissionais').add(data);
+    }
     closeModal('novo-prof');
     showToast(id?'Profissional atualizado!':'Profissional cadastrado!','success');
     loadProfissionais();
@@ -2551,6 +2617,166 @@ function loadDashboard() {
     lista.innerHTML = atraso_items.slice(0,8).map(x=>renderItem(x,true)).join('');
     if(atraso_items.length>8) lista.innerHTML+=`<div style="font-size:.72rem;color:var(--text-lighter);text-align:center;padding:.5rem 0">+${atraso_items.length-8} mais...</div>`;
   }).catch(()=>{});
+
+  // Novas seções — item 4 e 5
+  loadDashAgenda();
+  loadDashCapacidade();
+}
+
+// ── ITEM 4: Lembretes e próximos vencimentos (7 dias) ──
+async function loadDashAgenda() {
+  const el = document.getElementById('dash-agenda-list');
+  const cnt = document.getElementById('dash-agenda-count');
+  if(!el) return;
+  try {
+    const hoje = toDateStrLocal(new Date());
+    const d7 = new Date(); d7.setDate(d7.getDate()+7);
+    const limite = toDateStrLocal(d7);
+
+    const [lembSnap, srvSnap, recSnap] = await Promise.all([
+      db.collection('lembretes').where('status','!=','Concluído').get(),
+      db.collection('servicos').get(),
+      db.collection('receitas').where('status','==','Pendente').get()
+    ]);
+
+    const itens = [];
+
+    // Lembretes pendentes (próximos 7 dias e atrasados)
+    lembSnap.docs.forEach(d=>{
+      const l = d.data();
+      if(!l.data || l.data > limite) return;
+      const vencido = l.data < hoje;
+      itens.push({
+        ordem: l.data,
+        html: `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid var(--border)">
+          <div style="flex:1">
+            <span style="font-size:.76rem;font-weight:600">📌 ${l.titulo||'Lembrete'}</span>
+            ${l.prioridade&&l.prioridade!=='Normal'?`<span class="badge" style="font-size:.62rem;margin-left:4px;background:${l.prioridade==='Urgente'?'var(--danger)':'var(--warning)'};color:#fff">${l.prioridade}</span>`:''}
+            <div style="font-size:.72rem;color:var(--text-lighter)">${l.obs||''}</div>
+          </div>
+          <span style="font-size:.7rem;font-weight:600;color:${vencido?'var(--danger)':'var(--text-light)'};white-space:nowrap;margin-left:.5rem">${vencido?'⚠ Atrasado':formatDate(l.data)}</span>
+        </div>`
+      });
+    });
+
+    // Serviços com vencimento próximo
+    srvSnap.docs.forEach(d=>{
+      const s = d.data();
+      if(!s.data || s.data > limite || s.status==='Concluído' || s.status==='Cancelado') return;
+      const vencido = s.data < hoje;
+      itens.push({
+        ordem: s.data,
+        html: `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid var(--border)">
+          <div style="flex:1">
+            <span style="font-size:.76rem;font-weight:600">🔧 ${s.tipo||'Serviço'}</span>
+            <div style="font-size:.72rem;color:var(--text-lighter)">${s.empresa||''}</div>
+          </div>
+          <span style="font-size:.7rem;font-weight:600;color:${vencido?'var(--danger)':'var(--text-light)'};white-space:nowrap;margin-left:.5rem">${vencido?'⚠ Atrasado':formatDate(s.data)}</span>
+        </div>`
+      });
+    });
+
+    // Receitas pendentes vencendo nos próximos 7 dias
+    recSnap.docs.forEach(d=>{
+      const r = d.data();
+      if(!r.vencimento || r.vencimento < hoje || r.vencimento > limite) return;
+      itens.push({
+        ordem: r.vencimento,
+        html: `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid var(--border)">
+          <div style="flex:1">
+            <span style="font-size:.76rem;font-weight:600">💰 ${r.profissional||r.descricao||'Receita'}</span>
+            <div style="font-size:.72rem;color:var(--text-lighter)">${r.tipo||''} — ${formatMoney(r.valor)}</div>
+          </div>
+          <span style="font-size:.7rem;font-weight:600;color:var(--warning);white-space:nowrap;margin-left:.5rem">Vence ${formatDate(r.vencimento)}</span>
+        </div>`
+      });
+    });
+
+    itens.sort((a,b)=>a.ordem.localeCompare(b.ordem));
+    if(cnt) cnt.textContent = itens.length;
+    el.innerHTML = itens.length
+      ? itens.map(i=>i.html).join('')
+      : '<div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0;text-align:center">Nenhum item pendente para os próximos 7 dias. ✅</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--text-lighter);font-size:.8rem">Erro ao carregar.</div>';
+  }
+}
+
+// ── ITEM 5: Capacidade x Ocupação por sala no mês corrente ──
+async function loadDashCapacidade() {
+  const el = document.getElementById('dash-capacidade-list');
+  const labelEl = document.getElementById('dash-cap-mes-label');
+  if(!el) return;
+  try {
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth();
+    const anoAtual = hoje.getFullYear();
+    const mesesNomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    if(labelEl) labelEl.textContent = `${mesesNomes[mesAtual]}/${anoAtual}`;
+
+    const priMes = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-01`;
+    const ultDia = new Date(anoAtual, mesAtual+1, 0).getDate();
+    const ultMes = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-${String(ultDia).padStart(2,'0')}`;
+
+    const locSnap = await db.collection('locacoes').get();
+    const locacoes = locSnap.docs.map(d=>({id:d.id,...d.data()}));
+
+    const turnos = ['manha','tarde','noite'];
+    const salas = [
+      {key:'s1', nome: appConfig.sala1||'Áthos I'},
+      {key:'s2', nome: appConfig.sala2||'Áthos II'}
+    ];
+
+    // Conta dias úteis (dom a sab) no mês = dias totais do mês
+    // Turnos totais por sala = 3 turnos × dias do mês
+    const totalDias = ultDia;
+    const totalTurnosPorSala = 3 * totalDias;
+
+    // Para cada sala, contar quantos turno×dia têm locação ativa
+    const ocupado = {s1: new Set(), s2: new Set()};
+    for(let d=1; d<=ultDia; d++) {
+      const dStr = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      locacoes.forEach(l=>{
+        if(!locAtivaEmDia(l, dStr)) return;
+        const sk = getSalaKeyGlobal(l.sala, l.vinculo);
+        const turnosOcup = getTurnosOcupados(l);
+        turnosOcup.forEach(t=>{
+          if(sk === 'mista') {
+            ocupado.s1.add(`${t}_${dStr}`);
+            ocupado.s2.add(`${t}_${dStr}`);
+          } else if(sk === 's1' || sk === 's2') {
+            ocupado[sk].add(`${t}_${dStr}`);
+          }
+        });
+      });
+    }
+
+    const html = salas.map(sala=>{
+      const locados = ocupado[sala.key].size;
+      const disponiveis = totalTurnosPorSala - locados;
+      const pct = Math.round(locados / totalTurnosPorSala * 100);
+      const corBarra = pct >= 80 ? 'var(--danger)' : pct >= 50 ? 'var(--warning)' : 'var(--success)';
+      return `<div style="margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem">
+          <span style="font-size:.83rem;font-weight:600">${sala.nome}</span>
+          <span style="font-size:.72rem;color:var(--text-lighter)">${pct}% ocupado</span>
+        </div>
+        <div style="background:#e5e7eb;border-radius:6px;height:8px;margin-bottom:.5rem">
+          <div style="background:${corBarra};width:${pct}%;height:100%;border-radius:6px;transition:width .4s"></div>
+        </div>
+        <div style="display:flex;gap:1.25rem;font-size:.76rem">
+          <span>Total de turnos: <strong>${totalTurnosPorSala}</strong></span>
+          <span style="color:${corBarra}">Locados: <strong>${locados}</strong></span>
+          <span style="color:var(--success)">Disponíveis: <strong>${disponiveis}</strong></span>
+        </div>
+      </div>`;
+    }).join('<div style="border-top:1px solid var(--border);margin:.75rem 0"></div>');
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--text-lighter);font-size:.8rem">Erro ao carregar.</div>';
+    console.error(e);
+  }
 }
 
 // ══ FINANCEIRO ══
@@ -6298,15 +6524,16 @@ async function verHistoricoProf(profId) {
   openModal('historico-prof');
 
   try {
-    const [locSnap, recSnap, despSnap] = await Promise.all([
+    const [locSnap, recSnap, despSnap, altSnap] = await Promise.all([
       db.collection('locacoes').where('profId','==',profId).get(),
       db.collection('receitas').where('profId','==',profId).get(),
-      db.collection('despesas').where('profId','==',profId).get()
+      db.collection('despesas').where('profId','==',profId).get(),
+      db.collection('historicoProf').where('profId','==',profId).get()
     ]);
 
     const locacoes = locSnap.docs.map(d=>({id:d.id,...d.data()}));
     const receitas = recSnap.docs.map(d=>({id:d.id,...d.data()}));
-    const despesas = despSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const alteracoes = altSnap.docs.map(d=>({id:d.id,...d.data()}));
 
     // Buscar também receitas vinculadas pelo nome/campo profissional
     const recAll = receitas.concat(
@@ -6316,17 +6543,18 @@ async function verHistoricoProf(profId) {
     );
 
     const totalFat = recAll.reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
-    const totalPago = recAll.filter(r=>r.status==='pago').reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
-    const totalHoras = locacoes.filter(l=>(l.vinculo||'').toLowerCase().includes('hora')).length;
+    const totalPago = recAll.filter(r=>r.status==='Pago').reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
     const totalTurnos = locacoes.filter(l=>(l.vinculo||'').toLowerCase().includes('turno')).length;
+    const totalHoras = locacoes.filter(l=>(l.vinculo||'').toLowerCase().includes('hora')).length;
 
     if(indEl) indEl.innerHTML = `
       <div class="stat-card" style="min-width:130px"><div class="stat-label">Total Faturado</div><div style="font-size:1rem;font-weight:700;color:var(--gold)">${formatMoney(totalFat)}</div></div>
       <div class="stat-card" style="min-width:130px"><div class="stat-label">Total Recebido</div><div style="font-size:1rem;font-weight:700;color:var(--success)">${formatMoney(totalPago)}</div></div>
       <div class="stat-card" style="min-width:110px"><div class="stat-label">Locações Turno</div><div style="font-size:1rem;font-weight:700">${totalTurnos}</div></div>
-      <div class="stat-card" style="min-width:110px"><div class="stat-label">Horas Avulsas</div><div style="font-size:1rem;font-weight:700">${totalHoras}</div></div>`;
+      <div class="stat-card" style="min-width:110px"><div class="stat-label">Horas Avulsas</div><div style="font-size:1rem;font-weight:700">${totalHoras}</div></div>
+      <div class="stat-card" style="min-width:110px"><div class="stat-label">Alterações</div><div style="font-size:1rem;font-weight:700">${alteracoes.length}</div></div>`;
 
-    // Montar linha do tempo
+    // Montar linha do tempo combinada
     const eventos = [];
     locacoes.forEach(l=>{
       if(l.dataInicio) eventos.push({data:l.dataInicio, tipo:'locacao',
@@ -6336,15 +6564,31 @@ async function verHistoricoProf(profId) {
     });
     recAll.forEach(r=>{
       if(r.vencimento) eventos.push({data:r.vencimento, tipo:'receita',
-        desc:`Lançamento ${r.status==='pago'?'pago':'pendente'} — ${r.descricao||'—'} — ${formatMoney(parseFloat(r.valor)||0)}`});
+        desc:`Lançamento ${r.status==='Pago'?'pago':'pendente'} — ${r.descricao||r.tipo||'—'} — ${formatMoney(parseFloat(r.valor)||0)}`});
     });
-    // Histórico de edições do cadastro
+    // Alterações cadastrais da nova coleção historicoProf
+    alteracoes.forEach(h=>{
+      const ts = h.alteradoEm;
+      const data = ts?.toDate ? toDateStrLocal(ts.toDate()) : (ts||'').toString().slice(0,10);
+      const hora = ts?.toDate ? ts.toDate().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
+      const detalhe = (h.campos||[]).map(c=>
+        `<div style="font-size:.76rem;margin-top:3px;padding:2px 6px;background:#f3f4f6;border-radius:4px">
+          <strong>${c.campo}:</strong> <span style="text-decoration:line-through;color:var(--text-lighter)">${c.de}</span> → <strong>${c.para}</strong>
+        </div>`).join('');
+      eventos.push({data, sortTs: ts?.toMillis?ts.toMillis():0, tipo:'edicao',
+        desc:`Cadastro alterado${hora?' às '+hora:''} — ${(h.campos||[]).length} campo(s)`, extra: detalhe});
+    });
+    // Histórico legado no campo historico[] do próprio documento
     if(prof?.historico && Array.isArray(prof.historico)) {
       prof.historico.forEach(h=>{
         if(h.editadoEm) eventos.push({data:h.editadoEm.slice(0,10), tipo:'edicao', desc:`Cadastro editado por ${h.por||'admin'}`});
       });
     }
-    eventos.sort((a,b)=>a.data.localeCompare(b.data));
+
+    eventos.sort((a,b) => {
+      if(a.sortTs && b.sortTs) return b.sortTs - a.sortTs; // mais recentes primeiro para alterações
+      return b.data.localeCompare(a.data);
+    });
 
     if(!eventos.length) {
       if(tlEl) tlEl.innerHTML = '<div style="color:var(--text-lighter);font-size:.83rem;padding:1rem;text-align:center">Nenhuma movimentação registrada.</div>';
@@ -6356,18 +6600,20 @@ async function verHistoricoProf(profId) {
       receita:'<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
       edicao:'<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
     };
-    const colorMap = {locacao:'var(--gold)',fim:'var(--danger)',receita:'var(--success)',edicao:'var(--info)'};
+    const colorMap = {locacao:'var(--gold)',fim:'var(--danger)',receita:'var(--success)',edicao:'#6d5aac'};
     if(tlEl) tlEl.innerHTML = eventos.map(e=>`
-      <div style="display:flex;gap:.75rem;padding:.6rem 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:.75rem;padding:.7rem 0;border-bottom:1px solid var(--border)">
         <div style="width:28px;height:28px;border-radius:50%;background:${colorMap[e.tipo]||'var(--text-lighter)'};color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${iconMap[e.tipo]||''}</div>
-        <div>
+        <div style="flex:1">
           <div style="font-size:.76rem;color:var(--text-lighter)">${formatDate(e.data)}</div>
           <div style="font-size:.83rem;font-weight:500">${e.desc}</div>
+          ${e.extra||''}
         </div>
       </div>`).join('');
   } catch(err) {
     if(indEl) indEl.innerHTML = '';
     if(tlEl) tlEl.innerHTML = '<div style="color:var(--danger);font-size:.83rem;padding:1rem">Erro ao carregar histórico.</div>';
+    console.error(err);
   }
 }
 
