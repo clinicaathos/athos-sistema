@@ -702,10 +702,8 @@ body.dark .tag{background:#111827;border-color:#374151;}
           </button>
         </div>
         <div class="stats-grid">
-          <div class="stat-card"><div class="stat-label">Receita do Mês</div><div class="stat-value" style="color:var(--gold)" id="dash-receita">—</div><div class="stat-sub" id="dash-receita-sub">carregando...</div></div>
           <div class="stat-card"><div class="stat-label">Turnos Hoje</div><div class="stat-value" id="dash-turnos">—</div><div class="stat-sub" id="dash-turnos-sub">carregando...</div></div>
           <div class="stat-card"><div class="stat-label">Profissionais Ativos</div><div class="stat-value" id="dash-profs">—</div><div class="stat-sub" id="dash-profs-sub">carregando...</div></div>
-          <div class="stat-card"><div class="stat-label">A Receber</div><div class="stat-value" style="color:var(--danger)" id="dash-receber">—</div><div class="stat-sub" id="dash-receber-sub">carregando...</div></div>
         </div>
         <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem;box-shadow:var(--shadow)">
           <div style="font-size:.8rem;font-weight:600;margin-bottom:.875rem">Ocupação desta semana</div>
@@ -769,19 +767,6 @@ body.dark .tag{background:#111827;border-color:#374151;}
               <span class="badge badge-neutral" id="dash-agenda-count">0</span>
             </div>
             <div id="dash-agenda-list">
-              <div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0">Carregando...</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── ITEM 5: Capacidade x Ocupação por Sala (mês corrente) ── -->
-        <div style="margin-top:.75rem;margin-bottom:1.5rem">
-          <div class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
-              <span style="font-size:.85rem;font-weight:600">📊 Capacidade x Ocupação — Mês Atual</span>
-              <span class="badge badge-neutral" id="dash-cap-mes-label">—</span>
-            </div>
-            <div id="dash-capacidade-list">
               <div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0">Carregando...</div>
             </div>
           </div>
@@ -923,14 +908,6 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0">Carregando...</div>
           </div>
         </div>
-
-        <div class="divider-label">Turnos Fixos</div>
-        <div class="data-table">
-          <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Turno</span><span>Dias</span><span>Horário</span><span>Valor</span><span>Profissionais</span></div>
-          <div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span style="font-weight:500">Turno Manhã</span><span>Seg–Sex</span><span id="turno-manha-hrs">08h–12h</span><span class="turno-valor-manha" style="color:var(--text-lighter);font-size:.76rem">a definir</span><span><span class="badge badge-neutral" id="turno-manha-count">0</span></span></div>
-          <div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span style="font-weight:500">Turno Tarde</span><span>Seg–Sex</span><span id="turno-tarde-hrs">13h–17h</span><span class="turno-valor-tarde" style="color:var(--text-lighter);font-size:.76rem">a definir</span><span><span class="badge badge-neutral" id="turno-tarde-count">0</span></span></div>
-          <div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span style="font-weight:500">Turno Noite</span><span>Seg–Sex</span><span id="turno-noite-hrs">17h30–21h30</span><span class="turno-valor-noite" style="color:var(--text-lighter);font-size:.76rem">a definir</span><span><span class="badge badge-neutral" id="turno-noite-count">0</span></span></div>
-        </div>
       </div>
 
       <!-- ══ FINANCEIRO ══ -->
@@ -940,7 +917,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
           <div style="display:flex;gap:.5rem">
             <button class="btn btn-secondary" onclick="openModal('nova-receita')">+ Receita</button>
             <button class="btn btn-secondary" onclick="openModal('nova-despesa')">+ Despesa</button>
-            <button class="btn btn-secondary" onclick="exportarBackupExcel()" title="Backup completo em Excel">
+            <button class="btn btn-secondary" onclick="exportarBackupExcel()" title="Backup completo em Excel — todo o histórico já pago (receitas, despesas, locações e profissionais). Pendentes não entram.">
               <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2l2 4 2-4h2"/></svg>
               Backup Excel
             </button>
@@ -2771,17 +2748,8 @@ function loadDashboard() {
   // Usar data local (não UTC) para evitar divergência de fuso horário (UTC-3)
   const hojeStr = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
 
-  // Receitas do mês
-  db.collection('receitas').where('mes','==',mesAtual).where('ano','==',anoAtual).get().then(snap=>{
-    const receitas = snap.docs.map(d=>d.data());
-    const totalRec = receitas.reduce((s,r)=>s+(parseMoney(r.valor)||0),0);
-    const recPago = receitas.filter(r=>r.status==='Pago').reduce((s,r)=>s+(parseMoney(r.valor)||0),0);
-    const pendentes = receitas.filter(r=>r.status!=='Pago').length;
-    document.getElementById('dash-receita').textContent = formatMoney(totalRec);
-    document.getElementById('dash-receita-sub').textContent = `${formatMoney(recPago)} recebido · ${pendentes} pendente(s)`;
-    document.getElementById('dash-receber').textContent = formatMoney(receitas.filter(r=>r.status!=='Pago').reduce((s,r)=>s+(parseMoney(r.valor)||0),0));
-    document.getElementById('dash-receber-sub').textContent = `${pendentes} pagamento(s) pendente(s)`;
-  }).catch(()=>{});
+  // Receita do Mês / A Receber removidos do Dashboard — essa informação fica
+  // disponível apenas na aba Financeiro (item 3, evita duplicidade de somatórios).
 
   // Locações de hoje
   db.collection('locacoes').get().then(snap=>{
@@ -2917,7 +2885,7 @@ function loadDashboard() {
 
   // Novas seções — item 4 e 5
   loadDashAgenda();
-  loadDashCapacidade();
+  // Capacidade x Ocupação foi movida para a aba "Turnos" (item 3).
 }
 
 // ── ITEM 4: Lembretes e próximos vencimentos (7 dias) ──
@@ -3007,52 +2975,60 @@ async function loadDashCapacidade(elId, labelElId) {
   if(!el) return;
   try {
     const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
-    const mesesNomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    if(labelEl) labelEl.textContent = `${mesesNomes[mesAtual]}/${anoAtual}`;
+    // Grade fixa de turnos disponíveis para locação: Seg–Sex (3 turnos/dia) +
+    // Sábado (apenas manhã) = 16 turnos por sala. Esse total é fixo e não varia
+    // conforme o mês — corrigido a pedido (antes era calculado por dias do mês).
+    const TOTAL_TURNOS_POR_SALA = 16;
+    const grade = [
+      {offset:0, turnos:['manha','tarde','noite']}, // Segunda
+      {offset:1, turnos:['manha','tarde','noite']}, // Terça
+      {offset:2, turnos:['manha','tarde','noite']}, // Quarta
+      {offset:3, turnos:['manha','tarde','noite']}, // Quinta
+      {offset:4, turnos:['manha','tarde','noite']}, // Sexta
+      {offset:5, turnos:['manha']}                  // Sábado (só manhã)
+    ];
 
-    const priMes = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-01`;
-    const ultDia = new Date(anoAtual, mesAtual+1, 0).getDate();
-    const ultMes = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-${String(ultDia).padStart(2,'0')}`;
+    const diaSemanaHoje = (hoje.getDay()+6)%7; // 0 = segunda
+    const monday = new Date(hoje);
+    monday.setDate(monday.getDate()-diaSemanaHoje);
+    const saturday = new Date(monday);
+    saturday.setDate(monday.getDate()+5);
+    if(labelEl) labelEl.textContent = `Semana de ${monday.getDate()}/${monday.getMonth()+1} a ${saturday.getDate()}/${saturday.getMonth()+1}`;
 
     const locSnap = await db.collection('locacoes').get();
     const locacoes = locSnap.docs.map(d=>({id:d.id,...d.data()}));
 
-    const turnos = ['manha','tarde','noite'];
     const salas = [
       {key:'s1', nome: appConfig.sala1||'Áthos I'},
       {key:'s2', nome: appConfig.sala2||'Áthos II'}
     ];
 
-    // Conta dias úteis (dom a sab) no mês = dias totais do mês
-    // Turnos totais por sala = 3 turnos × dias do mês
-    const totalDias = ultDia;
-    const totalTurnosPorSala = 3 * totalDias;
-
-    // Para cada sala, contar quantos turno×dia têm locação ativa
+    // Para cada sala, contar quantos dos 16 turnos da grade semanal fixa têm locação ativa
     const ocupado = {s1: new Set(), s2: new Set()};
-    for(let d=1; d<=ultDia; d++) {
-      const dStr = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    grade.forEach(g=>{
+      const dia = new Date(monday);
+      dia.setDate(monday.getDate()+g.offset);
+      const dStr = toDateStrLocal(dia);
       locacoes.forEach(l=>{
         if(!locAtivaEmDia(l, dStr)) return;
         const sk = getSalaKeyGlobal(l.sala, l.vinculo);
-        const turnosOcup = getTurnosOcupados(l);
+        const turnosOcup = getTurnosOcupados(l).filter(t=>g.turnos.includes(t));
         turnosOcup.forEach(t=>{
+          const slotKey = `${g.offset}_${t}`;
           if(sk === 'mista') {
-            ocupado.s1.add(`${t}_${dStr}`);
-            ocupado.s2.add(`${t}_${dStr}`);
+            ocupado.s1.add(slotKey);
+            ocupado.s2.add(slotKey);
           } else if(sk === 's1' || sk === 's2') {
-            ocupado[sk].add(`${t}_${dStr}`);
+            ocupado[sk].add(slotKey);
           }
         });
       });
-    }
+    });
 
     const html = salas.map(sala=>{
-      const locados = ocupado[sala.key].size;
-      const disponiveis = totalTurnosPorSala - locados;
-      const pct = Math.round(locados / totalTurnosPorSala * 100);
+      const locados = Math.min(ocupado[sala.key].size, TOTAL_TURNOS_POR_SALA);
+      const disponiveis = TOTAL_TURNOS_POR_SALA - locados;
+      const pct = Math.round(locados / TOTAL_TURNOS_POR_SALA * 100);
       const corBarra = pct >= 80 ? 'var(--danger)' : pct >= 50 ? 'var(--warning)' : 'var(--success)';
       return `<div style="margin-bottom:1rem">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem">
@@ -3063,7 +3039,7 @@ async function loadDashCapacidade(elId, labelElId) {
           <div style="background:${corBarra};width:${pct}%;height:100%;border-radius:6px;transition:width .4s"></div>
         </div>
         <div style="display:flex;gap:1.25rem;font-size:.76rem">
-          <span>Total de turnos: <strong>${totalTurnosPorSala}</strong></span>
+          <span>Total de turnos: <strong>${TOTAL_TURNOS_POR_SALA}</strong></span>
           <span style="color:${corBarra}">Locados: <strong>${locados}</strong></span>
           <span style="color:var(--success)">Disponíveis: <strong>${disponiveis}</strong></span>
         </div>
@@ -3493,8 +3469,9 @@ async function exportarBackupExcel() {
 
     const wb = XLSX.utils.book_new();
 
-    // Receitas
-    const receitas = recSnap.docs.map(d => {
+    // Receitas — regra: nenhum backup do sistema deve incluir lançamentos
+    // pendentes (nem cancelados); somente o que já teve baixa/movimentação real.
+    const receitas = recSnap.docs.filter(d => d.data().status === 'Pago').map(d => {
       const r = d.data();
       return { ID: d.id, Profissional: r.profissional||'', Categoria: r.categoria||'', Tipo: r.tipo||'',
         Subcategoria: r.subcategoria||'', Valor: r.valor||'', Desconto: r.desconto||'0',
@@ -3504,8 +3481,8 @@ async function exportarBackupExcel() {
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(receitas.length ? receitas : [{}]), 'Receitas');
 
-    // Despesas
-    const despesas = despSnap.docs.map(d => {
+    // Despesas — mesma regra: somente pagas
+    const despesas = despSnap.docs.filter(d => d.data().status === 'Pago').map(d => {
       const x = d.data();
       return { ID: d.id, 'Descrição': x.descricao||'', Categoria: x.categoria||'',
         Subcategoria: x.subcategoria||'', Valor: x.valor||'', Vencimento: x.vencimento||'',
@@ -6022,23 +5999,6 @@ async function gerarRelatFiltrado() {
           if(dataFim)    locs = locs.filter(l=>l.data && l.data <= dataFim);
           locs = locs.sort((a,b)=>(a.data||'').localeCompare(b.data||''));
 
-          const turnosData = [
-            {nome:'Turno Manhã', hrs:document.getElementById('turno-manha-hrs')?.textContent||'—', val:document.querySelector('.turno-valor-manha')?.textContent||'—', count:document.getElementById('turno-manha-count')?.textContent||'0'},
-            {nome:'Turno Tarde', hrs:document.getElementById('turno-tarde-hrs')?.textContent||'—', val:document.querySelector('.turno-valor-tarde')?.textContent||'—', count:document.getElementById('turno-tarde-count')?.textContent||'0'},
-            {nome:'Turno Noite', hrs:document.getElementById('turno-noite-hrs')?.textContent||'—', val:document.querySelector('.turno-valor-noite')?.textContent||'—', count:document.getElementById('turno-noite-count')?.textContent||'0'},
-          ];
-          const turnosHtml = `<div class="card" style="margin-bottom:1rem">
-            <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">🕐 Turnos Ativos</div>
-            <div class="data-table">
-              <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr"><span>Turno</span><span>Horário</span><span>Valor/mês</span><span>Profissionais</span></div>
-              ${turnosData.map(t=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
-                <span style="font-weight:500">${t.nome}</span>
-                <span style="color:var(--text-light)">${t.hrs}</span>
-                <span style="color:var(--text-light)">${t.val}</span>
-                <span><span class="badge badge-neutral">${t.count}</span></span>
-              </div>`).join('')}
-            </div>
-          </div>`;
           const profsHtml = `<div class="card" style="margin-bottom:1rem">
             <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Profissionais</div>
             <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
@@ -6072,7 +6032,7 @@ async function gerarRelatFiltrado() {
               }).join('')}
             </div>
           </div>`:'<div class="card" style="margin-bottom:1rem;font-size:.82rem;color:var(--text-lighter);padding:.75rem"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Nenhuma locação no período.</div>';
-          extraEl.innerHTML = turnosHtml + profsHtml + agendaHtml;
+          extraEl.innerHTML = profsHtml + agendaHtml;
         } catch(e) {
           extraEl.innerHTML = '<div style="padding:1rem;font-size:.82rem;color:var(--danger)">Erro ao carregar dados complementares.</div>';
           console.error(e);
