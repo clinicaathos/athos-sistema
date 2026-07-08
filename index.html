@@ -16,7 +16,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <style>
 :root {
   --gold:#a07850;--gold-dark:#7a5a38;--gold-pale:rgba(160,120,80,.09);
@@ -643,7 +642,6 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="sb-group">Principal</div>
       <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">⊞</span>Dashboard</div>
       <div class="nav-item" onclick="showPage('agenda',this)"><span class="nav-icon">⊡</span>Agenda</div>
-      <div class="nav-item" onclick="showPage('turnos',this)"><span class="nav-icon">◴</span>Turnos</div>
       <div class="sb-group">Gestão</div>
       <div class="nav-item" onclick="showPage('profissionais',this)"><span class="nav-icon">⊙</span>Profissionais</div>
       <div class="nav-item" onclick="showPage('planos',this)"><span class="nav-icon">◫</span>Planos e Pacotes</div>
@@ -651,7 +649,6 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="nav-item" onclick="showPage('relatorios',this)"><span class="nav-icon">◈</span>Relatórios</div>
       <div class="nav-item" onclick="showPage('lembretes',this)"><span class="nav-icon">◷</span>Lembretes</div>
       <div class="nav-item" onclick="showPage('servicos',this)"><span class="nav-icon">⊗</span>Serviços</div>
-      <div class="nav-item" onclick="showPage('levantamento',this)"><span class="nav-icon">◐</span>Levantamento Financeiro</div>
       <div class="sb-group">Sistema</div>
       <div class="nav-item" onclick="showPage('configuracoes',this)"><span class="nav-icon">⊕</span>Configurações</div>
     </nav>
@@ -702,8 +699,10 @@ body.dark .tag{background:#111827;border-color:#374151;}
           </button>
         </div>
         <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Receita do Mês</div><div class="stat-value" style="color:var(--gold)" id="dash-receita">—</div><div class="stat-sub" id="dash-receita-sub">carregando...</div></div>
           <div class="stat-card"><div class="stat-label">Turnos Hoje</div><div class="stat-value" id="dash-turnos">—</div><div class="stat-sub" id="dash-turnos-sub">carregando...</div></div>
           <div class="stat-card"><div class="stat-label">Profissionais Ativos</div><div class="stat-value" id="dash-profs">—</div><div class="stat-sub" id="dash-profs-sub">carregando...</div></div>
+          <div class="stat-card"><div class="stat-label">A Receber</div><div class="stat-value" style="color:var(--danger)" id="dash-receber">—</div><div class="stat-sub" id="dash-receber-sub">carregando...</div></div>
         </div>
         <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem;box-shadow:var(--shadow)">
           <div style="font-size:.8rem;font-weight:600;margin-bottom:.875rem">Ocupação desta semana</div>
@@ -767,6 +766,19 @@ body.dark .tag{background:#111827;border-color:#374151;}
               <span class="badge badge-neutral" id="dash-agenda-count">0</span>
             </div>
             <div id="dash-agenda-list">
+              <div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0">Carregando...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── ITEM 5: Capacidade x Ocupação por Sala (mês corrente) ── -->
+        <div style="margin-top:.75rem;margin-bottom:1.5rem">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
+              <span style="font-size:.85rem;font-weight:600">📊 Capacidade x Ocupação — Mês Atual</span>
+              <span class="badge badge-neutral" id="dash-cap-mes-label">—</span>
+            </div>
+            <div id="dash-capacidade-list">
               <div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0">Carregando...</div>
             </div>
           </div>
@@ -893,20 +905,12 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div style="font-size:.75rem;color:var(--text-lighter)">Criar novo pacote</div>
           </div>
         </div>
-      </div>
-
-      <!-- ══ TURNOS ══ -->
-      <div class="page" id="page-turnos">
-        <div class="sec-header"><span class="sec-title">Controle de Turnos</span></div>
-
-        <div class="card" style="margin-bottom:1.25rem">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
-            <span style="font-size:.85rem;font-weight:600">📊 Quantidade e Ocupação das Salas — Mês Atual</span>
-            <span class="badge badge-neutral" id="turnos-cap-mes-label">—</span>
-          </div>
-          <div id="turnos-capacidade-list">
-            <div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0">Carregando...</div>
-          </div>
+        <div class="divider-label">Turnos Fixos</div>
+        <div class="data-table">
+          <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Turno</span><span>Dias</span><span>Horário</span><span>Valor</span><span>Profissionais</span></div>
+          <div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span style="font-weight:500">Turno Manhã</span><span>Seg–Sex</span><span id="turno-manha-hrs">08h–12h</span><span class="turno-valor-manha" style="color:var(--text-lighter);font-size:.76rem">a definir</span><span><span class="badge badge-neutral" id="turno-manha-count">0</span></span></div>
+          <div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span style="font-weight:500">Turno Tarde</span><span>Seg–Sex</span><span id="turno-tarde-hrs">13h–17h</span><span class="turno-valor-tarde" style="color:var(--text-lighter);font-size:.76rem">a definir</span><span><span class="badge badge-neutral" id="turno-tarde-count">0</span></span></div>
+          <div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span style="font-weight:500">Turno Noite</span><span>Seg–Sex</span><span id="turno-noite-hrs">17h30–21h30</span><span class="turno-valor-noite" style="color:var(--text-lighter);font-size:.76rem">a definir</span><span><span class="badge badge-neutral" id="turno-noite-count">0</span></span></div>
         </div>
       </div>
 
@@ -917,7 +921,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
           <div style="display:flex;gap:.5rem">
             <button class="btn btn-secondary" onclick="openModal('nova-receita')">+ Receita</button>
             <button class="btn btn-secondary" onclick="openModal('nova-despesa')">+ Despesa</button>
-            <button class="btn btn-secondary" onclick="exportarBackupExcel()" title="Backup completo em Excel — todo o histórico já pago (receitas, despesas, locações e profissionais). Pendentes não entram.">
+            <button class="btn btn-secondary" onclick="exportarBackupExcel()" title="Backup completo em Excel">
               <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2l2 4 2-4h2"/></svg>
               Backup Excel
             </button>
@@ -1018,7 +1022,6 @@ body.dark .tag{background:#111827;border-color:#374151;}
               <input type="date" id="mov-filtro-fim" class="form-input" style="padding:4px 8px;font-size:.72rem;width:130px">
               <button class="btn btn-primary" onclick="aplicarFiltrosMov()" style="font-size:.74rem;padding:5px 14px">🔍 Pesquisar</button>
               <button class="qf-btn" onclick="limparFiltroMovData()" style="font-size:.74rem">✕ Limpar</button>
-              <button class="btn btn-secondary" onclick="exportarMovimentacaoExcel()" style="font-size:.74rem;padding:5px 14px" title="Exporta apenas os lançamentos exibidos (filtro de data + somente baixas realizadas)">↓ Excel</button>
             </div>
             <div class="quick-filters">
               <button class="qf-btn active" id="mov-qf-todos" onclick="filtrarMov('todos',this)">Todos</button>
@@ -1341,282 +1344,6 @@ body.dark .tag{background:#111827;border-color:#374151;}
         </div>
       </div>
 
-      <!-- ══ LEVANTAMENTO FINANCEIRO ══ -->
-      <div class="page" id="page-levantamento">
-
-
-    <div id="toast-notification" class="hidden fixed bottom-5 right-5 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl z-50 transition-all duration-300 flex items-center gap-2 border border-slate-700">
-        <span id="toast-icon">ℹ️</span>
-        <span id="toast-message">Notificação</span>
-    </div>
-
-    <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
-            <div class="text-center lg:text-left w-full lg:w-auto">
-                <h1 class="text-lg lg:text-xl font-bold tracking-tight">Simulador Financeiro</h1>
-                <p class="text-[11px] text-indigo-200 mt-0.5">Gestão Estratégica &bull; Áthos</p>
-            </div>
-            <nav class="flex gap-1 bg-indigo-950 p-1 rounded-xl w-full lg:w-auto overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap snap-x">
-                <button onclick="LevSim.switchTab('dash')" id="btn-dash" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg bg-indigo-600 text-white shadow-xs cursor-pointer">Dashboard</button>
-                <button onclick="LevSim.switchTab('lanc')" id="btn-lanc" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-indigo-200 hover:text-white cursor-pointer">Lançamentos</button>
-                <button onclick="LevSim.switchTab('extrato')" id="btn-extrato" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-indigo-200 hover:text-white cursor-pointer">Histórico</button>
-                <button onclick="LevSim.switchTab('config')" id="btn-config" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-indigo-200 hover:text-white cursor-pointer">Configurações</button>
-            </nav>
-        </div>
-    </header>
-
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
-        
-        <div id="tab-dash" class="tab-content space-y-6">
-            
-            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div class="space-y-1">
-                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Filtro de Período</h2>
-                    <p class="text-sm font-bold text-slate-700">Selecione múltiplos meses e anos para análise</p>
-                </div>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full md:w-auto">
-                    <div class="flex flex-col gap-1">
-                        <label for="dash-filtro-ano" class="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">Ano de Análise</label>
-                        <select id="dash-filtro-ano" onchange="LevSim.renderApp()" class="w-full h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 font-semibold text-slate-700 focus:bg-white focus:outline-hidden cursor-pointer">
-                            <option value="2025">2025</option>
-                            <option value="2026" selected>2026</option>
-                            <option value="2027">2027</option>
-                            <option value="2028">2028</option>
-                            <option value="2029">2029</option>
-                            <option value="2030">2030</option>
-                        </select>
-                    </div>
-
-                    <div class="relative flex flex-col gap-1">
-                        <label for="dropdown-btn" class="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">Múltiplos Meses</label>
-                        <button type="button" id="dropdown-btn" onclick="LevSim.toggleDropdown(event)" class="w-full h-11 flex justify-between items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700 shadow-xs hover:bg-slate-100 focus:outline-hidden cursor-pointer">
-                            <span id="dropdown-label" class="truncate">Todos os meses</span>
-                            <svg class="h-4 w-4 text-slate-400 shrink-0 ml-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
-                        </button>
-
-                        <div id="dropdown-menu" onclick="event.stopPropagation()" class="hidden absolute left-0 md:right-0 top-18 md:top-16 z-20 w-full md:w-64 max-h-72 overflow-y-auto rounded-2xl bg-white shadow-xl border border-slate-200 p-2 space-y-0.5">
-                            <div class="flex items-center justify-between border-b border-slate-100 pb-2 pt-1 mb-1 px-2">
-                                <button onclick="LevSim.selecionarTodosMeses(true)" class="text-xs font-bold text-indigo-600 hover:underline cursor-pointer">Marcar todos</button>
-                                <button onclick="LevSim.selecionarTodosMeses(false)" class="text-xs font-bold text-slate-400 hover:underline cursor-pointer">Limpar</button>
-                            </div>
-                            <div id="dropdown-checkboxes-container" class="space-y-0.5"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 col-span-1">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ocupação Mínima</span>
-                    <span id="kpi-ponto-eq" class="text-xl lg:text-2xl font-bold text-slate-800 block mt-1.5">0.0%</span>
-                    <span id="lbl-metrica-eq" class="text-[10px] text-slate-400 block mt-0.5">Ponto de Equilíbrio</span>
-                </div>
-                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 col-span-1">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Faturamento Mínimo</span>
-                    <span id="kpi-break-even" class="text-xl lg:text-2xl font-bold text-slate-800 block mt-1.5 truncate">R$ 0,00</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">Break-Even Período</span>
-                </div>
-                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 col-span-1">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Payback Estimado</span>
-                    <span id="kpi-payback" class="text-xl lg:text-2xl font-bold text-slate-800 block mt-1.5">0 meses</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">Retorno Investimento</span>
-                </div>
-                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 col-span-1">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ROI Anual Projetado</span>
-                    <span id="kpi-roi" class="text-xl lg:text-2xl font-bold text-slate-800 block mt-1.5">0.0%</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">Taxa de Retorno s/ Cap.</span>
-                </div>
-                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 col-span-2 lg:col-span-1">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">TIR Mensal Real</span>
-                    <span id="kpi-tir" class="text-xl lg:text-2xl font-bold text-emerald-600 block mt-1.5">0.0%</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">Taxa Interna Retorno</span>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 lg:col-span-2">
-                    <h3 class="text-sm font-bold text-slate-700 mb-3">Evolução de Fluxo Misto (Receitas vs. Despesas + Linha de Resultado)</h3>
-                    <div class="h-60 sm:h-64 relative" id="chart-wrapper">
-                        <canvas id="mainChart"></canvas>
-                    </div>
-                </div>
-                
-                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 flex flex-col justify-between gap-4">
-                    <div class="space-y-3">
-                        <h3 class="text-sm font-bold text-slate-700">Desempenho por sala (Receita)</h3>
-                        <div class="grid grid-cols-2 lg:grid-cols-1 gap-3">
-                            <div class="p-3 bg-slate-50 rounded-xl">
-                                <span class="text-[10px] font-bold text-slate-400 block uppercase">Sala 01</span>
-                                <span id="faturamento-sala1" class="text-lg font-bold text-indigo-600 mt-0.5 block">R$ 0,00</span>
-                            </div>
-                            <div class="p-3 bg-slate-50 rounded-xl">
-                                <span class="text-[10px] font-bold text-slate-400 block uppercase">Sala 02</span>
-                                <span id="faturamento-sala2" class="text-lg font-bold text-purple-600 mt-0.5 block">R$ 0,00</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-indigo-50 p-4 rounded-xl space-y-2">
-                        <div class="flex justify-between items-center gap-2">
-                            <span class="text-[11px] font-bold text-indigo-700 uppercase">Resultado Operacional:</span>
-                            <span id="sum-operacional" class="text-sm lg:text-base font-bold text-slate-800 truncate">R$ 0,00</span>
-                        </div>
-                        <div class="flex justify-between items-center gap-2 border-t border-indigo-100 pt-2">
-                            <span class="text-[11px] font-bold text-indigo-900 uppercase">Fluxo Líquido do Período:</span>
-                            <span id="sum-liquido" class="text-base lg:text-lg font-black text-indigo-900 truncate">R$ 0,00</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-lanc" class="tab-content hidden max-w-3xl mx-auto space-y-6">
-            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
-                <h2 class="text-sm font-bold text-slate-700 mb-1">📥 Importar Planilha do Excel (.xlsx / .xls)</h2>
-                <p class="text-xs text-slate-400 mb-4">Arraste ou selecione o arquivo consolidado da clínica. O motor filtrará automaticamente apenas as abas de Receitas e Despesas.</p>
-                <div class="w-full">
-                    <label for="file-uploader" class="flex flex-col items-center justify-center w-full h-28 border-2 border-slate-200 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all p-4 text-center">
-                        <svg class="w-6 h-6 mb-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                        <p class="text-xs text-slate-500 font-semibold">Toque para selecionar o Excel da Clínica</p>
-                        <input type="file" id="file-uploader" accept=".xlsx, .xls" class="hidden" onchange="LevSim.importFile(this)" />
-                    </label>
-                </div>
-            </div>
-
-            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
-                <h2 class="text-sm font-bold text-slate-700 mb-4">✍️ Novo Lançamento Manual</h2>
-                <form id="form-lancamento" onsubmit="LevSim.saveLancamento(event)" class="space-y-5">
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1.5">1. Tipo de Movimentação</label>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            <button type="button" onclick="LevSim.setFormType('receita')" id="btn-type-receita" class="type-btn h-14 border rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all bg-emerald-50 border-emerald-500 text-emerald-800 cursor-pointer">
-                                <span class="text-lg">🟢</span> <span>Receita</span>
-                            </button>
-                            <button type="button" onclick="LevSim.setFormType('despesa')" id="btn-type-despesa" class="type-btn h-14 border border-slate-200 rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all text-slate-600 hover:bg-slate-50 cursor-pointer">
-                                <span class="text-lg">🔴</span> <span>Despesa</span>
-                            </button>
-                            <button type="button" onclick="LevSim.setFormType('investimento')" id="btn-type-investimento" class="type-btn h-14 border border-slate-200 rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all text-slate-600 hover:bg-slate-50 cursor-pointer">
-                                <span class="text-lg">🔵</span> <span>Investimento</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="sala-selector-block">
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1.5">2. Destinação da Receita</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button type="button" onclick="LevSim.setFormSala('sala1')" id="btn-sala1" class="sala-btn h-11 border rounded-xl font-semibold text-sm transition-all bg-indigo-50 border-indigo-500 text-indigo-800 cursor-pointer text-center w-full">Sala 01</button>
-                            <button type="button" onclick="LevSim.setFormSala('sala2')" id="btn-sala2" class="sala-btn h-11 border border-slate-200 rounded-xl font-semibold text-sm transition-all text-slate-600 hover:bg-slate-50 cursor-pointer text-center w-full">Sala 02</button>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div class="flex flex-col gap-1">
-                            <label for="lanc-data" class="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">Data</label>
-                            <input type="date" id="lanc-data" required class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full">
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <label for="lanc-desc" class="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">Descrição / Notas</label>
-                            <input type="text" id="lanc-desc" required placeholder="Ex: Turno Dr. Silva" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full">
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <label for="lanc-valor" class="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">Valor (R$)</label>
-                            <input type="text" id="lanc-valor" required placeholder="R$ 0,00" oninput="LevSim.handleCurrencyInput(this)" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full font-bold text-slate-700">
-                        </div>
-                    </div>
-
-                    <button type="submit" class="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-xs transition-all cursor-pointer mt-2">Salvar Lançamento</button>
-                </form>
-            </div>
-        </div>
-
-        <div id="tab-extrato" class="tab-content hidden">
-            <div class="bg-white rounded-2xl shadow-xs border border-slate-100 overflow-hidden">
-                <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h2 class="text-sm font-bold text-slate-700">Histórico Completo</h2>
-                        <p class="text-xs text-slate-400">Registros filtrados de acordo com o ano e meses ativos selecionados.</p>
-                    </div>
-                    <div class="flex gap-2 w-full sm:w-auto">
-                        <button onclick="LevSim.clearData()" class="flex-1 sm:flex-none h-9 px-3 text-xs font-bold text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-xl cursor-pointer">Limpar Banco</button>
-                        <button onclick="LevSim.exportJSON()" class="flex-1 sm:flex-none h-9 px-3 text-xs font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-xl cursor-pointer">Exportar Backup</button>
-                    </div>
-                </div>
-
-                <div id="empty-state" class="hidden p-12 text-center space-y-3">
-                    <span class="text-3xl block">📁</span>
-                    <h3 class="text-sm font-bold text-slate-700">Nenhum registro encontrado</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mx-auto">Não existem movimentações salvas para os meses ou ano ativos selecionados no momento.</p>
-                </div>
-
-                <div id="desktop-table-container" class="hidden md:block overflow-x-auto w-full">
-                    <table class="w-full text-left border-collapse min-w-[600px]">
-                        <thead>
-                            <tr class="bg-slate-50 text-slate-400 text-[10px] font-bold uppercase tracking-wider border-b border-slate-100">
-                                <th class="p-4">Data</th>
-                                <th class="p-4">Fluxo</th>
-                                <th class="p-4">Origem / Destino</th>
-                                <th class="p-4">Descrição</th>
-                                <th class="p-4 text-right">Valor</th>
-                                <th class="p-4 text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-body" class="text-xs lg:text-sm divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
-
-                <div id="mobile-cards-container" class="block md:hidden divide-y divide-slate-100 bg-white"></div>
-            </div>
-        </div>
-
-        <div id="tab-config" class="tab-content hidden max-w-md mx-auto">
-            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
-                <h2 class="text-sm font-bold text-slate-700 mb-1">Parâmetros Operacionais Estratégicos</h2>
-                <p class="text-xs text-slate-400 mb-5">Configure as métricas financeiras essenciais da sua clínica.</p>
-                
-                <div class="space-y-5">
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1.5">Métrica de Precificação</label>
-                        <div class="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">
-                            <button onclick="LevSim.setMetrica('horas')" id="btn-m-horas" class="h-9 text-xs font-semibold rounded-lg transition-all text-center cursor-pointer">Por Horas</button>
-                            <button onclick="LevSim.setMetrica('turnos')" id="btn-m-turnos" class="h-9 text-xs font-semibold rounded-lg transition-all text-center cursor-pointer">Por Turnos</button>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col gap-1">
-                        <label id="lbl-cfg-capacidade" class="text-[10px] font-bold uppercase text-slate-500">Capacidade Total Mensal</label>
-                        <input type="number" id="cfg-capacidade" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full">
-                    </div>
-                    
-                    <div class="flex flex-col gap-1">
-                        <label id="lbl-cfg-preco" class="text-[10px] font-bold uppercase text-slate-500">Preço de Venda Estimado (R$)</label>
-                        <input type="number" step="0.01" id="cfg-preco" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full">
-                    </div>
-
-                    <div class="flex flex-col gap-1">
-                        <label for="cfg-custofixo" class="text-[10px] font-bold uppercase text-slate-500 cursor-pointer">Estrutura de Custo Fixo Base Mensal (R$)</label>
-                        <input type="number" step="0.01" id="cfg-custofixo" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full">
-                    </div>
-
-                    <div class="flex flex-col gap-1">
-                        <label id="lbl-cfg-custovariavel" class="text-[10px] font-bold uppercase text-slate-500">Custo Variável Operacional Médio (R$)</label>
-                        <input type="number" step="0.01" id="cfg-custovariavel" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full">
-                    </div>
-                    
-                    <button onclick="LevSim.saveConfig()" class="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-xs transition-all mt-2 cursor-pointer">Salvar Parâmetros</button>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <footer class="bg-slate-100 border-t border-slate-200 py-4 text-center text-[10px] lg:text-xs text-slate-400 mt-auto">
-        Simulador Financeiro &bull; Gestão Descentralizada de Clínicas.
-    </footer>
-
-    
-      </div>
-
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -1636,6 +1363,13 @@ body.dark .tag{background:#111827;border-color:#374151;}
     </div>
     <div class="form-group" id="loc-saldo-pacote-group" style="display:none">
       <div style="background:#f3f4f6;border-radius:8px;padding:.6rem .75rem;font-size:.78rem;color:var(--text-light)" id="loc-saldo-pacote-info">—</div>
+      <div id="loc-pacote-escolha" style="display:none;margin-top:.5rem">
+        <div class="form-group" style="margin-bottom:.4rem">
+          <select class="form-select" id="loc-pacote-escolha-tipo" onchange="toggleEscolhaPacote()"></select>
+        </div>
+        <select class="form-select" id="loc-pacote-lista" style="display:none;margin-top:.4rem;font-size:.78rem" onchange="document.getElementById('loc-pacote-id-vinc').value=this.value"></select>
+        <input type="hidden" id="loc-pacote-id-vinc">
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Hora Início</label><select class="form-select" id="loc-inicio"><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:30</option><option>18:00</option><option>19:00</option><option>20:00</option><option>21:00</option><option>21:30</option></select></div>
@@ -2536,7 +2270,6 @@ function verProfissional(id) {
     ${p.obs?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:.7rem;margin-bottom:1rem;font-size:.82rem"><strong>Observações:</strong> ${p.obs}</div>`:''}
     <div class="modal-actions">
       <button class="btn btn-danger" onclick="excluirProfissional('${id}')">Excluir</button>
-      <button class="btn ${p.status==='Ativo'?'btn-secondary':'btn-primary'}" onclick="toggleStatusProfissional('${id}')">${p.status==='Ativo'?'Desativar':'Ativar'}</button>
       <button class="btn btn-secondary" onclick="closeModal('ver-prof')">Fechar</button>
       <button class="btn btn-secondary" onclick="closeModal('ver-prof');verHistoricoProf('${id}')">Histórico</button>
       <button class="btn btn-primary" onclick="closeModal('ver-prof');editarProfissional('${id}')">Editar Cadastro</button>
@@ -2748,8 +2481,26 @@ function loadDashboard() {
   // Usar data local (não UTC) para evitar divergência de fuso horário (UTC-3)
   const hojeStr = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
 
-  // Receita do Mês / A Receber removidos do Dashboard — essa informação fica
-  // disponível apenas na aba Financeiro (item 3, evita duplicidade de somatórios).
+  // Receitas do mês — filtra por vencimento (campo sempre presente) em vez de
+  // mes/ano (campo opcional que pode faltar em lançamentos manuais antigos)
+  const mesStr = String(mesAtual+1).padStart(2,'0');
+  const anoStr = String(anoAtual);
+  const inicioPeriodo = `${anoStr}-${mesStr}-01`;
+  const ultimoDia = new Date(anoAtual, mesAtual+1, 0).getDate();
+  const fimPeriodo = `${anoStr}-${mesStr}-${String(ultimoDia).padStart(2,'0')}`;
+
+  db.collection('receitas').get().then(snap=>{
+    const receitas = snap.docs.map(d=>d.data())
+      .filter(r => r.vencimento && r.vencimento >= inicioPeriodo && r.vencimento <= fimPeriodo);
+    const totalRec = receitas.reduce((s,r)=>s+(parseMoney(r.valor)||0),0);
+    const recPago = receitas.filter(r=>r.status==='Pago').reduce((s,r)=>s+(parseMoney(r.valor)||0),0);
+    const pendentes = receitas.filter(r=>r.status!=='Pago').length;
+    const totalPendente = receitas.filter(r=>r.status!=='Pago').reduce((s,r)=>s+(parseMoney(r.valor)||0),0);
+    document.getElementById('dash-receita').textContent = formatMoney(totalRec);
+    document.getElementById('dash-receita-sub').textContent = `${formatMoney(recPago)} recebido · ${pendentes} pendente(s)`;
+    document.getElementById('dash-receber').textContent = formatMoney(totalPendente);
+    document.getElementById('dash-receber-sub').textContent = `${pendentes} pagamento(s) pendente(s)`;
+  }).catch(e=>{console.error('Dashboard receitas:', e);});
 
   // Locações de hoje
   db.collection('locacoes').get().then(snap=>{
@@ -2885,7 +2636,7 @@ function loadDashboard() {
 
   // Novas seções — item 4 e 5
   loadDashAgenda();
-  // Capacidade x Ocupação foi movida para a aba "Turnos" (item 3).
+  loadDashCapacidade();
 }
 
 // ── ITEM 4: Lembretes e próximos vencimentos (7 dias) ──
@@ -2968,67 +2719,58 @@ async function loadDashAgenda() {
 }
 
 // ── ITEM 5: Capacidade x Ocupação por sala no mês corrente ──
-// Reutilizada tanto no Dashboard quanto na aba Turnos (item 3 do pedido da Beverly).
-async function loadDashCapacidade(elId, labelElId) {
-  const el = document.getElementById(elId || 'dash-capacidade-list');
-  const labelEl = document.getElementById(labelElId || 'dash-cap-mes-label');
+async function loadDashCapacidade() {
+  const el = document.getElementById('dash-capacidade-list');
+  const labelEl = document.getElementById('dash-cap-mes-label');
   if(!el) return;
   try {
     const hoje = new Date();
-    // Grade fixa de turnos disponíveis para locação: Seg–Sex (3 turnos/dia) +
-    // Sábado (apenas manhã) = 16 turnos por sala. Esse total é fixo e não varia
-    // conforme o mês — corrigido a pedido (antes era calculado por dias do mês).
-    const TOTAL_TURNOS_POR_SALA = 16;
-    const grade = [
-      {offset:0, turnos:['manha','tarde','noite']}, // Segunda
-      {offset:1, turnos:['manha','tarde','noite']}, // Terça
-      {offset:2, turnos:['manha','tarde','noite']}, // Quarta
-      {offset:3, turnos:['manha','tarde','noite']}, // Quinta
-      {offset:4, turnos:['manha','tarde','noite']}, // Sexta
-      {offset:5, turnos:['manha']}                  // Sábado (só manhã)
-    ];
+    const mesAtual = hoje.getMonth();
+    const anoAtual = hoje.getFullYear();
+    const mesesNomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    if(labelEl) labelEl.textContent = `${mesesNomes[mesAtual]}/${anoAtual}`;
 
-    const diaSemanaHoje = (hoje.getDay()+6)%7; // 0 = segunda
-    const monday = new Date(hoje);
-    monday.setDate(monday.getDate()-diaSemanaHoje);
-    const saturday = new Date(monday);
-    saturday.setDate(monday.getDate()+5);
-    if(labelEl) labelEl.textContent = `Semana de ${monday.getDate()}/${monday.getMonth()+1} a ${saturday.getDate()}/${saturday.getMonth()+1}`;
+    const priMes = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-01`;
+    const ultDia = new Date(anoAtual, mesAtual+1, 0).getDate();
+    const ultMes = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-${String(ultDia).padStart(2,'0')}`;
 
     const locSnap = await db.collection('locacoes').get();
     const locacoes = locSnap.docs.map(d=>({id:d.id,...d.data()}));
 
+    const turnos = ['manha','tarde','noite'];
     const salas = [
       {key:'s1', nome: appConfig.sala1||'Áthos I'},
       {key:'s2', nome: appConfig.sala2||'Áthos II'}
     ];
 
-    // Para cada sala, contar quantos dos 16 turnos da grade semanal fixa têm locação ativa
+    // Conta dias úteis (dom a sab) no mês = dias totais do mês
+    // Turnos totais por sala = 3 turnos × dias do mês
+    const totalDias = ultDia;
+    const totalTurnosPorSala = 3 * totalDias;
+
+    // Para cada sala, contar quantos turno×dia têm locação ativa
     const ocupado = {s1: new Set(), s2: new Set()};
-    grade.forEach(g=>{
-      const dia = new Date(monday);
-      dia.setDate(monday.getDate()+g.offset);
-      const dStr = toDateStrLocal(dia);
+    for(let d=1; d<=ultDia; d++) {
+      const dStr = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       locacoes.forEach(l=>{
         if(!locAtivaEmDia(l, dStr)) return;
         const sk = getSalaKeyGlobal(l.sala, l.vinculo);
-        const turnosOcup = getTurnosOcupados(l).filter(t=>g.turnos.includes(t));
+        const turnosOcup = getTurnosOcupados(l);
         turnosOcup.forEach(t=>{
-          const slotKey = `${g.offset}_${t}`;
           if(sk === 'mista') {
-            ocupado.s1.add(slotKey);
-            ocupado.s2.add(slotKey);
+            ocupado.s1.add(`${t}_${dStr}`);
+            ocupado.s2.add(`${t}_${dStr}`);
           } else if(sk === 's1' || sk === 's2') {
-            ocupado[sk].add(slotKey);
+            ocupado[sk].add(`${t}_${dStr}`);
           }
         });
       });
-    });
+    }
 
     const html = salas.map(sala=>{
-      const locados = Math.min(ocupado[sala.key].size, TOTAL_TURNOS_POR_SALA);
-      const disponiveis = TOTAL_TURNOS_POR_SALA - locados;
-      const pct = Math.round(locados / TOTAL_TURNOS_POR_SALA * 100);
+      const locados = ocupado[sala.key].size;
+      const disponiveis = totalTurnosPorSala - locados;
+      const pct = Math.round(locados / totalTurnosPorSala * 100);
       const corBarra = pct >= 80 ? 'var(--danger)' : pct >= 50 ? 'var(--warning)' : 'var(--success)';
       return `<div style="margin-bottom:1rem">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem">
@@ -3039,7 +2781,7 @@ async function loadDashCapacidade(elId, labelElId) {
           <div style="background:${corBarra};width:${pct}%;height:100%;border-radius:6px;transition:width .4s"></div>
         </div>
         <div style="display:flex;gap:1.25rem;font-size:.76rem">
-          <span>Total de turnos: <strong>${TOTAL_TURNOS_POR_SALA}</strong></span>
+          <span>Total de turnos: <strong>${totalTurnosPorSala}</strong></span>
           <span style="color:${corBarra}">Locados: <strong>${locados}</strong></span>
           <span style="color:var(--success)">Disponíveis: <strong>${disponiveis}</strong></span>
         </div>
@@ -3469,9 +3211,8 @@ async function exportarBackupExcel() {
 
     const wb = XLSX.utils.book_new();
 
-    // Receitas — regra: nenhum backup do sistema deve incluir lançamentos
-    // pendentes (nem cancelados); somente o que já teve baixa/movimentação real.
-    const receitas = recSnap.docs.filter(d => d.data().status === 'Pago').map(d => {
+    // Receitas
+    const receitas = recSnap.docs.map(d => {
       const r = d.data();
       return { ID: d.id, Profissional: r.profissional||'', Categoria: r.categoria||'', Tipo: r.tipo||'',
         Subcategoria: r.subcategoria||'', Valor: r.valor||'', Desconto: r.desconto||'0',
@@ -3481,8 +3222,8 @@ async function exportarBackupExcel() {
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(receitas.length ? receitas : [{}]), 'Receitas');
 
-    // Despesas — mesma regra: somente pagas
-    const despesas = despSnap.docs.filter(d => d.data().status === 'Pago').map(d => {
+    // Despesas
+    const despesas = despSnap.docs.map(d => {
       const x = d.data();
       return { ID: d.id, 'Descrição': x.descricao||'', Categoria: x.categoria||'',
         Subcategoria: x.subcategoria||'', Valor: x.valor||'', Vencimento: x.vencimento||'',
@@ -3797,6 +3538,7 @@ async function excluirLocacao() {
       return;
     }
     if(!confirm('Excluir esta locação da agenda?')) return;
+    await reverterPacoteNaExclusao(id);
     await db.collection('locacoes').doc(id).delete();
     closeModal('nova-locacao');
     showToast('Locação excluída!','success');
@@ -3813,6 +3555,7 @@ async function confirmarExclusaoLocacao() {
   if(!id) { showToast('Não foi possível identificar a locação a excluir.','error'); closeModal('loc-excluir-confirm'); return; }
   try {
     if(escopo === 'all') {
+      await reverterPacoteNaExclusao(id);
       await db.collection('locacoes').doc(id).delete();
       showToast('Série excluída!','success');
     } else if(escopo === 'future') {
@@ -3824,6 +3567,7 @@ async function confirmarExclusaoLocacao() {
       if(locAtual && dataClicada <= locAtual.dataInicio) {
         // Se a ocorrência selecionada é a primeira da série, não há "passado"
         // a preservar — excluir a série inteira é o resultado equivalente.
+        await reverterPacoteNaExclusao(id);
         await db.collection('locacoes').doc(id).delete();
         showToast('Série excluída!','success');
       } else {
@@ -4055,15 +3799,8 @@ async function salvarLocacao() {
   try {
     let locacaoId = editId;
     if(editId) {
-      const oldSnap = await db.collection('locacoes').doc(editId).get();
-      const oldData = oldSnap.exists ? oldSnap.data() : null;
       await db.collection('locacoes').doc(editId).update(data);
       showToast('Locação atualizada!','success');
-      // Item 4 — se o vínculo (forma de cobrança) mudou, estorna o lançamento
-      // anterior pendente e gera o novo lançamento conforme o vínculo atual.
-      if(oldData && oldData.vinculo !== data.vinculo) {
-        await tratarMudancaVinculoLocacao(oldData, {...data, id: editId});
-      }
     } else {
       data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
       const ref = await db.collection('locacoes').add(data);
@@ -4071,10 +3808,9 @@ async function salvarLocacao() {
       showToast('Locação confirmada!','success');
       // Gera o primeiro lançamento financeiro no momento da confirmação
       await gerarLancamentoLocacao({...data, id: locacaoId});
-      // Se for vínculo de pacote de horas, inicia/atualiza o saldo do profissional
-      const horasPacote = horasDoPacote(vinculo);
-      if(horasPacote > 0) {
-        await iniciarOuAtualizarPacoteHoras(data.profId, horasPacote, locacaoId);
+      // Se for vínculo de pacote de horas, processa pacote (novo ou consumir existente)
+      if(horasDoPacote(vinculo) > 0) {
+        await processarPacoteNaLocacao(data.profId, vinculo, locacaoId);
       }
     }
     closeModal('nova-locacao');
@@ -4110,12 +3846,12 @@ async function gerarLancamentoLocacao(locacao, vencimentoStr) {
     }
   }
 
-  // Evita duplicar: já existe lançamento (não cancelado) para esta locação neste vencimento?
+  // Evita duplicar: já existe lançamento para esta locação neste vencimento?
   const existente = await db.collection('receitas')
     .where('origemLocacaoId','==',locacao.id)
     .where('vencimento','==',venc)
-    .get();
-  if(existente.docs.some(d => d.data().status !== 'Cancelado')) return;
+    .limit(1).get();
+  if(!existente.empty) return;
 
   const prof = profissionaisCache.find(p=>p.id===locacao.profId);
   const salaNome = String(locacao.sala)==='2' ? (appConfig.sala2||'Áthos II') : (appConfig.sala1||'Áthos I');
@@ -4137,42 +3873,6 @@ async function gerarLancamentoLocacao(locacao, vencimentoStr) {
     ano: new Date(venc+'T12:00:00').getFullYear(),
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
-}
-
-// ── ITEM 4: AJUSTE FINANCEIRO QUANDO O VÍNCULO DA LOCAÇÃO MUDA ──
-// Ex: locação de Hora Avulsa alterada para Pacote de Horas (ou vice-versa).
-// Comportamento esperado: o lançamento pendente gerado pelo vínculo anterior é
-// estornado (marcado como Cancelado, preservando o registro para auditoria) e
-// um novo lançamento é gerado automaticamente conforme o vínculo/valor atual.
-// Lançamentos já pagos NÃO são mexidos — o ajuste vale apenas para pendências.
-async function tratarMudancaVinculoLocacao(oldData, novaLocacao) {
-  try {
-    const pendentesSnap = await db.collection('receitas')
-      .where('origemLocacaoId','==', novaLocacao.id)
-      .where('status','==','Pendente')
-      .get();
-
-    for(const doc of pendentesSnap.docs) {
-      await doc.ref.update({
-        status: 'Cancelado',
-        obs: (doc.data().obs || '') + ` — Estornado automaticamente: vínculo alterado de "${oldData.vinculo||'—'}" para "${novaLocacao.vinculo||'—'}".`,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
-
-    await gerarLancamentoLocacao(novaLocacao);
-
-    const horasPacote = horasDoPacote(novaLocacao.vinculo);
-    if(horasPacote > 0) {
-      await iniciarOuAtualizarPacoteHoras(novaLocacao.profId, horasPacote, novaLocacao.id);
-    }
-
-    showToast('Financeiro ajustado: lançamento anterior estornado e novo lançamento gerado conforme o novo vínculo.', 'success');
-    loadFinanceiro();
-  } catch(e) {
-    console.error('Erro ao ajustar financeiro pela troca de vínculo:', e);
-    showToast('Locação atualizada, mas houve um erro ao ajustar o financeiro automaticamente. Verifique a aba Financeiro.', 'error');
-  }
 }
 
 // ── GERAÇÃO MENSAL AUTOMÁTICA (locações recorrentes ativas) ──
@@ -5053,7 +4753,7 @@ function closeMobileSidebar() {
 }
 
 // ══ NAV ══
-const pageTitles={dashboard:'Dashboard',agenda:'Agenda',turnos:'Turnos',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',servicos:'Serviços',levantamento:'Levantamento Financeiro',configuracoes:'Configurações'};
+const pageTitles={dashboard:'Dashboard',agenda:'Agenda',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',servicos:'Serviços',configuracoes:'Configurações'};
 
 function showPage(n,el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -5064,8 +4764,6 @@ function showPage(n,el) {
   closeMobileSidebar();
   if(n==='lembretes') loadLembretes();
   if(n==='servicos') loadServicos();
-  if(n==='turnos') loadDashCapacidade('turnos-capacidade-list','turnos-cap-mes-label');
-  if(n==='levantamento') LevSim.init();
 }
 
 // ══ MODALS ══
@@ -5278,44 +4976,6 @@ function _renderMovData(lista) {
     </div>`).join('');
 }
 
-// ── ITEM 5: EXPORTAR MOVIMENTAÇÃO EM EXCEL (respeitando o filtro aplicado) ──
-// Exporta exatamente o que está sendo exibido na tela: já filtrado pelo período
-// de data selecionado (ou mês ativo, se nenhum período customizado foi informado)
-// e considerando apenas lançamentos cuja baixa/movimentação já foi efetivamente
-// realizada (status 'Pago'). Lançamentos pendentes nunca entram nesta exportação,
-// pois movCache já é alimentado somente a partir de receitas/despesas com status 'Pago'.
-function exportarMovimentacaoExcel() {
-  if(!movCache || movCache.length === 0) {
-    showToast('Nenhum lançamento para exportar com o filtro atual.', 'error');
-    return;
-  }
-  try {
-    const linhas = movCache.map(x => ({
-      'Descrição': x.profissional || x.descricao || '—',
-      'Tipo': x._tipo,
-      'Categoria': x.categoria || x.tipo || '—',
-      'Subcategoria': x.subcategoria || '',
-      'Data da Baixa': x._dataMov ? formatDate(x._dataMov) : '',
-      'Vencimento Original': x.vencimento ? formatDate(x.vencimento) : '',
-      'Valor': parseMoney(x.valor) || 0,
-      'Observação': x.obs || ''
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(linhas), 'Movimentação');
-
-    const ini = document.getElementById('mov-filtro-ini')?.value;
-    const fim = document.getElementById('mov-filtro-fim')?.value;
-    const periodoStr = (ini || fim)
-      ? `${ini ? ini.split('-').reverse().join('-') : 'inicio'}_a_${fim ? fim.split('-').reverse().join('-') : 'hoje'}`
-      : (document.getElementById('mov-periodo-label')?.textContent || 'periodo').replace(/\s+/g,'_');
-    XLSX.writeFile(wb, `Movimentacao_${periodoStr}.xlsx`);
-    showToast('Excel da Movimentação exportado!', 'success');
-  } catch(e) {
-    console.error('Erro ao exportar movimentação em Excel:', e);
-    showToast('Erro ao exportar Excel da Movimentação.', 'error');
-  }
-}
-
 async function devolverParaPagar(id, colecao) {
   if(!confirm('Retornar para "Contas a Pagar"? O status será alterado para Pendente.')) return;
   try {
@@ -5437,38 +5097,6 @@ function calcDescontoLocacao() {
   } else {
     document.getElementById('loc-valor-final').value = '';
   }
-}
-
-// ── PACOTE DE HORAS: exibir saldo do profissional no modal de locação ──
-function horasDoPacote(vinculo) {
-  if(vinculo === 'Pacote de 5 Horas') return 5;
-  if(vinculo === 'Pacote de 10 Horas' || vinculo === 'Pacote de Horas') return 10;
-  return 0;
-}
-
-async function toggleSaldoPacote() {
-  const vinculo = document.getElementById('loc-vinculo').value;
-  const grupo = document.getElementById('loc-saldo-pacote-group');
-  const isPacote = vinculo.startsWith('Pacote de');
-  if(!grupo) return;
-  if(!isPacote) { grupo.style.display='none'; return; }
-  grupo.style.display='';
-  const profId = document.getElementById('loc-prof').value;
-  const info = document.getElementById('loc-saldo-pacote-info');
-  if(!profId) { info.textContent = 'Selecione um profissional para ver o saldo de horas.'; return; }
-  try {
-    const doc = await db.collection('profissionais').doc(profId).get();
-    if(!doc.exists) { info.textContent='—'; return; }
-    const p = doc.data();
-    const total = p.horasTotal || 0;
-    const usadas = p.horasUsadas || 0;
-    const saldo = Math.max(0, total - usadas);
-    if(total > 0) {
-      info.innerHTML = `<strong>Saldo atual:</strong> ${saldo}h disponíveis de ${total}h contratadas (${usadas}h já utilizadas neste ciclo).`;
-    } else {
-      info.innerHTML = `Este profissional ainda não tem pacote de horas ativo. Ao confirmar, será iniciado um pacote de <strong>${horasDoPacote(vinculo)}h</strong>.`;
-    }
-  } catch(e) { info.textContent='Não foi possível carregar o saldo.'; }
 }
 
 // ── SALA MISTA: oculta o seletor de Sala, já que o vínculo já define o espaço ──
@@ -5675,104 +5303,219 @@ async function excluirSubcat(id) {
   } catch(e) { showToast('Erro ao excluir.','error'); }
 }
 
-// ── PACOTE DE HORAS — FLUXO ──
-// Coleção 'historicoPacotes': {profId, tipo:'inicio'|'uso'|'renovacao', horas, obs, locacaoId, createdAt}
+// ══════════════════════════════════════════════════════════════════
+// ── MÓDULO DE PACOTE DE HORAS (redesenho completo) ──
+//
+// Modelo de dados:
+//   pacotesHoras: { profId, profNome, totalHoras, horasUsadas,
+//                   dataInicio, status:'Ativo'|'Encerrado', locacaoId }
+//   usosPacote:   { pacoteId, profId, horas, data, hora, obs, createdAt }
+//
+// Regras:
+//  - Uma locação "Pacote" SEMPRE pergunta: criar novo pacote OU consumir um já ativo.
+//  - Excluir locação de pacote: reverte horasUsadas no pacote vinculado.
+//  - Excluir uso: remove o documento de usosPacote E reverte horasUsadas.
+//  - horasUsadas no pacote = soma dos documentos em usosPacote (fonte da verdade).
+// ══════════════════════════════════════════════════════════════════
 
-// Inicia o pacote no profissional quando uma locação por pacote é confirmada.
-// Se o profissional já tiver um pacote ativo, soma as horas ao total contratado.
-async function iniciarOuAtualizarPacoteHoras(profId, horas, locacaoId) {
-  if(!profId || !horas) return;
+// Busca pacotes ativos de um profissional
+async function getPacotesAtivos(profId) {
+  if(!profId) return [];
   try {
-    const ref = db.collection('profissionais').doc(profId);
-    const doc = await ref.get();
-    if(!doc.exists) return;
-    const atual = doc.data().horasTotal || 0;
-    await ref.update({
-      horasTotal: atual + horas,
-      horasUsadas: doc.data().horasUsadas || 0,
-      vinculo: 'Pacote de Horas',
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    await db.collection('historicoPacotes').add({
-      profId, tipo:'inicio', horas, locacaoId: locacaoId||null,
-      obs: `Pacote de ${horas}h contratado`,
+    const snap = await db.collection('pacotesHoras')
+      .where('profId','==',profId)
+      .where('status','==','Ativo').get();
+    return snap.docs.map(d=>({id:d.id,...d.data()}));
+  } catch(e) { return []; }
+}
+
+// ── PAINEL DE SALDO NO MODAL DE LOCAÇÃO ──
+async function toggleSaldoPacote() {
+  const vinculo = document.getElementById('loc-vinculo').value;
+  const grupo = document.getElementById('loc-saldo-pacote-group');
+  const isPacote = vinculo.startsWith('Pacote de');
+  if(!grupo) return;
+  if(!isPacote) { grupo.style.display='none'; return; }
+  grupo.style.display='';
+  const profId = document.getElementById('loc-prof').value;
+  const info = document.getElementById('loc-saldo-pacote-info');
+  if(!profId) { info.innerHTML='Selecione um profissional para ver o saldo de horas.'; return; }
+  info.innerHTML='<span style="color:var(--text-lighter);font-size:.78rem">Verificando pacotes ativos...</span>';
+  const ativos = await getPacotesAtivos(profId);
+  const hNovo = horasDoPacote(vinculo);
+  if(ativos.length === 0) {
+    info.innerHTML = `<div style="font-size:.82rem">Nenhum pacote ativo. Será criado um novo pacote de <strong>${hNovo}h</strong> ao confirmar.</div>`;
+    document.getElementById('loc-pacote-escolha').style.display='none';
+    document.getElementById('loc-pacote-id-vinc').value='';
+  } else {
+    const lista = ativos.map(p=>{
+      const saldo = Math.max(0, p.totalHoras - (p.horasUsadas||0));
+      return `<option value="${p.id}">${p.totalHoras}h contratadas — ${saldo}h disponíveis (desde ${formatDate(p.dataInicio||'')})</option>`;
+    }).join('');
+    info.innerHTML=`<div style="font-size:.82rem;margin-bottom:.5rem">Este profissional já tem pacote(s) ativo(s). Como deseja proceder?</div>`;
+    const escolhaEl = document.getElementById('loc-pacote-escolha');
+    if(escolhaEl) {
+      escolhaEl.style.display='';
+      document.getElementById('loc-pacote-escolha-tipo').innerHTML=`
+        <option value="consumir">Consumir pacote existente (descontar horas)</option>
+        <option value="novo">Criar novo pacote de ${hNovo}h</option>`;
+      document.getElementById('loc-pacote-lista').innerHTML=lista;
+      // seleciona o primeiro por padrão
+      document.getElementById('loc-pacote-id-vinc').value=ativos[0].id;
+      toggleEscolhaPacote();
+    }
+  }
+}
+
+function toggleEscolhaPacote() {
+  const tipo = document.getElementById('loc-pacote-escolha-tipo')?.value;
+  const listaEl = document.getElementById('loc-pacote-lista');
+  const idVinc = document.getElementById('loc-pacote-id-vinc');
+  if(!listaEl || !idVinc) return;
+  if(tipo === 'consumir') {
+    listaEl.style.display='';
+    idVinc.value = listaEl.value;
+  } else {
+    listaEl.style.display='none';
+    idVinc.value='';
+  }
+}
+
+function horasDoPacote(vinculo) {
+  if(vinculo === 'Pacote de 5 Horas') return 5;
+  if(vinculo === 'Pacote de 10 Horas' || vinculo === 'Pacote de Horas') return 10;
+  return 0;
+}
+
+// ── CRIAÇÃO / VINCULAÇÃO DE PACOTE AO CONFIRMAR LOCAÇÃO ──
+async function processarPacoteNaLocacao(profId, vinculo, locacaoId) {
+  const horas = horasDoPacote(vinculo);
+  if(!horas) return null;
+  const escolhaTipo = document.getElementById('loc-pacote-escolha-tipo')?.value || 'novo';
+  const pacoteIdVinc = document.getElementById('loc-pacote-id-vinc')?.value || '';
+  const prof = profissionaisCache.find(p=>p.id===profId);
+
+  if(escolhaTipo === 'consumir' && pacoteIdVinc) {
+    // Vincula esta locação a um pacote existente — não cria novo
+    await db.collection('locacoes').doc(locacaoId).update({pacoteId: pacoteIdVinc});
+    return pacoteIdVinc;
+  } else {
+    // Cria um novo pacote de horas
+    const ref = await db.collection('pacotesHoras').add({
+      profId, profNome: prof?.nome||'',
+      totalHoras: horas, horasUsadas: 0,
+      dataInicio: toDateStrLocal(new Date()),
+      status: 'Ativo', locacaoId,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-  } catch(e) { console.error('Erro ao iniciar pacote de horas:', e); }
+    await db.collection('locacoes').doc(locacaoId).update({pacoteId: ref.id});
+    return ref.id;
+  }
 }
 
-// Desconta horas usadas do saldo do profissional e grava no histórico.
-async function descontarHorasPacote(profId, horas, obs) {
-  if(!profId || !horas) return;
-  try {
-    const ref = db.collection('profissionais').doc(profId);
-    const doc = await ref.get();
-    if(doc.exists) {
-      const atual = doc.data().horasUsadas || 0;
-      await ref.update({horasUsadas: atual + horas, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
-      await db.collection('historicoPacotes').add({
-        profId, tipo:'uso', horas, obs: obs||`${horas}h utilizadas`,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
-  } catch(e) { console.error('Erro ao descontar horas:', e); }
-}
-
-async function renovarHorasMensais() {
-  // Chamado no início de cada mês — reseta horasUsadas para 0
-  const hoje = new Date();
-  if(hoje.getDate() !== 1) return; // só roda no dia 1
-  try {
-    const snap = await db.collection('profissionais')
-      .where('vinculo','==','Pacote de Horas')
-      .where('status','==','Ativo').get();
-    const batch = db.batch();
-    snap.docs.forEach(d => batch.update(d.ref, {horasUsadas: 0}));
-    await batch.commit();
-    for(const d of snap.docs) {
-      await db.collection('historicoPacotes').add({
-        profId: d.id, tipo:'renovacao', horas: d.data().horasTotal||0,
-        obs: 'Renovação mensal do pacote', createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
-    console.log('Horas mensais renovadas.');
-  } catch(e) { console.error(e); }
-}
-
-// ── Modal de registro de uso manual (chamado a partir do card do profissional) ──
-function abrirModalUsoPacote(profId, profNome, saldo) {
-  document.getElementById('uso-pacote-prof-id').value = profId;
-  document.getElementById('uso-pacote-titulo').textContent = `Registrar uso de horas — ${profNome}`;
+// ── REGISTRO DE USO (abre modal) ──
+async function abrirModalUsoPacote(pacoteId, profNome, saldo) {
+  document.getElementById('uso-pacote-prof-id').value = pacoteId; // reutilizamos o campo com semântica nova: pacoteId
+  document.getElementById('uso-pacote-titulo').textContent = `Registrar uso — ${profNome}`;
   document.getElementById('uso-pacote-saldo').textContent = `Saldo disponível: ${saldo}h`;
   document.getElementById('uso-pacote-horas').value = '';
   document.getElementById('uso-pacote-obs').value = '';
+  // Preencher data e hora sugeridas
+  const hoje = new Date();
+  const dataInput = document.getElementById('uso-pacote-data');
+  const horaInput = document.getElementById('uso-pacote-hora');
+  if(dataInput) dataInput.value = toDateStrLocal(hoje);
+  if(horaInput) horaInput.value = `${String(hoje.getHours()).padStart(2,'0')}:00`;
   openModal('uso-pacote');
 }
 
 async function confirmarUsoPacote() {
-  const profId = document.getElementById('uso-pacote-prof-id').value;
+  const pacoteId = document.getElementById('uso-pacote-prof-id').value;
   const horas = parseFloat(document.getElementById('uso-pacote-horas').value);
   const obs = document.getElementById('uso-pacote-obs').value;
-  if(!horas || horas<=0) { showToast('Informe a quantidade de horas utilizadas.','error'); return; }
-  await descontarHorasPacote(profId, horas, obs);
-  closeModal('uso-pacote');
-  showToast('Uso registrado!','success');
-  if(typeof verProfissional==='function') {
-    const modalAberto = document.getElementById('modal-ver-profissional');
-    if(modalAberto && modalAberto.classList.contains('active')) verProfissional(profId);
-  }
-  loadProfissionais();
+  const data = document.getElementById('uso-pacote-data')?.value || toDateStrLocal(new Date());
+  const hora = document.getElementById('uso-pacote-hora')?.value || '';
+  if(!horas || horas<=0) { showToast('Informe a quantidade de horas.','error'); return; }
+  try {
+    const pacoteSnap = await db.collection('pacotesHoras').doc(pacoteId).get();
+    if(!pacoteSnap.exists) { showToast('Pacote não encontrado.','error'); return; }
+    const pacote = pacoteSnap.data();
+    const saldoAtual = Math.max(0, pacote.totalHoras - (pacote.horasUsadas||0));
+    if(horas > saldoAtual) { showToast(`Saldo insuficiente. Disponível: ${saldoAtual}h.`,'error'); return; }
+    // Grava o uso como documento próprio — permite reverter individualmente
+    await db.collection('usosPacote').add({
+      pacoteId, profId: pacote.profId, profNome: pacote.profNome||'',
+      horas, data, hora, obs: obs||'',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // Atualiza horasUsadas no pacote (incrementa)
+    await db.collection('pacotesHoras').doc(pacoteId).update({
+      horasUsadas: firebase.firestore.FieldValue.increment(horas)
+    });
+    closeModal('uso-pacote');
+    showToast('Uso registrado!','success');
+    loadProfissionais();
+    renderAgendaDia();
+    renderAgendaSemana();
+    loadDashboard();
+  } catch(e) { showToast('Erro ao registrar uso.','error'); console.error(e); }
 }
 
-// Retorna histórico de uso de pacote de um profissional, mais recente primeiro
-async function getHistoricoPacote(profId) {
+// ── EXCLUSÃO DE USO (reverte saldo) ──
+async function excluirUsoPacote(usoId, pacoteId, horas) {
+  if(!confirm(`Excluir este registro de ${horas}h? O saldo será restaurado.`)) return;
   try {
-    const snap = await db.collection('historicoPacotes').where('profId','==',profId).get();
-    return snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
-      const ta=a.createdAt?.toMillis?.()||0, tb=b.createdAt?.toMillis?.()||0;
-      return tb-ta;
+    await db.collection('usosPacote').doc(usoId).delete();
+    await db.collection('pacotesHoras').doc(pacoteId).update({
+      horasUsadas: firebase.firestore.FieldValue.increment(-horas)
     });
-  } catch(e) { return []; }
+    showToast('Uso removido e saldo restaurado.','success');
+    loadProfissionais();
+  } catch(e) { showToast('Erro ao excluir uso.','error'); }
+}
+
+// ── EXCLUSÃO DE LOCAÇÃO DE PACOTE (reverte saldo do pacote vinculado) ──
+async function reverterPacoteNaExclusao(locacaoId) {
+  try {
+    const locSnap = await db.collection('locacoes').doc(locacaoId).get();
+    if(!locSnap.exists) return;
+    const loc = locSnap.data();
+    if(!loc.pacoteId) return; // não era locação de pacote
+    const escolhaTipo = loc.pacoteVinculadoExistente ? 'consumir' : 'novo';
+    if(escolhaTipo === 'novo') {
+      // Encerrar o pacote criado por esta locação
+      await db.collection('pacotesHoras').doc(loc.pacoteId).update({status:'Encerrado'});
+    }
+    // Se era "consumir", não encerra o pacote — ele continua para outros usos
+  } catch(e) { console.error('Erro ao reverter pacote na exclusão:', e); }
+}
+
+async function renovarHorasMensais() {
+  // Mantido por compatibilidade com a chamada existente no init — não faz mais nada
+  // pois pacotes agora têm vida própria e não resetam mensalmente.
+  console.log('renovarHorasMensais: módulo redesenhado, sem reset mensal automático.');
+}
+
+// ── CARD DE PACOTE NO CARD DO PROFISSIONAL ──
+async function renderPacoteCard(profId, profNome) {
+  const ativos = await getPacotesAtivos(profId);
+  if(ativos.length === 0) return '';
+  return ativos.map(p=>{
+    const saldo = Math.max(0, p.totalHoras - (p.horasUsadas||0));
+    const pct = Math.min(100, Math.round((p.horasUsadas||0)/p.totalHoras*100));
+    const cls = pct>=80?'danger':pct>=60?'warning':'';
+    return `<div class="horas-bar-wrap">
+      <div class="horas-bar-label" style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text-light);margin-bottom:3px">
+        <span>Saldo: ${saldo}h disponíveis</span>
+        <span style="font-weight:600">${p.horasUsadas||0}h / ${p.totalHoras}h</span>
+      </div>
+      <div class="horas-bar"><div class="horas-bar-fill ${cls}" style="width:${pct}%"></div></div>
+      <button class="btn btn-secondary" style="font-size:.68rem;padding:.3rem .6rem;margin-top:.4rem"
+        onclick="event.stopPropagation();abrirModalUsoPacote('${p.id}','${profNome.replace(/'/g,"\\'")}',${saldo})">
+        Registrar uso
+      </button>
+    </div>`;
+  }).join('');
 }
 
 // ── DESPESAS PARCELADAS — VENCIMENTOS CORRETOS ──
@@ -5999,6 +5742,23 @@ async function gerarRelatFiltrado() {
           if(dataFim)    locs = locs.filter(l=>l.data && l.data <= dataFim);
           locs = locs.sort((a,b)=>(a.data||'').localeCompare(b.data||''));
 
+          const turnosData = [
+            {nome:'Turno Manhã', hrs:document.getElementById('turno-manha-hrs')?.textContent||'—', val:document.querySelector('.turno-valor-manha')?.textContent||'—', count:document.getElementById('turno-manha-count')?.textContent||'0'},
+            {nome:'Turno Tarde', hrs:document.getElementById('turno-tarde-hrs')?.textContent||'—', val:document.querySelector('.turno-valor-tarde')?.textContent||'—', count:document.getElementById('turno-tarde-count')?.textContent||'0'},
+            {nome:'Turno Noite', hrs:document.getElementById('turno-noite-hrs')?.textContent||'—', val:document.querySelector('.turno-valor-noite')?.textContent||'—', count:document.getElementById('turno-noite-count')?.textContent||'0'},
+          ];
+          const turnosHtml = `<div class="card" style="margin-bottom:1rem">
+            <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem">🕐 Turnos Ativos</div>
+            <div class="data-table">
+              <div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr"><span>Turno</span><span>Horário</span><span>Valor/mês</span><span>Profissionais</span></div>
+              ${turnosData.map(t=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+                <span style="font-weight:500">${t.nome}</span>
+                <span style="color:var(--text-light)">${t.hrs}</span>
+                <span style="color:var(--text-light)">${t.val}</span>
+                <span><span class="badge badge-neutral">${t.count}</span></span>
+              </div>`).join('')}
+            </div>
+          </div>`;
           const profsHtml = `<div class="card" style="margin-bottom:1rem">
             <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin-bottom:.75rem"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Profissionais</div>
             <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
@@ -6032,7 +5792,7 @@ async function gerarRelatFiltrado() {
               }).join('')}
             </div>
           </div>`:'<div class="card" style="margin-bottom:1rem;font-size:.82rem;color:var(--text-lighter);padding:.75rem"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Nenhuma locação no período.</div>';
-          extraEl.innerHTML = profsHtml + agendaHtml;
+          extraEl.innerHTML = turnosHtml + profsHtml + agendaHtml;
         } catch(e) {
           extraEl.innerHTML = '<div style="padding:1rem;font-size:.82rem;color:var(--danger)">Erro ao carregar dados complementares.</div>';
           console.error(e);
@@ -6321,33 +6081,6 @@ async function excluirProfissional(id) {
     showToast('Profissional excluído.','success');
     loadProfissionais();
   } catch(e) { showToast('Erro ao excluir profissional.','error'); console.error(e); }
-}
-
-// ── DESATIVAR / ATIVAR PROFISSIONAL ──
-// Mantém o cadastro e todo o histórico, apenas muda o status. Profissionais inativos
-// deixam de aparecer nas opções de nova locação e na contagem de "Profissionais Ativos".
-async function toggleStatusProfissional(id) {
-  const p = profissionaisCache.find(x=>x.id===id);
-  if(!p) return;
-  const statusAtual = p.status || 'Ativo';
-  const novoStatus = statusAtual === 'Ativo' ? 'Inativo' : 'Ativo';
-  const acao = novoStatus === 'Inativo' ? 'desativar' : 'reativar';
-  if(!confirm(`Deseja ${acao} ${p.nome||'este profissional'}? ${novoStatus==='Inativo' ? 'Ele deixará de aparecer em novas locações, mas o cadastro e o histórico serão mantidos.' : 'Ele voltará a aparecer nas opções de novas locações.'}`)) return;
-  try {
-    await db.collection('profissionais').doc(id).update({
-      status: novoStatus,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    await db.collection('historicoProf').add({
-      profId: id,
-      profNome: p.nome || '',
-      alteradoEm: firebase.firestore.FieldValue.serverTimestamp(),
-      campos: [{ campo: 'Status', de: statusAtual, para: novoStatus }]
-    });
-    closeModal('ver-prof');
-    showToast(novoStatus==='Inativo' ? 'Profissional desativado.' : 'Profissional reativado.', 'success');
-    loadProfissionais();
-  } catch(e) { showToast('Erro ao atualizar status do profissional.','error'); console.error(e); }
 }
 
 // ── TOGGLE PARCELAS ──
@@ -7091,9 +6824,13 @@ async function verHistoricoProf(profId) {
   <div class="modal" style="max-width:420px">
     <div class="modal-title" id="uso-pacote-titulo">Registrar uso de horas</div>
     <input type="hidden" id="uso-pacote-prof-id">
-    <div style="font-size:.82rem;color:var(--text-light);margin-bottom:.75rem" id="uso-pacote-saldo">—</div>
+    <div style="font-size:.82rem;color:var(--text-light);margin-bottom:.75rem;font-weight:500" id="uso-pacote-saldo">—</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Data do uso</label><input class="form-input" type="date" id="uso-pacote-data"></div>
+      <div class="form-group"><label class="form-label">Horário</label><input class="form-input" type="time" id="uso-pacote-hora"></div>
+    </div>
     <div class="form-group"><label class="form-label">Horas utilizadas</label><input class="form-input" type="number" min="0.5" step="0.5" id="uso-pacote-horas" placeholder="Ex: 1"></div>
-    <div class="form-group"><label class="form-label">Observação (opcional)</label><input class="form-input" id="uso-pacote-obs" placeholder="Ex: Sessão avulsa em 19/06"></div>
+    <div class="form-group"><label class="form-label">Observação (opcional)</label><input class="form-input" id="uso-pacote-obs" placeholder="Ex: Atendimento — sala Áthos I"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('uso-pacote')">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmarUsoPacote()">Registrar</button>
@@ -7101,626 +6838,5 @@ async function verHistoricoProf(profId) {
   </div>
 </div>
 
-<!-- ===== LEVANTAMENTO FINANCEIRO (LevSim) ===== -->
-<script>
-(function(){
-
-        let _lvInitialized = false;
-        function lvInit() {
-            if (_lvInitialized) { renderApp(); return; }
-            _lvInitialized = true;
-
-            document.getElementById('lanc-data').valueAsDate = new Date();
-            renderDropdownCheckboxes();
-            updateMetricaUI();
-            renderApp();
-
-            document.addEventListener('click', (e) => {
-                const menu = document.getElementById('dropdown-menu');
-                const btn = document.getElementById('dropdown-btn');
-                if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
-                    menu.classList.add('hidden');
-                }
-            });
-        }
-
-        let selectedType = 'receita';
-        let selectedSala = 'sala1';
-        let mesesAtivos = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; 
-        const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-        const nomesCurtos = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-
-        // CONTROLE DE ARMAZENAMENTO v17 - CÁLCULOS ALINHADOS DE RETORNO (TIR/ROI)
-        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_v17')) || [
-            { id: '8Itjnat1UwZOqqmhnZIh', data: '2026-06-08', tipo: 'receita', sala: 'sala1', desc: 'Receita avulsa - Recarga gás', valor: 200.00 },
-            { id: 'FPSqPHBXckuuCvrSo0TM', data: '2026-05-17', tipo: 'receita', sala: 'sala1', desc: 'Estorno cartao - Estorno de 1 caixa de rodapé', valor: 309.54 },
-            { id: 'Fm2VHpe47l9GNOAqsBqQ', data: '2026-06-17', tipo: 'receita', sala: 'sala2', desc: 'Andressa Alves Santos - Locação Áthos II', valor: 40.00 },
-            { id: 'pOUrAZjqHpjL7gusj8cs', data: '2026-06-25', tipo: 'receita', sala: 'sala2', desc: 'Andressa Alves Santos - Locação Áthos II', valor: 40.00 },
-            { id: '04QGu29zSkFzPGnNQIvQ', data: '2026-06-15', tipo: 'despesa', sala: '-', desc: 'Enel (Energia)', valor: 226.31 },
-            { id: '0BN9iiHb19AeU0oPiRa2', data: '2026-04-17', tipo: 'investimento', sala: '-', desc: 'Compras - Santiago (Serviços)', valor: 301.06 },
-            { id: '0I1Jxi8SbC4DbSxaKPp7', data: '2026-06-10', tipo: 'investimento', sala: '-', desc: 'Carrinho Aparador (Compras)', valor: 42.33 },
-            { id: '0Ow7s8v44HmAVrfVccJ7', data: '2026-05-20', tipo: 'investimento', sala: '-', desc: 'Estofados Obra (Serviços)', valor: 500.00 }
-        ];
-
-        let config = JSON.parse(localStorage.getItem('simulador_config_v17')) || {
-            metrica: 'horas',
-            capacidade: 320,
-            preco: 60,
-            custoFixo: 3500,
-            custoVariavel: 10
-        };
-
-        let chartInstance = null;
-
-        
-        function triggerToast(msg, icon = "ℹ️") {
-            const toast = document.getElementById('toast-notification');
-            document.getElementById('toast-icon').innerText = icon;
-            document.getElementById('toast-message').innerText = msg;
-            toast.classList.remove('hidden');
-            setTimeout(() => toast.classList.add('hidden'), 4500);
-        }
-
-        function handleCurrencyInput(input) {
-            let value = input.value.replace(/\D/g, '');
-            if(value === '') { input.value = ''; return; }
-            value = (value / 100).toFixed(2) + '';
-            value = value.replace(".", ",");
-            value = value.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
-            input.value = 'R$ ' + value;
-        }
-
-        function parseRawValue(val) {
-            if (val === undefined || val === null) return 0;
-            if (typeof val === 'number') return val;
-            let clean = val.toString().trim().replace(/[\xA0\s]/g, '').replace(/R\$/g, '');
-            if (clean === '') return 0;
-            
-            if (clean.includes('.') && clean.includes(',')) {
-                clean = clean.replace(/\./g, '').replace(',', '.');
-            } else if (clean.includes(',')) {
-                clean = clean.replace(',', '.');
-            }
-            return parseFloat(clean) || 0;
-        }
-
-        function normalizeKey(key) {
-            if (!key) return '';
-            return key.toString().toLowerCase().trim()
-                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
-                .replace(/[^a-z0-9]/g, ""); 
-        }
-
-        function normalizeDate(dateVal) {
-            if (!dateVal) return new Date().toISOString().split('T')[0];
-            if (dateVal instanceof Date) {
-                let y = dateVal.getFullYear();
-                let m = String(dateVal.getMonth() + 1).padStart(2, '0');
-                let d = String(dateVal.getDate()).padStart(2, '0');
-                return `${y}-${m}-${d}`;
-            }
-            if (typeof dateVal === 'number' && dateVal > 30000 && dateVal < 60000) {
-                let dateObj = XLSX.SSF.parse_date_code(dateVal);
-                let y = dateObj.y;
-                let m = String(dateObj.m).padStart(2, '0');
-                let d = String(dateObj.d).padStart(2, '0');
-                return `${y}-${m}-${d}`;
-            }
-            let str = dateVal.toString().trim();
-            if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-                return str.split(' ')[0].split('T')[0];
-            }
-            if (str.includes('/')) {
-                let parts = str.split(' ')[0].split('/');
-                if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-                return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-            }
-            return str;
-        }
-
-        function processarClassificacaoDespesa(descricao, categoria, subcategoria) {
-            const desc = normalizeKey(descricao);
-            const cat = normalizeKey(categoria);
-            const sub = normalizeKey(subcategoria);
-
-            if (cat === 'fixo' || cat.includes('operacional') || cat.includes('recorrente')) {
-                return 'despesa';
-            }
-            const opexSubcategorias = ['energia', 'iptu', 'internet', 'telefone', 'agua', 'taxas', 'impostos', 'aluguel', 'condominio', 'limpeza'];
-            if (opexSubcategorias.some(item => sub.includes(item))) return 'despesa';
-
-            const opexKeywords = ['enel', 'coelce', 'cagece', 'algar', 'claro', 'vivo', 'tim', 'oi', 'net', 'aluguel', 'condominio', 'iptu', 'contador', 'contabilidade', 'simplesnacional', 'das', 'fgts', 'inss', 'darf'];
-            if (opexKeywords.some(kw => desc.includes(kw))) return 'despesa';
-
-            const capexSubcategorias = ['despesasobra', 'obra', 'investimento', 'imobilizado', 'moveis', 'equipamentos'];
-            if (capexSubcategorias.some(item => sub.includes(item))) return 'investimento';
-
-            const capexKeywords = ['obra', 'reforma', 'santiago', 'construcao', 'pedreiro', 'pintor', 'maodeobra', 'gesso', 'tinta', 'madeira', 'fio', 'cimento', 'tijolo', 'rodape', 'frete', 'ferragem', 'cadeira', 'poltrona', 'diva', 'mesa', 'aparador', 'armario', 'estofado', 'sofa', 'tapete', 'cortina', 'luminaria', 'arcondicionado', 'climario', 'computador', 'notebook', 'tv', 'leroy', 'mercadolivre'];
-            if (capexKeywords.some(kw => desc.includes(kw))) return 'investimento';
-
-            return 'despesa';
-        }
-
-        function importFile(input) {
-            const file = input.files[0]; if (!file) return;
-            const reader = new FileReader();
-
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                    
-                    let countImported = 0;
-                    let sheetsProcessed = [];
-
-                    workbook.SheetNames.forEach(sheetName => {
-                        try {
-                            const nameLower = sheetName.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                            
-                            if (nameLower.includes('locac') || nameLower.includes('profission') || nameLower.includes('sala')) {
-                                return; 
-                            }
-
-                            const worksheet = workbook.Sheets[sheetName];
-                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: true });
-                            if (!jsonData || jsonData.length === 0) return;
-
-                            const normalizedRows = jsonData.map(row => {
-                                let normObj = {};
-                                for (let key in row) { normObj[normalizeKey(key)] = row[key]; }
-                                return normObj;
-                            });
-
-                            const firstRowKeys = Object.keys(normalizedRows[0] || {});
-                            
-                            let isReceitaSheet = nameLower.includes('receita') || (firstRowKeys.includes('profissional') && firstRowKeys.includes('valorfinal'));
-                            let isDespesaSheet = nameLower.includes('despesa') || (firstRowKeys.includes('descricao') && firstRowKeys.includes('subcategoria'));
-
-                            if (isReceitaSheet) {
-                                sheetsProcessed.push(sheetName);
-                                normalizedRows.forEach(row => {
-                                    if (!row['profissional'] && !row['valor'] && !row['valorfinal']) return;
-                                    
-                                    let rawId = (row['id'] || '').toString().trim() || ('rec-' + Date.now() + '-' + Math.random());
-                                    let normalizedDateStr = normalizeDate(row['vencimento'] || row['data']);
-                                    let profissional = row['profissional'] || 'Receita Avulsa';
-                                    let observacao = row['observacao'] || row['obs'] || '';
-                                    
-                                    let valorFinalRaw = (row['valorfinal'] !== undefined && row['valorfinal'] !== "") ? row['valorfinal'] : row['valor'];
-                                    let valor = parseRawValue(valorFinalRaw);
-                                    if(valor === 0) return; 
-                                    
-                                    let desc = profissional + (observacao ? ' - ' + observacao : '');
-                                    
-                                    let sala = 'sala1';
-                                    let upperObs = (observacao || '').toString().toUpperCase();
-                                    if (upperObs.includes('ÁTHOS II') || upperObs.includes('ATHOS II') || upperObs.includes('SALA 2') || upperObs.includes('SALA 02')) {
-                                        sala = 'sala2';
-                                    }
-                                    
-                                    if (lancamentos.some(l => l.id === rawId)) return;
-                                    lancamentos.push({ id: rawId, data: normalizedDateStr, tipo: 'receita', sala: sala, desc: desc, valor: valor });
-                                    countImported++;
-                                });
-                            }
-                            else if (isDespesaSheet) {
-                                sheetsProcessed.push(sheetName);
-                                normalizedRows.forEach(row => {
-                                    if (!row['descricao'] && !row['valor']) return;
-                                    
-                                    let rawId = (row['id'] || '').toString().trim() || ('desp-' + Date.now() + '-' + Math.random());
-                                    let normalizedDateStr = normalizeDate(row['vencimento'] || row['data']);
-                                    let descricao = row['descricao'] || row['desc'] || 'Despesa';
-                                    let categoria = row['categoria'] || '';
-                                    let subcategoria = row['subcategoria'] || '';
-                                    
-                                    let valor = parseRawValue(row['valor']);
-                                    if(valor === 0) return; 
-                                    
-                                    let tipo = processarClassificacaoDespesa(descricao, categoria, subcategoria);
-                                    
-                                    if (lancamentos.some(l => l.id === rawId)) return;
-                                    lancamentos.push({ id: rawId, data: normalizedDateStr, tipo: tipo, sala: '-', desc: descricao + (subcategoria ? ' (' + subcategoria + ')' : ''), valor: valor });
-                                    countImported++;
-                                });
-                            }
-                        } catch (sheetErr) {
-                            console.error(sheetErr);
-                        }
-                    });
-
-                    if (sheetsProcessed.length === 0) {
-                        alert("Não foram encontradas abas válidas de 'Receitas' ou 'Despesas'.");
-                        return;
-                    }
-
-                    localStorage.setItem('simulador_lancamentos_v17', JSON.stringify(lancamentos));
-                    triggerToast(`Planilha Áthos integrada com sucesso!`, "📥");
-                    renderApp(); switchTab('dash');
-                } catch (globalErr) {
-                    alert("Erro estrutural no processamento do Excel.");
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function toggleDropdown(event) {
-            event.stopPropagation();
-            document.getElementById('dropdown-menu').classList.toggle('hidden');
-        }
-
-        function renderDropdownCheckboxes() {
-            const container = document.getElementById('dropdown-checkboxes-container');
-            container.innerHTML = '';
-            nomesMeses.forEach((mes, idx) => {
-                const label = document.createElement('label');
-                label.className = "flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 text-sm font-semibold text-slate-700 cursor-pointer w-full select-none";
-                label.innerHTML = `
-                    <input type="checkbox" id="chk-mes-${idx}" ${mesesAtivos.includes(idx) ? 'checked' : ''} onchange="onCheckboxChange(${idx})" class="h-5 w-5 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
-                    <span>${mes}</span>
-                `;
-                container.appendChild(label);
-            });
-        }
-
-        function onCheckboxChange(idx) {
-            const chk = document.getElementById(`chk-mes-${idx}`);
-            if (chk.checked) { if (!mesesAtivos.includes(idx)) mesesAtivos.push(idx); } 
-            else { mesesAtivos = mesesAtivos.filter(m => m !== idx); }
-            mesesAtivos.sort((a, b) => a - b);
-            updateDropdownLabel(); renderApp();
-        }
-
-        function selecionarTodosMeses(status) {
-            mesesAtivos = status ? [0,1,2,3,4,5,6,7,8,9,10,11] : [];
-            nomesMeses.forEach((_, idx) => {
-                const chk = document.getElementById(`chk-mes-${idx}`);
-                if (chk) chk.checked = status;
-            });
-            updateDropdownLabel(); renderApp();
-        }
-
-        function updateDropdownLabel() {
-            const labelEl = document.getElementById('dropdown-label');
-            if (mesesAtivos.length === 12) labelEl.innerText = "Todos os meses";
-            else if (mesesAtivos.length === 0) labelEl.innerText = "Nenhum selecionado";
-            else if (mesesAtivos.length <= 2) labelEl.innerText = mesesAtivos.map(m => nomesCurtos[m]).join(', ');
-            else labelEl.innerText = `${mesesAtivos.length} meses ativos`;
-        }
-
-        function setMetrica(m) { config.metrica = m; updateMetricaUI(); }
-
-        function updateMetricaUI() {
-            const btnHoras = document.getElementById('btn-m-horas');
-            const btnTurnos = document.getElementById('btn-m-turnos');
-            const lblCap = document.getElementById('lbl-cfg-capacidade');
-            const lblPreco = document.getElementById('lbl-cfg-preco');
-            const lblVar = document.getElementById('lbl-cfg-custovariavel');
-
-            if(config.metrica === 'turnos') {
-                btnTurnos.className = "h-9 text-xs font-semibold rounded-lg text-center bg-white text-indigo-900 shadow-xs cursor-pointer w-full";
-                btnHoras.className = "h-9 text-xs font-semibold rounded-lg text-center text-slate-500 hover:text-slate-700 cursor-pointer w-full";
-                lblCap.innerText = "Capacidade Mensal (Qtd. Turnos)";
-                lblPreco.innerText = "Preço de Venda Médio por Turno (R$)";
-                lblVar.innerText = "Custo Variável Médio por Turno (R$)";
-            } else {
-                btnHoras.className = "h-9 text-xs font-semibold rounded-lg text-center bg-white text-indigo-900 shadow-xs cursor-pointer w-full";
-                btnTurnos.className = "h-9 text-xs font-semibold rounded-lg text-center text-slate-500 hover:text-slate-700 cursor-pointer w-full";
-                lblCap.innerText = "Capacidade Mensal (Qtd. Horas)";
-                lblPreco.innerText = "Preço de Venda Médio por Hora (R$)";
-                lblVar.innerText = "Custo Variável Médio por Hora (R$)";
-            }
-            document.getElementById('cfg-capacidade').value = config.capacidade;
-            document.getElementById('cfg-preco').value = config.preco;
-            document.getElementById('cfg-custofixo').value = config.custoFixo;
-            document.getElementById('cfg-custovariavel').value = config.custoVariavel;
-        }
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(el => {
-                el.className = "tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-indigo-200 hover:text-white cursor-pointer";
-            });
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            document.getElementById(`btn-${tabId}`).className = "tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg bg-indigo-600 text-white shadow-xs cursor-pointer";
-            if (tabId === 'dash') setTimeout(renderApp, 5);
-        }
-
-        function setFormType(type) {
-            selectedType = type;
-            document.querySelectorAll('.type-btn').forEach(el => {
-                el.className = "type-btn h-14 border border-slate-200 rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all text-slate-600 hover:bg-slate-50 cursor-pointer";
-            });
-            const btn = document.getElementById(`btn-type-${type}`);
-            if(type === 'receita') {
-                btn.className = "type-btn h-14 border rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all bg-emerald-50 border-emerald-500 text-emerald-800 cursor-pointer";
-                document.getElementById('sala-selector-block').classList.remove('hidden');
-            } else if(type === 'despesa') {
-                btn.className = "type-btn h-14 border rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all bg-rose-50 border-rose-500 text-rose-800 cursor-pointer";
-                document.getElementById('sala-selector-block').classList.add('hidden'); selectedSala = '-';
-            } else {
-                btn.className = "type-btn h-14 border rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all bg-indigo-50 border-indigo-500 text-indigo-800 cursor-pointer";
-                document.getElementById('sala-selector-block').classList.add('hidden'); selectedSala = '-';
-            }
-        }
-
-        function setFormSala(sala) {
-            selectedSala = sala;
-            document.querySelectorAll('.sala-btn').forEach(el => {
-                el.className = "sala-btn h-11 border border-slate-200 rounded-xl font-semibold text-sm transition-all text-slate-600 hover:bg-slate-50 cursor-pointer text-center w-full";
-            });
-            document.getElementById(`btn-${sala}`).className = "sala-btn h-11 border rounded-xl font-semibold text-sm transition-all bg-indigo-50 border-indigo-500 text-indigo-800 cursor-pointer text-center w-full";
-        }
-
-        function saveLancamento(e) {
-            e.preventDefault();
-            const data = document.getElementById('lanc-data').value;
-            const desc = document.getElementById('lanc-desc').value;
-            const valor = parseCurrencyToFloat(document.getElementById('lanc-valor').value);
-            const sala = selectedType === 'receita' ? selectedSala : '-';
-
-            if(valor <= 0) { alert("Insira um valor acima de R$ 0,00"); return; }
-            let manualId = 'manual-' + Date.now();
-            lancamentos.push({ id: manualId, data, tipo: selectedType, sala, desc, valor });
-            localStorage.setItem('simulador_lancamentos_v17', JSON.stringify(lancamentos));
-
-            document.getElementById('lanc-desc').value = '';
-            document.getElementById('lanc-valor').value = '';
-            triggerToast("Lançamento adicionado manualmente!", "🟢");
-            renderApp(); switchTab('dash');
-        }
-
-        function deleteLancamento(id) {
-            lancamentos = lancamentos.filter(item => item.id !== id);
-            localStorage.setItem('simulador_lancamentos_v17', JSON.stringify(lancamentos));
-            triggerToast("Registro removido.", "🔴"); renderApp();
-        }
-
-        function parseCurrencyToFloat(stringVal) {
-            if(!stringVal) return 0;
-            let cleanVal = stringVal.replace(/[^\d,]/g, '').replace(',', '.');
-            return parseFloat(cleanVal) || 0;
-        }
-
-        // MOTOR DE BISSECÇÃO - INTEGRADO E SEGURO CONTRA TAXAS NEGATIVAS OU DEFICITÁRIAS
-        function calcularTIRReal(investimento, lucroMensal, meses) {
-            if (investimento <= 0) return 0;
-            
-            // SE O LUCRO DO PERÍODO FOR MENOR OU IGUAL A ZERO, HÁ PERDA TOTAL DO APORTE NO HORIZONTE DE SIMULAÇÃO
-            if (lucroMensal <= 0) return -100.0;
-
-            function calcularVPL(r) {
-                let vpl = -investimento;
-                for (let t = 1; t <= meses; t++) {
-                    vpl += lucroMensal / Math.pow(1 + r, t);
-                }
-                return vpl;
-            }
-
-            let low = -0.999; 
-            let high = 20.0;  
-
-            if (calcularVPL(low) < 0) return -100.0;
-            if (calcularVPL(high) > 0) return high * 100;
-
-            for (let i = 0; i < 80; i++) {
-                let mid = (low + high) / 2;
-                let vplMid = calcularVPL(mid);
-
-                if (Math.abs(vplMid) < 1e-4) return mid * 100;
-
-                if (vplMid > 0) { low = mid; } 
-                else { high = mid; }
-            }
-            return ((low + high) / 2) * 100;
-        }
-
-        function renderApp() {
-            const tbody = document.getElementById('table-body');
-            const mobileContainer = document.getElementById('mobile-cards-container');
-            if (tbody) tbody.innerHTML = ''; if (mobileContainer) mobileContainer.innerHTML = '';
-            
-            const filtroAno = document.getElementById('dash-filtro-ano').value;
-            const sorted = [...lancamentos].sort((a,b) => new Date(b.data) - new Date(a.data));
-            
-            let sala1Tot = 0; let sala2Tot = 0;
-            let totalDespesas = 0; let totalInvestido = 0;
-            let totalRegistrosExibidos = 0;
-
-            sorted.forEach(item => {
-                const itemDate = new Date(item.data + 'T00:00:00');
-                const itemMes = itemDate.getMonth();
-                const itemAno = itemDate.getFullYear().toString();
-
-                if (itemAno === filtroAno && mesesAtivos.includes(itemMes)) {
-                    totalRegistrosExibidos++;
-                    if(item.tipo === 'receita' && item.sala === 'sala1') sala1Tot += item.valor;
-                    if(item.tipo === 'receita' && item.sala === 'sala2') sala2Tot += item.valor;
-                    if(item.tipo === 'despesa') totalDespesas += item.valor;
-                    if(item.tipo === 'investimento') totalInvestido += item.valor;
-
-                    if (tbody) {
-                        const tr = document.createElement('tr');
-                        let badge = item.tipo === 'receita' ? '<span class="px-2 py-0.5 text-[10px] font-semibold rounded-sm bg-emerald-50 text-emerald-700">Entrada</span>' : (item.tipo === 'despesa' ? '<span class="px-2 py-0.5 text-[10px] font-semibold rounded-sm bg-rose-50 text-rose-700">Saída</span>' : '<span class="px-2 py-0.5 text-[10px] font-semibold rounded-sm bg-indigo-50 text-indigo-700">Invest.</span>');
-                        let orig = item.tipo === 'receita' ? (item.sala === 'sala1' ? 'Sala 01' : 'Sala 02') : 'Geral';
-                        tr.innerHTML = `
-                            <td class="p-4 text-slate-500 whitespace-nowrap">${item.data.split('-').reverse().join('/')}</td>
-                            <td class="p-4">${badge}</td>
-                            <td class="p-4 font-semibold text-slate-600 whitespace-nowrap">${orig}</td>
-                            <td class="p-4 text-slate-700 min-w-[150px]">${item.desc}</td>
-                            <td class="p-4 text-right font-bold whitespace-nowrap ${item.tipo==='receita'?'text-emerald-600':(item.tipo==='despesa'?'text-rose-600':'text-indigo-600')}">${formatCurrency(item.valor)}</td>
-                            <td class="p-4 text-center whitespace-nowrap"><button onclick="LevSim.deleteLancamento('${item.id}')" class="text-xs text-rose-500 font-semibold hover:text-rose-700 cursor-pointer">Remover</button></td>
-                        `;
-                        tbody.appendChild(tr);
-                    }
-
-                    if (mobileContainer) {
-                        const card = document.createElement('div'); card.className = "p-4 flex flex-col gap-2 bg-white";
-                        let orig = item.tipo === 'receita' ? (item.sala === 'sala1' ? 'Sala 01' : 'Sala 02') : 'Geral';
-                        card.innerHTML = `
-                            <div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-400">${item.data.split('-').reverse().join('/')}</span><span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-sm ${item.tipo === 'receita' ? 'bg-emerald-50 text-emerald-700' : (item.tipo==='despesa'?'bg-rose-50 text-rose-700':'bg-indigo-50 text-indigo-700')}">${item.tipo}</span></div>
-                            <div class="text-sm font-semibold text-slate-800">${item.desc}</div>
-                            <div class="text-xs text-slate-500">Origem: <span class="font-semibold text-slate-700">${orig}</span></div>
-                            <div class="flex justify-between items-center mt-1 pt-2 border-t border-slate-50"><span class="text-base font-black ${item.tipo==='receita'?'text-emerald-600':(item.tipo==='despesa'?'text-rose-600':'text-indigo-600')}">${formatCurrency(item.valor)}</span><button onclick="LevSim.deleteLancamento('${item.id}')" class="text-xs font-bold text-rose-500 hover:underline">Remover</button></div>
-                        `;
-                        mobileContainer.appendChild(card);
-                    }
-                }
-            });
-
-            const emptyStateEl = document.getElementById('empty-state');
-            const tableContainerEl = document.getElementById('desktop-table-container');
-            if (totalRegistrosExibidos === 0) {
-                if (emptyStateEl) emptyStateEl.classList.remove('hidden');
-                if (tableContainerEl) tableContainerEl.classList.add('hidden');
-                if (mobileContainer) mobileContainer.classList.add('hidden');
-            } else {
-                if (emptyStateEl) emptyStateEl.classList.add('hidden');
-                if (tableContainerEl) tableContainerEl.classList.remove('hidden');
-                if (mobileContainer) mobileContainer.classList.remove('hidden');
-            }
-
-            document.getElementById('faturamento-sala1').innerText = formatCurrency(sala1Tot);
-            document.getElementById('faturamento-sala2').innerText = formatCurrency(sala2Tot);
-            
-            let totalReceitas = sala1Tot + sala2Tot;
-            const qtdMesesSelecionados = mesesAtivos.length || 1;
-            
-            let custoFixoAcumulado = config.custoFixo * qtdMesesSelecionados;
-            let margemContribuicaoUnitaria = config.preco - config.custoVariavel;
-            if(margemContribuicaoUnitaria <= 0) margemContribuicaoUnitaria = config.preco || 1; 
-
-            const unidadesBreakEven = custoFixoAcumulado / margemContribuicaoUnitaria;
-            let faturamentoMinimoRequerido = unidadesBreakEven * config.preco;
-            document.getElementById('kpi-break-even').innerText = formatCurrency(faturamentoMinimoRequerido);
-
-            let capacidadAjustadaPeriodo = config.capacidade * qtdMesesSelecionados;
-            const ocuPct = capacidadAjustadaPeriodo > 0 ? (unidadesBreakEven / capacidadAjustadaPeriodo) * 100 : 0;
-            document.getElementById('kpi-ponto-eq').innerText = ocuPct.toFixed(1) + '%';
-            document.getElementById('lbl-metrica-eq').innerText = `Eq. em ${config.metrica === 'turnos' ? 'Turnos' : 'Horas'}`;
-
-            let resultadoOperacional = totalReceitas - totalDespesas;
-            let fluxoCaixaLiquido = resultadoOperacional - totalInvestido;
-
-            document.getElementById('sum-operacional').innerText = formatCurrency(resultadoOperacional);
-            document.getElementById('sum-liquido').innerText = formatCurrency(fluxoCaixaLiquido);
-
-            let lucroMensalMedioReal = resultadoOperacional / qtdMesesSelecionados;
-
-            // ANÁLISE COMPATÍVEL BASEADA NO ESCOPO INTEGRAL FILTRADO DO PERÍODO ACTIVO
-            if (totalInvestido > 0) {
-                document.getElementById('kpi-payback').innerText = lucroMensalMedioReal > 0 ? (totalInvestido / lucroMensalMedioReal).toFixed(1) + ' meses' : 'Déficit Ativo';
-                
-                // ROI ANUAL PROJETADO: (Lucro Mensal Médio do Período * 12) / Investimento realizado no período selecionado
-                let roiAnualCalculado = ((lucroMensalMedioReal * 12) / totalInvestido) * 100;
-                let roiEl = document.getElementById('kpi-roi');
-                roiEl.innerText = roiAnualCalculado.toFixed(1) + '%';
-                
-                // TIR MENSAL CALCULADA POR PROJEÇÃO COM BASE NO ESCOPO ATIVO
-                let tirCalculada = calcularTIRReal(totalInvestido, lucroMensalMedioReal, 12);
-                let tirEl = document.getElementById('kpi-tir');
-                tirEl.innerText = tirCalculada.toFixed(1) + '%';
-                
-                if (tirCalculada < 0) { 
-                    tirEl.className = "text-xl lg:text-2xl font-bold text-rose-600 block mt-1.5"; 
-                } else { 
-                    tirEl.className = "text-xl lg:text-2xl font-bold text-emerald-600 block mt-1.5"; 
-                }
-            } else {
-                document.getElementById('kpi-payback').innerText = 'Sem Invest.';
-                document.getElementById('kpi-roi').innerText = '0.0%';
-                document.getElementById('kpi-tir').innerText = '0.0%';
-                document.getElementById('kpi-tir').className = "text-xl lg:text-2xl font-bold text-slate-500 block mt-1.5";
-            }
-            renderCharts();
-        }
-
-        function formatCurrency(val) {
-            return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        }
-
-        function renderCharts() {
-            const ctx = document.getElementById('mainChart'); if(!ctx) return;
-            const filtroAno = document.getElementById('dash-filtro-ano').value;
-            let labelsFiltradas = []; let receitasData = []; let despesasData = []; let lucrosData = [];
-
-            nomesCurtos.forEach((mes, idx) => {
-                if (mesesAtivos.includes(idx)) {
-                    labelsFiltradas.push(mes); let rMes = 0; let dMes = 0;
-                    lancamentos.forEach(item => {
-                        const itemDate = new Date(item.data + 'T00:00:00');
-                        if(itemDate.getFullYear().toString() === filtroAno && itemDate.getMonth() === idx) {
-                            if(item.tipo === 'receita') rMes += item.valor;
-                            if(item.tipo === 'despesa') dMes += item.valor;
-                        }
-                    });
-                    receitasData.push(rMes); despesasData.push(dMes);
-                    lucrosData.push(rMes - dMes);
-                }
-            });
-
-            if(chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
-                data: {
-                    labels: labelsFiltradas,
-                    datasets: [
-                        { type: 'line', label: 'Lucro ou Déficit Real', data: lucrosData, borderColor: '#10b981', backgroundColor: '#10b981', borderWidth: 2.5, pointRadius: 3, tension: 0.15, fill: false },
-                        { type: 'bar', label: 'Receitas', data: receitasData, backgroundColor: '#4f46e5', borderRadius: 4 },
-                        { type: 'bar', label: 'Despesas', data: despesasData, backgroundColor: '#ef4444', borderRadius: 4 }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
-                    scales: { y: { beginAtZero: true, ticks: { font: { size: 10 } } }, x: { ticks: { font: { size: 10 } } } }
-                }
-            });
-        }
-
-        function saveConfig() {
-            config.capacidade = parseInt(document.getElementById('cfg-capacidade').value) || 320;
-            config.preco = parseFloat(document.getElementById('cfg-preco').value) || 60;
-            config.custoFixo = parseFloat(document.getElementById('cfg-custofixo').value) || 0;
-            config.custoVariavel = parseFloat(document.getElementById('cfg-custovariavel').value) || 0;
-            localStorage.setItem('simulador_config_v17', JSON.stringify(config));
-            triggerToast("Parâmetros operacionais salvos!", "⚙️");
-            renderApp(); switchTab('dash');
-        }
-
-        function clearData() {
-            if(confirm("Deseja apagar todos os dados locais?")) {
-                lancamentos = []; localStorage.setItem('simulador_lancamentos_v17', JSON.stringify(lancamentos));
-                triggerToast("Banco de dados resetado.", "🧹"); renderApp();
-            }
-        }
-
-        function exportJSON() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(lancamentos));
-            const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", "backup_simulador.json"); document.body.appendChild(downloadAnchor);
-            downloadAnchor.click(); downloadAnchor.remove();
-        }
-    
-        window.LevSim = {
-            init: lvInit,
-            clearData,
-            deleteLancamento,
-            exportJSON,
-            saveConfig,
-            selecionarTodosMeses,
-            setFormSala,
-            setFormType,
-            setMetrica,
-            switchTab,
-            toggleDropdown,
-            importFile,
-            onCheckboxChange,
-            renderApp,
-            handleCurrencyInput,
-            saveLancamento
-        };
-})();
-
-</script>
 </body>
 </html>
