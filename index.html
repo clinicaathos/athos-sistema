@@ -649,6 +649,8 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="nav-item" onclick="showPage('relatorios',this)"><span class="nav-icon">◈</span>Relatórios</div>
       <div class="nav-item" onclick="showPage('lembretes',this)"><span class="nav-icon">◷</span>Lembretes</div>
       <div class="nav-item" onclick="showPage('servicos',this)"><span class="nav-icon">⊗</span>Serviços</div>
+      <div class="nav-item" onclick="showPage('turnos',this)"><span class="nav-icon">◧</span>Turnos</div>
+      <div class="nav-item" onclick="showPage('levantamento',this)"><span class="nav-icon">◉</span>Levantamento</div>
       <div class="sb-group">Sistema</div>
       <div class="nav-item" onclick="showPage('configuracoes',this)"><span class="nav-icon">⊕</span>Configurações</div>
     </nav>
@@ -1344,6 +1346,76 @@ body.dark .tag{background:#111827;border-color:#374151;}
         </div>
       </div>
 
+      <!-- ══ TURNOS ══ -->
+      <div class="page" id="page-turnos">
+        <div class="sec-header">
+          <span class="sec-title">Turnos</span>
+          <button class="btn btn-primary" onclick="abrirModalBloqueio()">
+            <svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            Bloquear Turno
+          </button>
+        </div>
+        <!-- Resumo de ocupação da semana -->
+        <div class="stats-grid" style="margin-bottom:1rem">
+          <div class="stat-card"><div class="stat-label">Turnos locados hoje</div><div class="stat-value" id="tur-locados-hoje">—</div></div>
+          <div class="stat-card"><div class="stat-label">Disponíveis hoje</div><div class="stat-value" id="tur-disp-hoje">—</div></div>
+          <div class="stat-card"><div class="stat-label">Bloqueios ativos</div><div class="stat-value" id="tur-bloqueios">—</div></div>
+        </div>
+        <!-- Visualização por sala -->
+        <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap">
+          <input type="date" id="tur-filtro-data" class="form-input" style="width:160px" onchange="loadTurnos()">
+          <select class="form-select" style="width:160px" id="tur-filtro-sala" onchange="loadTurnos()">
+            <option value="">Ambas as salas</option>
+            <option value="1">Áthos I</option>
+            <option value="2">Áthos II</option>
+          </select>
+          <button class="btn btn-secondary" onclick="loadTurnos()">Atualizar</button>
+        </div>
+        <div id="tur-grid-s1" style="margin-bottom:1rem"></div>
+        <div id="tur-grid-s2"></div>
+        <!-- Bloqueios cadastrados -->
+        <div style="margin-top:1.25rem">
+          <div style="font-size:.82rem;font-weight:600;margin-bottom:.5rem">Bloqueios cadastrados</div>
+          <div id="tur-bloqueios-list"><div style="color:var(--text-lighter);font-size:.8rem">Carregando...</div></div>
+        </div>
+      </div>
+
+      <!-- ══ LEVANTAMENTO FINANCEIRO ══ -->
+      <div class="page" id="page-levantamento">
+        <div class="sec-header">
+          <span class="sec-title">Levantamento Financeiro</span>
+          <button class="btn btn-secondary" onclick="exportarLevantamentoCSV()">↓ Exportar CSV</button>
+        </div>
+        <!-- Período de projeção -->
+        <div class="card" style="margin-bottom:.75rem">
+          <div style="font-size:.82rem;font-weight:600;margin-bottom:.75rem">Período de projeção</div>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+            <div class="form-group" style="margin:0;flex:1;min-width:130px"><label class="form-label">Mês</label><select class="form-select" id="lev-mes"><option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option><option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option></select></div>
+            <div class="form-group" style="margin:0;flex:1;min-width:100px"><label class="form-label">Ano</label><input class="form-input" type="number" id="lev-ano" min="2024" max="2030" value="2025"></div>
+            <button class="btn btn-primary" onclick="calcularLevantamento()">Calcular</button>
+          </div>
+        </div>
+        <!-- Totais -->
+        <div class="stats-grid" style="margin-bottom:.75rem">
+          <div class="stat-card"><div class="stat-label">Receita projetada</div><div class="stat-value" style="color:var(--gold)" id="lev-total-proj">—</div></div>
+          <div class="stat-card"><div class="stat-label">Receita realizada</div><div class="stat-value" style="color:var(--success)" id="lev-total-real">—</div></div>
+          <div class="stat-card"><div class="stat-label">A receber</div><div class="stat-value" style="color:var(--danger)" id="lev-total-pend">—</div></div>
+          <div class="stat-card"><div class="stat-label">Turnos locados</div><div class="stat-value" id="lev-turnos-loc">—</div></div>
+        </div>
+        <!-- Detalhamento por profissional -->
+        <div class="card">
+          <div style="font-size:.82rem;font-weight:600;margin-bottom:.75rem">Detalhamento por profissional</div>
+          <div class="data-table" id="lev-tabela">
+            <div style="color:var(--text-lighter);font-size:.8rem;padding:1rem;text-align:center">Selecione o período e clique em Calcular.</div>
+          </div>
+        </div>
+        <!-- Projeção vs. capacidade -->
+        <div class="card" style="margin-top:.75rem">
+          <div style="font-size:.82rem;font-weight:600;margin-bottom:.75rem">Capacidade x ocupação do período</div>
+          <div id="lev-capacidade"><div style="color:var(--text-lighter);font-size:.8rem">Aguardando cálculo.</div></div>
+        </div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -2011,8 +2083,18 @@ async function saveConfig() {
 // ══ PROFISSIONAIS ══
 async function loadProfissionais() {
   try {
-    const snap = await db.collection('profissionais').orderBy('nome').get();
+    const [snap, pacotesSnap] = await Promise.all([
+      db.collection('profissionais').orderBy('nome').get(),
+      db.collection('pacotesHoras').where('status','==','Ativo').get()
+    ]);
     profissionaisCache = snap.docs.map(d => ({id:d.id,...d.data()}));
+    // Agrupar pacotes ativos por profId para exibição no card
+    window._pacotesAtivosMap = {};
+    pacotesSnap.docs.forEach(d=>{
+      const p={id:d.id,...d.data()};
+      if(!window._pacotesAtivosMap[p.profId]) window._pacotesAtivosMap[p.profId]=[];
+      window._pacotesAtivosMap[p.profId].push(p);
+    });
     renderProfissionais(profissionaisCache);
     updateProfSelect();
     updateDashboardProfs();
@@ -2050,14 +2132,28 @@ function renderProfissionais(profs, filtro='todos') {
       '<span class="vinculo-tag vinculo-com">Com vínculo</span>' :
       '<span class="vinculo-tag vinculo-sem">Sem vínculo</span>';
 
-    // horas bar se pacote
+    // Barra de saldo de pacote de horas (novo modelo)
     let horasBar = '';
-    if(p.vinculo==='Pacote de Horas' && p.horasTotal) {
-      const usadas = p.horasUsadas||0;
-      const saldo = Math.max(0, p.horasTotal - usadas);
-      const pct = Math.min(100,Math.round(usadas/p.horasTotal*100));
-      const cls = pct>=80?'danger':pct>=60?'warning':'';
-      horasBar = `<div class="horas-bar-wrap"><div class="horas-bar-label" style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text-light);margin-bottom:3px"><span>Saldo: ${saldo}h disponíveis</span><span style="font-weight:600">${usadas}h / ${p.horasTotal}h</span></div><div class="horas-bar"><div class="horas-bar-fill ${cls}" style="width:${pct}%"></div></div><button class="btn btn-secondary" style="font-size:.68rem;padding:.3rem .6rem;margin-top:.4rem" onclick="event.stopPropagation();abrirModalUsoPacote('${p.id}','${(p.nome||'').replace(/'/g,"\\'")}',${saldo})">Registrar uso</button></div>`;
+    const pacotesProf = (window._pacotesAtivosMap||{})[p.id] || [];
+    if(pacotesProf.length > 0) {
+      horasBar = pacotesProf.map(pac=>{
+        const usadas = pac.horasUsadas||0;
+        const saldo = Math.max(0, pac.totalHoras - usadas);
+        const pct = Math.min(100,Math.round(usadas/pac.totalHoras*100));
+        const cls = pct>=100?'danger':pct>=80?'warning':'';
+        const concluido = saldo<=0;
+        return `<div class="horas-bar-wrap">
+          <div class="horas-bar-label" style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text-light);margin-bottom:3px">
+            <span>${concluido?'⚠ Pacote concluído':'Saldo: '+saldo+'h disponíveis'}</span>
+            <span style="font-weight:600">${usadas}h / ${pac.totalHoras}h</span>
+          </div>
+          <div class="horas-bar"><div class="horas-bar-fill ${cls}" style="width:${pct}%"></div></div>
+          ${!concluido?`<button class="btn btn-secondary" style="font-size:.68rem;padding:.3rem .6rem;margin-top:.4rem"
+            onclick="event.stopPropagation();abrirModalUsoPacote('${pac.id}','${(p.nome||'').replace(/'/g,"\\'")}',${saldo})">
+            Registrar uso</button>`
+          :`<span style="font-size:.72rem;color:var(--danger);font-weight:600">Pacote de ${pac.totalHoras}h encerrado</span>`}
+        </div>`;
+      }).join('');
     }
 
     return `<div class="prof-card" onclick="verProfissional('${p.id}')">
@@ -2640,6 +2736,243 @@ function loadDashboard() {
 }
 
 // ── ITEM 4: Lembretes e próximos vencimentos (7 dias) ──
+// ══════════════════════════════════════════════════════
+// ── ABA TURNOS ──
+// ══════════════════════════════════════════════════════
+async function loadTurnos() {
+  const hojeStr = toDateStrLocal(new Date());
+  const dataFiltro = document.getElementById('tur-filtro-data')?.value || hojeStr;
+  const salaFiltro = document.getElementById('tur-filtro-sala')?.value || '';
+  const s1Nome = appConfig.sala1||'Áthos I';
+  const s2Nome = appConfig.sala2||'Áthos II';
+  const turnos = [{k:'manha',n:'Manhã'},{k:'tarde',n:'Tarde'},{k:'noite',n:'Noite'}];
+
+  // Preencher filtro de data com hoje se vazio
+  const dataEl = document.getElementById('tur-filtro-data');
+  if(dataEl && !dataEl.value) dataEl.value = hojeStr;
+
+  try {
+    const [locSnap, bloqSnap] = await Promise.all([
+      db.collection('locacoes').get(),
+      db.collection('bloqueios').where('data','==',dataFiltro).get()
+    ]);
+    const locacoes = locSnap.docs.map(d=>({id:d.id,...d.data()})).filter(l=>locAtivaEmDia(l,dataFiltro));
+    const bloqueios = bloqSnap.docs.map(d=>({id:d.id,...d.data()}));
+
+    // Mapa turno+sala → locação
+    const mapaLoc = {};
+    locacoes.forEach(l=>{
+      const sk = getSalaKeyGlobal(l.sala,l.vinculo);
+      getTurnosOcupados(l).forEach(t=>{
+        if(sk==='mista'){mapaLoc[`${t}_s1`]=l;mapaLoc[`${t}_s2`]=l;}
+        else mapaLoc[`${t}_${sk}`]=l;
+      });
+    });
+    const mapaBloq = {};
+    bloqueios.forEach(b=>{mapaBloq[`${b.turno}_s${b.sala}`]=b;});
+
+    // Contadores para stats
+    const totalTurnos = 6;
+    const locados = Object.keys(mapaLoc).length;
+    const bloqCount = bloqueios.length;
+    const dispEl = document.getElementById('tur-disp-hoje');
+    const locEl = document.getElementById('tur-locados-hoje');
+    const bloqEl = document.getElementById('tur-bloqueios');
+    if(locEl) locEl.textContent = locados;
+    if(dispEl) dispEl.textContent = Math.max(0, totalTurnos - locados - bloqCount);
+    if(bloqEl) bloqEl.textContent = bloqCount;
+
+    const bloqStyle = 'background:repeating-linear-gradient(45deg,#9ca3af,#9ca3af 4px,#e5e7eb 4px,#e5e7eb 9px);border-radius:8px;padding:.6rem .75rem;font-size:.78rem;color:#4b5563';
+    function celulaHtml(turnoK, salaK) {
+      const k=`${turnoK}_${salaK}`;
+      const loc = mapaLoc[k];
+      const bloq = mapaBloq[k];
+      if(bloq) return `<div style="${bloqStyle};cursor:pointer" onclick="editarBloqueio('${bloq.id}')">🔒 Bloqueado<br><span style="font-size:.7rem">${bloq.motivo}</span></div>`;
+      if(loc) {
+        const prof = profissionaisCache.find(p=>p.id===loc.profId)?.nome||'?';
+        return `<div style="background:${loc.cor||'var(--gold)'};border-radius:8px;padding:.6rem .75rem;font-size:.78rem;font-weight:600;color:#fff;cursor:pointer" onclick="editarLocacao('${loc.id}','${dataFiltro}')">${prof}<br><span style="font-size:.7rem;opacity:.85">${loc.inicio||''}–${loc.fim||''}</span></div>`;
+      }
+      return `<div style="border:1.5px dashed #d1d5db;border-radius:8px;padding:.6rem .75rem;font-size:.78rem;color:var(--text-lighter);text-align:center;cursor:pointer" onclick="abrirModalBloqueio('${salaK==='s1'?'1':'2'}','${dataFiltro}','${turnoK}')">Disponível<br><span style="font-size:.68rem">+ bloquear</span></div>`;
+    }
+    function renderGridSala(containerId, salaN, salaK) {
+      const el = document.getElementById(containerId);
+      if(!el) return;
+      el.innerHTML = `<div style="font-size:.82rem;font-weight:700;margin-bottom:.5rem;color:var(--gold)">${salaN} — ${formatDate(dataFiltro)}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem">
+          ${turnos.map(t=>`<div><div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.25rem;font-weight:600">${t.n}</div>${celulaHtml(t.k,salaK)}</div>`).join('')}
+        </div>`;
+    }
+    if(!salaFiltro || salaFiltro==='1') renderGridSala('tur-grid-s1', s1Nome, 's1');
+    else document.getElementById('tur-grid-s1').innerHTML='';
+    if(!salaFiltro || salaFiltro==='2') renderGridSala('tur-grid-s2', s2Nome, 's2');
+    else document.getElementById('tur-grid-s2').innerHTML='';
+
+    // Lista de bloqueios
+    const allBloqSnap = await db.collection('bloqueios').orderBy('data','asc').get();
+    const allBloq = allBloqSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const hoje = toDateStrLocal(new Date());
+    const futurosBloq = allBloq.filter(b=>b.data>=hoje);
+    const bloqListEl = document.getElementById('tur-bloqueios-list');
+    if(bloqListEl) {
+      bloqListEl.innerHTML = futurosBloq.length ? futurosBloq.map(b=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--border)">
+          <div>
+            <span style="font-size:.82rem;font-weight:600">${b.sala==='2'?s2Nome:s1Nome} — ${b.turno==='manha'?'Manhã':b.turno==='tarde'?'Tarde':'Noite'}</span>
+            <div style="font-size:.76rem;color:var(--text-lighter)">${formatDate(b.data)} · ${b.motivo}</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="excluirBloqueio_turnosPage('${b.id}')">Remover</button>
+        </div>`).join('')
+      : '<div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0">Nenhum bloqueio futuro cadastrado.</div>';
+    }
+  } catch(e) { console.error('loadTurnos:', e); }
+}
+
+async function excluirBloqueio_turnosPage(id) {
+  if(!confirm('Remover este bloqueio?')) return;
+  try {
+    await db.collection('bloqueios').doc(id).delete();
+    showToast('Bloqueio removido!','success');
+    loadTurnos();
+  } catch(e) { showToast('Erro ao remover.','error'); }
+}
+
+// ══════════════════════════════════════════════════════
+// ── ABA LEVANTAMENTO FINANCEIRO ──
+// ══════════════════════════════════════════════════════
+async function calcularLevantamento() {
+  const mes = parseInt(document.getElementById('lev-mes').value);
+  const ano = parseInt(document.getElementById('lev-ano').value);
+  const mesStr = String(mes+1).padStart(2,'0');
+  const priDia = `${ano}-${mesStr}-01`;
+  const ultDia = new Date(ano, mes+1, 0).getDate();
+  const ultDiaStr = `${ano}-${mesStr}-${String(ultDia).padStart(2,'0')}`;
+  const mesesNomes=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const s1Nome = appConfig.sala1||'Áthos I';
+  const s2Nome = appConfig.sala2||'Áthos II';
+
+  const tabela = document.getElementById('lev-tabela');
+  const capEl = document.getElementById('lev-capacidade');
+  if(tabela) tabela.innerHTML='<div style="color:var(--text-lighter);font-size:.8rem;padding:.75rem">Calculando...</div>';
+  if(capEl) capEl.innerHTML='';
+
+  try {
+    const [locSnap, recSnap] = await Promise.all([
+      db.collection('locacoes').get(),
+      db.collection('receitas').get()
+    ]);
+    const locacoes = locSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const receitas = recSnap.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(r => r.vencimento && r.vencimento>=priDia && r.vencimento<=ultDiaStr);
+
+    // Calcular locações ativas no período, agrupadas por profissional
+    const locPeriodo = {};
+    let turnosTotal = 0;
+    for(let d=1;d<=ultDia;d++) {
+      const dStr = `${ano}-${mesStr}-${String(d).padStart(2,'0')}`;
+      locacoes.forEach(l=>{
+        if(!locAtivaEmDia(l,dStr)) return;
+        if(!locPeriodo[l.profId]) locPeriodo[l.profId]={locacoes:new Set(),turnos:0};
+        locPeriodo[l.profId].locacoes.add(l.id);
+        locPeriodo[l.profId].turnos += getTurnosOcupados(l).length;
+        turnosTotal += getTurnosOcupados(l).length / Object.values(locPeriodo).length;
+      });
+    }
+    // Deduplicar contagem de turnos (cada locação conta pelos turnos × dias que ocorre)
+    const locProfMap = {};
+    locacoes.forEach(l=>{
+      if(!l.profId) return;
+      let diasAtivos = 0;
+      for(let d=1;d<=ultDia;d++){
+        const dStr=`${ano}-${mesStr}-${String(d).padStart(2,'0')}`;
+        if(locAtivaEmDia(l,dStr)) diasAtivos++;
+      }
+      if(diasAtivos===0) return;
+      if(!locProfMap[l.profId]) locProfMap[l.profId]={profs:[],valorProj:0,turnos:0};
+      const vLoc = parseFloat(l.valorLancamento||0);
+      // Para locação recorrente, o valor é mensal (1 lançamento/mês)
+      const vlMes = l.recorrencia && l.recorrencia!=='Apenas este horário' ? vLoc : vLoc;
+      locProfMap[l.profId].valorProj += vlMes;
+      locProfMap[l.profId].turnos += getTurnosOcupados(l).length * (l.recorrencia!=='Apenas este horário'?4:1);
+      locProfMap[l.profId].loc = l;
+    });
+
+    // Cruzar com receitas reais
+    let totalProj=0, totalReal=0, totalPend=0;
+    const linhas = Object.entries(locProfMap).map(([profId, info])=>{
+      const prof = profissionaisCache.find(p=>p.id===profId);
+      const nome = prof?.nome || profId;
+      const recProf = receitas.filter(r=>r.profId===profId||(r.profissional&&r.profissional===prof?.nome));
+      const real = recProf.filter(r=>r.status==='Pago').reduce((s,r)=>s+(parseMoney(r.valor)||0),0);
+      const pend = recProf.filter(r=>r.status!=='Pago').reduce((s,r)=>s+(parseMoney(r.valor)||0),0);
+      const proj = info.valorProj;
+      totalProj+=proj; totalReal+=real; totalPend+=pend;
+      return {nome,proj,real,pend,turnos:info.turnos};
+    });
+    // Incluir receitas avulsas sem locação vinculada
+    const profIdsComLoc = Object.keys(locProfMap);
+    const recSemLoc = receitas.filter(r=>!profIdsComLoc.includes(r.profId));
+    recSemLoc.forEach(r=>{
+      const v = parseMoney(r.valor)||0;
+      if(r.status==='Pago') totalReal+=v; else totalPend+=v;
+    });
+
+    // Atualiza stats
+    const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+    set('lev-total-proj', formatMoney(totalProj));
+    set('lev-total-real', formatMoney(totalReal));
+    set('lev-total-pend', formatMoney(totalPend));
+    set('lev-turnos-loc', linhas.reduce((s,l)=>s+l.turnos,0));
+
+    // Tabela
+    if(tabela) {
+      if(!linhas.length) {
+        tabela.innerHTML='<div style="color:var(--text-lighter);font-size:.8rem;padding:1rem;text-align:center">Nenhuma locação encontrada no período.</div>';
+      } else {
+        tabela.innerHTML=`<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr"><span>Profissional</span><span>Turnos</span><span>Projetado</span><span>Realizado</span><span>Pendente</span></div>`
+          +linhas.sort((a,b)=>b.proj-a.proj).map(l=>`
+          <div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+            <span style="font-weight:500">${l.nome}</span>
+            <span>${l.turnos}</span>
+            <span style="color:var(--gold);font-weight:600">${formatMoney(l.proj)}</span>
+            <span style="color:var(--success);font-weight:600">${formatMoney(l.real)}</span>
+            <span style="color:${l.pend>0?'var(--danger)':'var(--text-lighter)'};">${l.pend>0?formatMoney(l.pend):'—'}</span>
+          </div>`).join('');
+      }
+    }
+
+    // Capacidade x ocupação
+    if(capEl) {
+      const turnosDisp = 3 * ultDia;
+      const pctS1 = Math.round(turnosTotal/turnosDisp*50);
+      const pctS2 = Math.round(turnosTotal/turnosDisp*50);
+      capEl.innerHTML = [s1Nome,s2Nome].map((sn,si)=>{
+        const pct = si===0?pctS1:pctS2;
+        return `<div style="margin-bottom:.75rem">
+          <div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:.3rem">
+            <span style="font-weight:600">${sn}</span><span>${pct}% ocupado</span>
+          </div>
+          <div style="background:#e5e7eb;border-radius:6px;height:8px"><div style="background:${pct>=80?'var(--danger)':pct>=50?'var(--warning)':'var(--success)'};width:${pct}%;height:100%;border-radius:6px"></div></div>
+        </div>`;
+      }).join('');
+    }
+  } catch(e) { if(tabela) tabela.innerHTML='<div style="color:var(--danger);font-size:.8rem;padding:.75rem">Erro ao calcular.</div>'; console.error(e); }
+}
+
+async function exportarLevantamentoCSV() {
+  const tabela = document.getElementById('lev-tabela');
+  if(!tabela || tabela.querySelector('[style*="Aguardando"]')) {
+    showToast('Calcule o levantamento primeiro.','error'); return;
+  }
+  const mes = parseInt(document.getElementById('lev-mes').value);
+  const ano = parseInt(document.getElementById('lev-ano').value);
+  const linhas = [['Profissional','Turnos','Projetado (R$)','Realizado (R$)','Pendente (R$)']];
+  tabela.querySelectorAll('.dt-row').forEach(row=>{
+    const cols = Array.from(row.querySelectorAll('span')).map(s=>s.textContent.trim());
+    linhas.push(cols);
+  });
+  baixarCSV(linhas, `levantamento_${mes+1}_${ano}.csv`);
+}
+
 async function loadDashAgenda() {
   const el = document.getElementById('dash-agenda-list');
   const cnt = document.getElementById('dash-agenda-count');
@@ -2819,10 +3152,10 @@ async function loadFinanceiro() {
     document.getElementById('fin-saldo').style.color = saldo>=0?'var(--success)':'var(--danger)';
     updateStickySummary(totalRecPago, totalDespPago);
 
-    // Tabelas: somente pendentes (status !== 'Pago')
+    // Tabelas: somente pendentes com valor > 0 (desconto 100% = R$0,00 → não exibe)
     const recSnap=await db.collection('receitas').get();
     const todasReceitas=recSnap.docs.map(d=>({id:d.id,...d.data()}));
-    const receitas=todasReceitas.filter(r=>r.status!=='Pago');
+    const receitas=todasReceitas.filter(r=>r.status!=='Pago' && (parseMoney(r.valor)||0) > 0);
     renderReceitas(receitas);
 
     const despSnap=await db.collection('despesas').get();
@@ -4753,7 +5086,7 @@ function closeMobileSidebar() {
 }
 
 // ══ NAV ══
-const pageTitles={dashboard:'Dashboard',agenda:'Agenda',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',servicos:'Serviços',configuracoes:'Configurações'};
+const pageTitles={dashboard:'Dashboard',agenda:'Agenda',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',servicos:'Serviços',configuracoes:'Configurações',turnos:'Turnos',levantamento:'Levantamento Financeiro'};
 
 function showPage(n,el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -4764,6 +5097,15 @@ function showPage(n,el) {
   closeMobileSidebar();
   if(n==='lembretes') loadLembretes();
   if(n==='servicos') loadServicos();
+  if(n==='turnos') loadTurnos();
+  if(n==='levantamento') {
+    // Pré-selecionar mês e ano correntes
+    const h=new Date();
+    const mEl=document.getElementById('lev-mes');
+    const aEl=document.getElementById('lev-ano');
+    if(mEl) mEl.value=h.getMonth();
+    if(aEl) aEl.value=h.getFullYear();
+  }
 }
 
 // ══ MODALS ══
