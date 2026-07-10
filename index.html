@@ -651,6 +651,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="nav-item" onclick="showPage('lembretes',this)"><span class="nav-icon">◷</span>Lembretes</div>
       <div class="nav-item" onclick="showPage('servicos',this)"><span class="nav-icon">⊗</span>Serviços</div>
       <div class="nav-item" onclick="showPage('levantamento',this)"><span class="nav-icon">◐</span>Levantamento Financeiro</div>
+      <div class="nav-item" onclick="showPage('analise',this)"><span class="nav-icon">◎</span>Análise de Negócio</div>
       <div class="sb-group">Sistema</div>
       <div class="nav-item" onclick="showPage('configuracoes',this)"><span class="nav-icon">⊕</span>Configurações</div>
     </nav>
@@ -702,26 +703,8 @@ body.dark .tag{background:#111827;border-color:#374151;}
         </div>
         <div class="stats-grid">
           <div class="stat-card"><div class="stat-label">Receita do Mês</div><div class="stat-value" style="color:var(--gold)" id="dash-receita">—</div><div class="stat-sub" id="dash-receita-sub">carregando...</div></div>
-          <div class="stat-card"><div class="stat-label">Turnos Hoje</div><div class="stat-value" id="dash-turnos">—</div><div class="stat-sub" id="dash-turnos-sub">carregando...</div></div>
           <div class="stat-card"><div class="stat-label">Profissionais Ativos</div><div class="stat-value" id="dash-profs">—</div><div class="stat-sub" id="dash-profs-sub">carregando...</div></div>
           <div class="stat-card"><div class="stat-label">A Receber</div><div class="stat-value" style="color:var(--danger)" id="dash-receber">—</div><div class="stat-sub" id="dash-receber-sub">carregando...</div></div>
-        </div>
-        <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem;box-shadow:var(--shadow)">
-          <div style="font-size:.8rem;font-weight:600;margin-bottom:.875rem">Ocupação desta semana</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem" id="dash-ocupacao">
-            <div>
-              <div style="font-size:.75rem;font-weight:500;color:var(--text-light);margin-bottom:.5rem" id="dash-s1-label">Sala 1</div>
-              <div class="turno-bar-wrap"><span class="turno-bar-label">Manhã</span><div class="turno-bar"><div class="turno-bar-fill" style="width:80%"></div></div><span class="turno-bar-count">4/5</span></div>
-              <div class="turno-bar-wrap"><span class="turno-bar-label">Tarde</span><div class="turno-bar"><div class="turno-bar-fill" style="width:60%"></div></div><span class="turno-bar-count">3/5</span></div>
-              <div class="turno-bar-wrap"><span class="turno-bar-label">Noite</span><div class="turno-bar"><div class="turno-bar-fill" style="width:20%"></div></div><span class="turno-bar-count">1/5</span></div>
-            </div>
-            <div>
-              <div style="font-size:.75rem;font-weight:500;color:var(--text-light);margin-bottom:.5rem" id="dash-s2-label">Sala 2</div>
-              <div class="turno-bar-wrap"><span class="turno-bar-label">Manhã</span><div class="turno-bar"><div class="turno-bar-fill" style="width:100%"></div></div><span class="turno-bar-count">5/5</span></div>
-              <div class="turno-bar-wrap"><span class="turno-bar-label">Tarde</span><div class="turno-bar"><div class="turno-bar-fill" style="width:40%"></div></div><span class="turno-bar-count">2/5</span></div>
-              <div class="turno-bar-wrap"><span class="turno-bar-label">Noite</span><div class="turno-bar"><div class="turno-bar-fill" style="width:60%"></div></div><span class="turno-bar-count">3/5</span></div>
-            </div>
-          </div>
         </div>
         <div class="dash-grid">
           <div class="card">
@@ -1637,6 +1620,78 @@ body.dark .tag{background:#111827;border-color:#374151;}
     
       </div>
 
+      <!-- ══ ANÁLISE DE NEGÓCIO ══ -->
+      <div class="page" id="page-analise">
+        <div class="sec-header">
+          <span class="sec-title">Análise de Negócio</span>
+          <button class="btn btn-secondary" onclick="calcularAnalise()">↻ Recalcular</button>
+        </div>
+
+        <!-- Parâmetros de entrada -->
+        <div class="card" style="margin-bottom:.75rem">
+          <div style="font-size:.82rem;font-weight:600;margin-bottom:.75rem">Parâmetros do período de análise</div>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+            <div class="form-group" style="margin:0;min-width:130px"><label class="form-label">Período</label>
+              <select class="form-select" id="analise-periodo">
+                <option value="3">Últimos 3 meses</option>
+                <option value="6" selected>Últimos 6 meses</option>
+                <option value="12">Último ano</option>
+                <option value="24">Últimos 2 anos</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;min-width:160px"><label class="form-label">Investimento inicial (R$)</label>
+              <input class="form-input" type="number" id="analise-investimento" placeholder="Ex: 50000" min="0">
+            </div>
+            <div class="form-group" style="margin:0;min-width:160px"><label class="form-label">Custo fixo mensal (R$) <span style="font-size:.68rem;color:var(--text-lighter)">(se quiser sobrescrever)</span></label>
+              <input class="form-input" type="number" id="analise-custo-fixo" placeholder="Calculado das despesas">
+            </div>
+            <button class="btn btn-primary" onclick="calcularAnalise()">Calcular</button>
+          </div>
+        </div>
+
+        <!-- KPIs principais -->
+        <div class="stats-grid" style="margin-bottom:.75rem">
+          <div class="stat-card">
+            <div class="stat-label">ROI do Período</div>
+            <div class="stat-value" id="analise-roi" style="color:var(--gold)">—</div>
+            <div class="stat-sub" id="analise-roi-sub">Retorno sobre o investimento</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Payback</div>
+            <div class="stat-value" id="analise-payback">—</div>
+            <div class="stat-sub">Meses para recuperar o investimento</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Break-Even Mensal</div>
+            <div class="stat-value" id="analise-breakeven">—</div>
+            <div class="stat-sub">Receita mínima para cobrir custos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Margem Líquida Média</div>
+            <div class="stat-value" id="analise-margem">—</div>
+            <div class="stat-sub">Lucro / Receita bruta</div>
+          </div>
+        </div>
+
+        <!-- Detalhamento financeiro do período -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+          <div class="card">
+            <div style="font-size:.82rem;font-weight:600;margin-bottom:.75rem">Receitas no período</div>
+            <div id="analise-rec-detalhe"><div style="color:var(--text-lighter);font-size:.8rem">Aguardando cálculo.</div></div>
+          </div>
+          <div class="card">
+            <div style="font-size:.82rem;font-weight:600;margin-bottom:.75rem">Despesas no período</div>
+            <div id="analise-desp-detalhe"><div style="color:var(--text-lighter);font-size:.8rem">Aguardando cálculo.</div></div>
+          </div>
+        </div>
+
+        <!-- Projeção de longo prazo -->
+        <div class="card">
+          <div style="font-size:.82rem;font-weight:600;margin-bottom:.75rem">📈 Projeção de longo prazo (com base na média do período)</div>
+          <div id="analise-projecao"><div style="color:var(--text-lighter);font-size:.8rem">Aguardando cálculo.</div></div>
+        </div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -1662,6 +1717,12 @@ body.dark .tag{background:#111827;border-color:#374151;}
         </div>
         <select class="form-select" id="loc-pacote-lista" style="display:none;margin-top:.4rem;font-size:.78rem" onchange="document.getElementById('loc-pacote-id-vinc').value=this.value"></select>
         <input type="hidden" id="loc-pacote-id-vinc">
+      </div>
+      <!-- Horas a consumir nesta sessão — descontadas automaticamente ao confirmar -->
+      <div id="loc-horas-sessao-group" style="display:none;margin-top:.5rem">
+        <label class="form-label">Horas desta sessão <span style="font-size:.7rem;color:var(--text-lighter)">(será descontado do saldo do pacote)</span></label>
+        <input class="form-input" type="number" id="loc-horas-sessao" min="0.5" step="0.5" placeholder="Ex: 1" style="width:120px" oninput="calcSaldoPos()">
+        <div id="loc-saldo-pos" style="font-size:.76rem;margin-top:4px;color:var(--text-light)"></div>
       </div>
     </div>
     <div class="form-row">
@@ -3192,6 +3253,112 @@ async function exportarLevantamentoCSV() {
     linhas.push(cols);
   });
   baixarCSV(linhas, `levantamento_${mes+1}_${ano}.csv`);
+}
+
+// ══════════════════════════════════════════════════════
+// ── ANÁLISE DE NEGÓCIO (somente leitura do Firebase) ──
+// Calcula ROI, Payback e Break-Even a partir das receitas e despesas existentes.
+// Não escreve nenhum dado no banco — apenas lê e exibe.
+// ══════════════════════════════════════════════════════
+async function calcularAnalise() {
+  const meses = parseInt(document.getElementById('analise-periodo')?.value||'6');
+  const investimento = parseFloat(document.getElementById('analise-investimento')?.value||'0');
+  const custoFixoManual = parseFloat(document.getElementById('analise-custo-fixo')?.value||'0');
+
+  // Calcular intervalo de datas
+  const hoje = new Date();
+  const inicio = new Date(hoje.getFullYear(), hoje.getMonth() - meses, 1);
+  const inicioStr = toDateStrLocal(inicio).slice(0,7); // YYYY-MM
+
+  const set = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
+
+  try {
+    const [recSnap, despSnap] = await Promise.all([
+      db.collection('receitas').get(),
+      db.collection('despesas').get()
+    ]);
+
+    // Filtrar pelo período
+    const receitas = recSnap.docs.map(d=>d.data())
+      .filter(r => r.vencimento && r.vencimento.slice(0,7) >= inicioStr);
+    const despesas = despSnap.docs.map(d=>d.data())
+      .filter(d => d.vencimento && d.vencimento.slice(0,7) >= inicioStr);
+
+    const totalRec = receitas.reduce((s,r)=>s+(parseMoney(r.valor)||0), 0);
+    const totalRecPago = receitas.filter(r=>r.status==='Pago').reduce((s,r)=>s+(parseMoney(r.valor)||0), 0);
+    const totalDesp = despesas.reduce((s,d)=>s+(parseMoney(d.valor)||0), 0);
+    const totalDespPago = despesas.filter(d=>d.status==='Pago').reduce((s,d)=>s+(parseMoney(d.valor)||0), 0);
+
+    const lucro = totalRecPago - totalDespPago;
+    const recMensal = totalRec / meses;
+    const despMensal = custoFixoManual > 0 ? custoFixoManual : totalDesp / meses;
+    const lucroMensal = totalRecPago/meses - totalDespPago/meses;
+
+    // ROI = (Lucro / Investimento) × 100
+    const roi = investimento > 0 ? (lucro / investimento * 100) : null;
+    // Payback = Investimento / Lucro mensal médio
+    const payback = lucroMensal > 0 && investimento > 0 ? (investimento / lucroMensal) : null;
+    // Break-Even = Custo fixo mensal (receita mínima para cobrir custos)
+    const breakEven = despMensal;
+    // Margem líquida
+    const margem = totalRecPago > 0 ? (lucro / totalRecPago * 100) : null;
+
+    // Exibir KPIs
+    set('analise-roi', roi !== null ? `${roi.toFixed(1)}%` : investimento > 0 ? 'Prejuízo' : 'Informe o investimento');
+    set('analise-roi-sub', roi !== null ? `Lucro: ${formatMoney(lucro)} sobre investimento de ${formatMoney(investimento)}` : '');
+    set('analise-payback', payback !== null ? `${payback.toFixed(1)} meses` : investimento > 0 ? (lucroMensal<=0?'Sem lucro no período':'—') : 'Informe o investimento');
+    set('analise-breakeven', formatMoney(breakEven));
+    set('analise-margem', margem !== null ? `${margem.toFixed(1)}%` : '—');
+
+    // Detalhamento por categoria
+    const recPorCat = {};
+    receitas.forEach(r=>{ const c=r.categoria||r.tipo||'Outros'; recPorCat[c]=(recPorCat[c]||0)+(parseMoney(r.valor)||0); });
+    const despPorCat = {};
+    despesas.forEach(d=>{ const c=d.categoria||d.tipo||'Outros'; despPorCat[c]=(despPorCat[c]||0)+(parseMoney(d.valor)||0); });
+
+    const recDetalheEl = document.getElementById('analise-rec-detalhe');
+    if(recDetalheEl) recDetalheEl.innerHTML = Object.entries(recPorCat).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>`
+      <div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.3rem 0;border-bottom:1px solid var(--border)">
+        <span>${cat}</span><span style="font-weight:600;color:var(--success)">${formatMoney(val)}</span>
+      </div>`).join('') + `<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.4rem 0;font-weight:700">
+        <span>Total</span><span style="color:var(--success)">${formatMoney(totalRec)}</span></div>`;
+
+    const despDetalheEl = document.getElementById('analise-desp-detalhe');
+    if(despDetalheEl) despDetalheEl.innerHTML = Object.entries(despPorCat).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>`
+      <div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.3rem 0;border-bottom:1px solid var(--border)">
+        <span>${cat}</span><span style="font-weight:600;color:var(--danger)">${formatMoney(val)}</span>
+      </div>`).join('') + `<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.4rem 0;font-weight:700">
+        <span>Total</span><span style="color:var(--danger)">${formatMoney(totalDesp)}</span></div>`;
+
+    // Projeção de longo prazo
+    const projEl = document.getElementById('analise-projecao');
+    if(projEl) {
+      const anos = [1, 2, 3, 5];
+      projEl.innerHTML = `
+        <div class="data-table">
+          <div class="dt-head" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr">
+            <span>Horizonte</span><span>Receita proj.</span><span>Despesa proj.</span><span>Lucro proj.</span><span>ROI acumulado</span>
+          </div>
+          ${anos.map(a=>{
+            const rProj = recMensal * 12 * a;
+            const dProj = despMensal * 12 * a;
+            const lProj = rProj - dProj;
+            const roiProj = investimento > 0 ? (lProj/investimento*100) : null;
+            return `<div class="dt-row" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr">
+              <span style="font-weight:600">${a} ano${a>1?'s':''}</span>
+              <span style="color:var(--success)">${formatMoney(rProj)}</span>
+              <span style="color:var(--danger)">${formatMoney(dProj)}</span>
+              <span style="font-weight:600;color:${lProj>=0?'var(--success)':'var(--danger)'}">${formatMoney(lProj)}</span>
+              <span style="font-weight:600">${roiProj!==null?roiProj.toFixed(1)+'%':'—'}</span>
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="font-size:.72rem;color:var(--text-lighter);margin-top:.5rem">* Projeção baseada na média mensal do período selecionado. Não considera variações sazonais ou crescimento.</div>`;
+    }
+  } catch(e) {
+    console.error('calcularAnalise:', e);
+    showToast('Erro ao calcular análise.','error');
+  }
 }
 
 async function loadDashAgenda() {
@@ -5315,7 +5482,7 @@ function closeMobileSidebar() {
 }
 
 // ══ NAV ══
-const pageTitles={dashboard:'Dashboard',agenda:'Agenda',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',servicos:'Serviços',configuracoes:'Configurações',turnos:'Turnos',levantamento:'Levantamento Financeiro'};
+const pageTitles={dashboard:'Dashboard',agenda:'Agenda',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',servicos:'Serviços',configuracoes:'Configurações',turnos:'Turnos',levantamento:'Levantamento Financeiro',analise:'Análise de Negócio'};
 
 function showPage(n,el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -5328,6 +5495,7 @@ function showPage(n,el) {
   if(n==='servicos') loadServicos();
   if(n==='turnos') loadDashCapacidade('turnos-capacidade-list','turnos-cap-mes-label');
   if(n==='levantamento') LevSim.init();
+  if(n==='analise') calcularAnalise();
 }
 
 // ══ MODALS ══
@@ -5894,12 +6062,20 @@ async function getPacotesAtivos(profId) {
 }
 
 // ── PAINEL DE SALDO NO MODAL DE LOCAÇÃO ──
+// Guarda o saldo disponível do pacote selecionado (para validação e cálculo em tempo real)
+let _saldoPacoteAtual = 0;
+
 async function toggleSaldoPacote() {
   const vinculo = document.getElementById('loc-vinculo').value;
   const grupo = document.getElementById('loc-saldo-pacote-group');
+  const sessaoGrupo = document.getElementById('loc-horas-sessao-group');
   const isPacote = vinculo.startsWith('Pacote de');
   if(!grupo) return;
-  if(!isPacote) { grupo.style.display='none'; return; }
+  if(!isPacote) {
+    grupo.style.display='none';
+    if(sessaoGrupo) sessaoGrupo.style.display='none';
+    return;
+  }
   grupo.style.display='';
   const profId = document.getElementById('loc-prof').value;
   const info = document.getElementById('loc-saldo-pacote-info');
@@ -5908,10 +6084,16 @@ async function toggleSaldoPacote() {
   const ativos = await getPacotesAtivos(profId);
   const hNovo = horasDoPacote(vinculo);
   if(ativos.length === 0) {
+    // Nenhum pacote ativo — será criado um novo; mostrar campo de horas da primeira sessão
+    _saldoPacoteAtual = hNovo;
     info.innerHTML = `<div style="font-size:.82rem">Nenhum pacote ativo. Será criado um novo pacote de <strong>${hNovo}h</strong> ao confirmar.</div>`;
     document.getElementById('loc-pacote-escolha').style.display='none';
     document.getElementById('loc-pacote-id-vinc').value='';
+    if(sessaoGrupo) sessaoGrupo.style.display='';
+    calcSaldoPos();
   } else {
+    const primeiro = ativos[0];
+    _saldoPacoteAtual = Math.max(0, primeiro.totalHoras - (primeiro.horasUsadas||0));
     const lista = ativos.map(p=>{
       const saldo = Math.max(0, p.totalHoras - (p.horasUsadas||0));
       return `<option value="${p.id}">${p.totalHoras}h contratadas — ${saldo}h disponíveis (desde ${formatDate(p.dataInicio||'')})</option>`;
@@ -5924,10 +6106,25 @@ async function toggleSaldoPacote() {
         <option value="consumir">Consumir pacote existente (descontar horas)</option>
         <option value="novo">Criar novo pacote de ${hNovo}h</option>`;
       document.getElementById('loc-pacote-lista').innerHTML=lista;
-      // seleciona o primeiro por padrão
       document.getElementById('loc-pacote-id-vinc').value=ativos[0].id;
       toggleEscolhaPacote();
     }
+    if(sessaoGrupo) sessaoGrupo.style.display='';
+    calcSaldoPos();
+  }
+}
+
+// Mostra o saldo resultante após o desconto das horas desta sessão
+function calcSaldoPos() {
+  const horasSessao = parseFloat(document.getElementById('loc-horas-sessao')?.value) || 0;
+  const saldoPos = _saldoPacoteAtual - horasSessao;
+  const el = document.getElementById('loc-saldo-pos');
+  if(!el) return;
+  if(horasSessao <= 0) { el.textContent=''; return; }
+  if(saldoPos < 0) {
+    el.innerHTML = `<span style="color:var(--danger);font-weight:600">⚠ Saldo insuficiente. Disponível: ${_saldoPacoteAtual}h.</span>`;
+  } else {
+    el.innerHTML = `Saldo após esta sessão: <strong>${saldoPos}h</strong> restantes.`;
   }
 }
 
@@ -5939,9 +6136,17 @@ function toggleEscolhaPacote() {
   if(tipo === 'consumir') {
     listaEl.style.display='';
     idVinc.value = listaEl.value;
+    // Atualizar saldo com base no pacote selecionado
+    const selectedId = listaEl.value;
+    getPacotesAtivos(document.getElementById('loc-prof')?.value||'').then(ativos=>{
+      const pac = ativos.find(p=>p.id===selectedId);
+      if(pac) { _saldoPacoteAtual = Math.max(0, pac.totalHoras-(pac.horasUsadas||0)); calcSaldoPos(); }
+    });
   } else {
     listaEl.style.display='none';
     idVinc.value='';
+    _saldoPacoteAtual = horasDoPacote(document.getElementById('loc-vinculo')?.value||'');
+    calcSaldoPos();
   }
 }
 
@@ -5957,24 +6162,42 @@ async function processarPacoteNaLocacao(profId, vinculo, locacaoId) {
   if(!horas) return null;
   const escolhaTipo = document.getElementById('loc-pacote-escolha-tipo')?.value || 'novo';
   const pacoteIdVinc = document.getElementById('loc-pacote-id-vinc')?.value || '';
+  const horasSessao = parseFloat(document.getElementById('loc-horas-sessao')?.value) || 0;
   const prof = profissionaisCache.find(p=>p.id===profId);
+  const hoje = toDateStrLocal(new Date());
 
+  let pacoteId;
   if(escolhaTipo === 'consumir' && pacoteIdVinc) {
-    // Vincula esta locação a um pacote existente — não cria novo
-    await db.collection('locacoes').doc(locacaoId).update({pacoteId: pacoteIdVinc});
-    return pacoteIdVinc;
+    // Vincula a pacote existente — não cria novo
+    pacoteId = pacoteIdVinc;
+    await db.collection('locacoes').doc(locacaoId).update({pacoteId});
   } else {
     // Cria um novo pacote de horas
     const ref = await db.collection('pacotesHoras').add({
       profId, profNome: prof?.nome||'',
       totalHoras: horas, horasUsadas: 0,
-      dataInicio: toDateStrLocal(new Date()),
+      dataInicio: hoje,
       status: 'Ativo', locacaoId,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    await db.collection('locacoes').doc(locacaoId).update({pacoteId: ref.id});
-    return ref.id;
+    pacoteId = ref.id;
+    await db.collection('locacoes').doc(locacaoId).update({pacoteId});
   }
+
+  // Se o usuário informou horas desta sessão, descontar automaticamente
+  if(horasSessao > 0 && pacoteId) {
+    await db.collection('usosPacote').add({
+      pacoteId, profId, profNome: prof?.nome||'',
+      horas: horasSessao, data: hoje, hora: '',
+      obs: 'Descontado automaticamente no cadastro da locação',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection('pacotesHoras').doc(pacoteId).update({
+      horasUsadas: firebase.firestore.FieldValue.increment(horasSessao)
+    });
+  }
+
+  return pacoteId;
 }
 
 // ── REGISTRO DE USO (abre modal) ──
