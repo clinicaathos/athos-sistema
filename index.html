@@ -756,18 +756,6 @@ body.dark .tag{background:#111827;border-color:#374151;}
           </div>
         </div>
 
-        <!-- ── ITEM 5: Capacidade x Ocupação por Sala (mês corrente) ── -->
-        <div style="margin-top:.75rem;margin-bottom:1.5rem">
-          <div class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
-              <span style="font-size:.85rem;font-weight:600">📊 Capacidade x Ocupação — Mês Atual</span>
-              <span class="badge badge-neutral" id="dash-cap-mes-label">—</span>
-            </div>
-            <div id="dash-capacidade-list">
-              <div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0">Carregando...</div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- ══ AGENDA ══ -->
@@ -3012,9 +3000,8 @@ function loadDashboard() {
     if(atraso_items.length>8) lista.innerHTML+=`<div style="font-size:.72rem;color:var(--text-lighter);text-align:center;padding:.5rem 0">+${atraso_items.length-8} mais...</div>`;
   }).catch(()=>{});
 
-  // Novas seções — item 4 e 5
+  // Novas seções — item 4
   loadDashAgenda();
-  loadDashCapacidade();
 }
 
 // ── ITEM 4: Lembretes e próximos vencimentos (7 dias) ──
@@ -4249,6 +4236,23 @@ function editarLocacao(id, dataClicada) {
 // ── EXCLUSÃO DE LOCAÇÃO ──
 // Se a locação for recorrente, oferece escolha: apenas esta ocorrência (adiciona
 // exceção de data) ou toda a série (apaga o documento inteiro).
+// ── LIMPEZA DE LANÇAMENTOS PENDENTES AO EXCLUIR/ENCERRAR LOCAÇÃO ──
+// Ao excluir (ou encerrar) uma locação, os lançamentos financeiros já gerados
+// automaticamente a partir dela (receitas com origemLocacaoId) continuavam
+// pendentes e "vencendo" normalmente, mesmo com a locação/turno já removidos.
+// Esta função remove os lançamentos PENDENTES (nunca os já pagos/históricos)
+// vinculados à locação, opcionalmente só a partir de uma data de corte.
+async function excluirLancamentosPendentesDaLocacao(locacaoId, dataCorte) {
+  try {
+    let q = db.collection('receitas').where('origemLocacaoId','==',locacaoId).where('status','==','Pendente');
+    const snap = await q.get();
+    const batchDeletes = snap.docs
+      .filter(d => !dataCorte || (d.data().vencimento && d.data().vencimento >= dataCorte))
+      .map(d => d.ref.delete());
+    await Promise.all(batchDeletes);
+  } catch(e) { console.error('Erro ao remover lançamentos pendentes da locação:', e); }
+}
+
 async function excluirLocacao() {
   const id=document.getElementById('loc-edit-id').value;
   if(!id) return;
@@ -4268,6 +4272,7 @@ async function excluirLocacao() {
     }
     if(!confirm('Excluir esta locação da agenda?')) return;
     await reverterPacoteNaExclusao(id);
+    await excluirLancamentosPendentesDaLocacao(id);
     await db.collection('locacoes').doc(id).delete();
     closeModal('nova-locacao');
     showToast('Locação excluída!','success');
@@ -4285,6 +4290,7 @@ async function confirmarExclusaoLocacao() {
   try {
     if(escopo === 'all') {
       await reverterPacoteNaExclusao(id);
+      await excluirLancamentosPendentesDaLocacao(id);
       await db.collection('locacoes').doc(id).delete();
       showToast('Série excluída!','success');
     } else if(escopo === 'future') {
@@ -4297,6 +4303,7 @@ async function confirmarExclusaoLocacao() {
         // Se a ocorrência selecionada é a primeira da série, não há "passado"
         // a preservar — excluir a série inteira é o resultado equivalente.
         await reverterPacoteNaExclusao(id);
+        await excluirLancamentosPendentesDaLocacao(id);
         await db.collection('locacoes').doc(id).delete();
         showToast('Série excluída!','success');
       } else {
@@ -4304,6 +4311,8 @@ async function confirmarExclusaoLocacao() {
         dClicada.setDate(dClicada.getDate()-1);
         const novoFim = toDateStrLocal(dClicada);
         await db.collection('locacoes').doc(id).update({ dataFim: novoFim });
+        // Remove lançamentos pendentes gerados para vencimentos após o encerramento
+        await excluirLancamentosPendentesDaLocacao(id, novoFim);
         showToast('Série encerrada a partir desta data!','success');
       }
     } else {
@@ -4546,6 +4555,9 @@ async function salvarLocacao() {
     renderAgendaDia();
     renderAgendaSemana();
     loadFinanceiro();
+    // Garante que a barra de saldo de pacote de horas (aba Profissionais)
+    // reflita imediatamente as horas descontadas nesta locação
+    if(horasDoPacote(vinculo) > 0) loadProfissionais();
   } catch(e){showToast('Erro ao salvar locação.','error');}
 }
 
