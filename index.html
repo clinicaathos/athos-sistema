@@ -3434,9 +3434,10 @@ async function loadDashCapacidade(elId, labelElId) {
   try {
     const hoje = new Date();
     // Grade fixa de turnos disponíveis para locação: Seg–Sex (3 turnos/dia) +
-    // Sábado (apenas manhã) = 16 turnos por sala. Esse total é fixo e não varia
-    // conforme o mês — corrigido a pedido (antes era calculado por dias do mês).
-    const TOTAL_TURNOS_POR_SALA = 16;
+    // Sábado (apenas manhã) = 16 turnos/semana na grade cheia. A Sala Áthos I
+    // opera com disponibilidade reduzida (13 turnos); a Sala Áthos II segue com
+    // a grade cheia de 16. Ajustado a pedido — antes as duas salas usavam 16.
+    const TOTAL_TURNOS_POR_SALA = { s1: 13, s2: 16 };
     const grade = [
       {offset:0, turnos:['manha','tarde','noite']}, // Segunda
       {offset:1, turnos:['manha','tarde','noite']}, // Terça
@@ -3484,9 +3485,10 @@ async function loadDashCapacidade(elId, labelElId) {
     });
 
     const html = salas.map(sala=>{
-      const locados = Math.min(ocupado[sala.key].size, TOTAL_TURNOS_POR_SALA);
-      const disponiveis = TOTAL_TURNOS_POR_SALA - locados;
-      const pct = Math.round(locados / TOTAL_TURNOS_POR_SALA * 100);
+      const totalSala = TOTAL_TURNOS_POR_SALA[sala.key];
+      const locados = Math.min(ocupado[sala.key].size, totalSala);
+      const disponiveis = totalSala - locados;
+      const pct = Math.round(locados / totalSala * 100);
       const corBarra = pct >= 80 ? 'var(--danger)' : pct >= 50 ? 'var(--warning)' : 'var(--success)';
       return `<div style="margin-bottom:1rem">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem">
@@ -3497,7 +3499,7 @@ async function loadDashCapacidade(elId, labelElId) {
           <div style="background:${corBarra};width:${pct}%;height:100%;border-radius:6px;transition:width .4s"></div>
         </div>
         <div style="display:flex;gap:1.25rem;font-size:.76rem">
-          <span>Total de turnos: <strong>${TOTAL_TURNOS_POR_SALA}</strong></span>
+          <span>Total de turnos: <strong>${totalSala}</strong></span>
           <span style="color:${corBarra}">Locados: <strong>${locados}</strong></span>
           <span style="color:var(--success)">Disponíveis: <strong>${disponiveis}</strong></span>
         </div>
@@ -4544,8 +4546,16 @@ async function salvarLocacao() {
       const ref = await db.collection('locacoes').add(data);
       locacaoId = ref.id;
       showToast('Locação confirmada!','success');
-      // Gera o primeiro lançamento financeiro no momento da confirmação
-      await gerarLancamentoLocacao({...data, id: locacaoId});
+      // Se esta locação está apenas consumindo horas de um pacote já existente,
+      // o lançamento financeiro do pacote já foi gerado quando ele foi aberto —
+      // não deve ser cobrado de novo a cada sessão que só consome o saldo.
+      const escolhaTipoPacote = horasDoPacote(vinculo) > 0
+        ? (document.getElementById('loc-pacote-escolha-tipo')?.value || 'novo')
+        : 'novo';
+      if(escolhaTipoPacote !== 'consumir') {
+        // Gera o primeiro lançamento financeiro no momento da confirmação
+        await gerarLancamentoLocacao({...data, id: locacaoId});
+      }
       // Se for vínculo de pacote de horas, processa pacote (novo ou consumir existente)
       if(horasDoPacote(vinculo) > 0) {
         await processarPacoteNaLocacao(data.profId, vinculo, locacaoId);
@@ -4593,6 +4603,10 @@ async function gerarLancamentoLocacao(locacao, vencimentoStr) {
     .where('vencimento','==',venc)
     .limit(1).get();
   if(!existente.empty) return;
+
+  // Respeita exclusão manual: se o usuário já excluiu o lançamento deste
+  // vencimento para esta locação, não gerar de novo automaticamente.
+  if(Array.isArray(locacao.vencimentosCancelados) && locacao.vencimentosCancelados.includes(venc)) return;
 
   const prof = profissionaisCache.find(p=>p.id===locacao.profId);
   const salaNome = String(locacao.sala)==='2' ? (appConfig.sala2||'Áthos II') : (appConfig.sala1||'Áthos I');
@@ -5966,13 +5980,31 @@ function editarReceita(id) {
   });
 }
 
+// ── REGISTRA EXCLUSÃO MANUAL DE LANÇAMENTO GERADO POR LOCAÇÃO ──
+// Sem isso, a geração mensal automática (gerarLancamentosLocacoesMensais)
+// recriava o lançamento no próximo carregamento, pois ela só verifica se já
+// existe um documento — e um lançamento excluído manualmente deixa de existir.
+async function registrarExclusaoLancamentoLocacao(origemLocacaoId, vencimento) {
+  if(!origemLocacaoId || !vencimento) return;
+  try {
+    await db.collection('locacoes').doc(origemLocacaoId).update({
+      vencimentosCancelados: firebase.firestore.FieldValue.arrayUnion(vencimento)
+    });
+  } catch(e) { /* locação pode já não existir mais — sem problema */ }
+}
+
 let currentReceitaEdit = null;
 async function excluirReceita() {
   const id = document.getElementById('receita-edit-id')?.value;
   if(!id) return;
   if(!confirm('Excluir esta receita?')) return;
   try {
+    const doc = await db.collection('receitas').doc(id).get();
+    const r = doc.exists ? doc.data() : null;
     await db.collection('receitas').doc(id).delete();
+    if(r?.origemLocacaoId && r?.vencimento) {
+      await registrarExclusaoLancamentoLocacao(r.origemLocacaoId, r.vencimento);
+    }
     closeModal('nova-receita');
     showToast('Receita excluída.','success');
     loadFinanceiro();
@@ -6748,9 +6780,18 @@ async function excluirLoteRec() {
   if(ids.length === 0) return;
   if(!confirm(`Excluir ${ids.length} receita(s) selecionada(s)?`)) return;
   try {
+    const docs = await Promise.all(ids.map(id => db.collection('receitas').doc(id).get()));
     const batch = db.batch();
     ids.forEach(id => batch.delete(db.collection('receitas').doc(id)));
     await batch.commit();
+    // Registra exclusão manual das que vieram de locação, para não reaparecerem
+    await Promise.all(docs.map(doc => {
+      if(!doc.exists) return null;
+      const r = doc.data();
+      return r?.origemLocacaoId && r?.vencimento
+        ? registrarExclusaoLancamentoLocacao(r.origemLocacaoId, r.vencimento)
+        : null;
+    }));
     showToast(`${ids.length} receita(s) excluída(s)!`, 'success');
     loadFinanceiro();
   } catch(e) { showToast('Erro ao excluir.', 'error'); }
