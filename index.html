@@ -3434,10 +3434,9 @@ async function loadDashCapacidade(elId, labelElId) {
   try {
     const hoje = new Date();
     // Grade fixa de turnos disponíveis para locação: Seg–Sex (3 turnos/dia) +
-    // Sábado (apenas manhã) = 16 turnos/semana na grade cheia. A Sala Áthos I
-    // opera com disponibilidade reduzida (13 turnos); a Sala Áthos II segue com
-    // a grade cheia de 16. Ajustado a pedido — antes as duas salas usavam 16.
-    const TOTAL_TURNOS_POR_SALA = { s1: 13, s2: 16 };
+    // Sábado (apenas manhã) = 16 turnos/semana na grade cheia. Ambas as salas
+    // usam a grade cheia de 16 turnos/semana.
+    const TOTAL_TURNOS_POR_SALA = { s1: 16, s2: 16 };
     const grade = [
       {offset:0, turnos:['manha','tarde','noite']}, // Segunda
       {offset:1, turnos:['manha','tarde','noite']}, // Terça
@@ -6934,6 +6933,18 @@ function toggleParcelas(sel) {
 async function excluirLancamento(id, colecao) {
   if(!confirm('Excluir este lançamento? Esta ação não pode ser desfeita.')) return;
   try {
+    // Antes de apagar, verifica se este lançamento veio de uma locação
+    // recorrente. Se vier, é preciso registrar o vencimento cancelado nela
+    // (vencimentosCancelados) — senão a geração mensal automática recria o
+    // mesmo lançamento no próximo carregamento, pois ela só checa se o
+    // documento existe, não se foi excluído manualmente por aqui.
+    if(colecao === 'receitas') {
+      const doc = await db.collection(colecao).doc(id).get();
+      const r = doc.exists ? doc.data() : null;
+      if(r?.origemLocacaoId && r?.vencimento) {
+        await registrarExclusaoLancamentoLocacao(r.origemLocacaoId, r.vencimento);
+      }
+    }
     await db.collection(colecao).doc(id).delete();
     showToast('Lançamento excluído!', 'success');
     loadFinanceiro();
@@ -7187,9 +7198,11 @@ async function loadLembretes() {
       const priColor = l.prioridade==='Urgente' ? 'var(--danger)' : l.prioridade==='Alta' ? 'var(--warning)' : 'var(--text-lighter)';
       const statusColor = l.status==='Concluído' ? 'var(--success)' : vencido ? 'var(--danger)' : 'var(--warning)';
       return `<div class="card" style="margin-bottom:.6rem;opacity:${l.status==='Concluído'?.65:1}">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
+          <input type="checkbox" ${l.status==='Concluído'?'checked':''} onchange="toggleLembreteConcluido('${l.id}',this.checked)"
+            title="Marcar como concluído" style="margin-top:3px;width:18px;height:18px;flex-shrink:0;accent-color:var(--success);cursor:pointer">
           <div style="flex:1">
-            <div style="font-weight:600;font-size:.88rem;margin-bottom:2px">${l.titulo||'—'}
+            <div style="font-weight:600;font-size:.88rem;margin-bottom:2px${l.status==='Concluído'?';text-decoration:line-through':''}">${l.titulo||'—'}
               ${l.prioridade&&l.prioridade!=='Normal'?`<span class="badge" style="background:${priColor};color:#fff;margin-left:4px;font-size:.68rem">${l.prioridade}</span>`:''}
             </div>
             ${l.obs?`<div style="font-size:.79rem;color:var(--text-light);margin-bottom:4px">${l.obs}</div>`:''}
@@ -7206,6 +7219,17 @@ async function loadLembretes() {
   } catch(e) {
     lista.innerHTML = '<div style="color:var(--danger);font-size:.83rem;padding:1rem">Erro ao carregar lembretes.</div>';
   }
+}
+
+// Marca/desmarca conclusão direto pela lista (checkbox), sem abrir o modal
+async function toggleLembreteConcluido(id, concluido) {
+  try {
+    await db.collection('lembretes').doc(id).update({
+      status: concluido ? 'Concluído' : 'Pendente',
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    loadLembretes();
+  } catch(e) { showToast('Erro ao atualizar lembrete.', 'error'); }
 }
 
 async function salvarLembrete() {
@@ -8013,6 +8037,16 @@ async function verHistoricoProf(profId) {
             if(type === 'receita') {
                 btn.className = "type-btn h-14 border rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all bg-emerald-50 border-emerald-500 text-emerald-800 cursor-pointer";
                 document.getElementById('sala-selector-block').classList.remove('hidden');
+                // Ao voltar para Receita, garante uma sala válida selecionada — sem
+                // isso, se o usuário alternou para Despesa/Investimento antes e
+                // não clicou de novo em Sala 01/02, o lançamento era salvo com
+                // sala:'-' e ficava fora dos totais/KPIs (sala1Tot/sala2Tot só
+                // somam 'sala1'/'sala2' exatos), mesmo aparecendo na tabela.
+                if(selectedSala !== 'sala1' && selectedSala !== 'sala2') {
+                    setFormSala('sala1');
+                } else {
+                    setFormSala(selectedSala);
+                }
             } else if(type === 'despesa') {
                 btn.className = "type-btn h-14 border rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all bg-rose-50 border-rose-500 text-rose-800 cursor-pointer";
                 document.getElementById('sala-selector-block').classList.add('hidden'); selectedSala = '-';
@@ -8101,7 +8135,7 @@ async function verHistoricoProf(profId) {
             const filtroAno = document.getElementById('dash-filtro-ano').value;
             const sorted = [...lancamentos].sort((a,b) => new Date(b.data) - new Date(a.data));
             
-            let sala1Tot = 0; let sala2Tot = 0;
+            let sala1Tot = 0; let sala2Tot = 0; let outrasSalasTot = 0;
             let totalDespesas = 0; let totalInvestido = 0;
             let totalRegistrosExibidos = 0;
 
@@ -8114,6 +8148,13 @@ async function verHistoricoProf(profId) {
                     totalRegistrosExibidos++;
                     if(item.tipo === 'receita' && item.sala === 'sala1') sala1Tot += item.valor;
                     if(item.tipo === 'receita' && item.sala === 'sala2') sala2Tot += item.valor;
+                    // Qualquer receita cuja sala não seja exatamente 'sala1'/'sala2'
+                    // (ex.: ficou '-' por um lançamento salvo logo após alternar
+                    // para Despesa/Investimento) ainda soma no total geral — antes
+                    // ela ficava de fora de sala1Tot/sala2Tot e, por consequência,
+                    // fora de todos os KPIs (faturamento, resultado, ROI, payback,
+                    // TIR), mesmo aparecendo normalmente na tabela.
+                    if(item.tipo === 'receita' && item.sala !== 'sala1' && item.sala !== 'sala2') outrasSalasTot += item.valor;
                     if(item.tipo === 'despesa') totalDespesas += item.valor;
                     if(item.tipo === 'investimento') totalInvestido += item.valor;
 
@@ -8161,7 +8202,7 @@ async function verHistoricoProf(profId) {
             document.getElementById('faturamento-sala1').innerText = formatCurrency(sala1Tot);
             document.getElementById('faturamento-sala2').innerText = formatCurrency(sala2Tot);
             
-            let totalReceitas = sala1Tot + sala2Tot;
+            let totalReceitas = sala1Tot + sala2Tot + outrasSalasTot;
             const qtdMesesSelecionados = mesesAtivos.length || 1;
             
             let custoFixoAcumulado = config.custoFixo * qtdMesesSelecionados;
