@@ -899,6 +899,10 @@ body.dark .tag{background:#111827;border-color:#374151;}
               Backup Excel
             </button>
             <button class="btn btn-primary" onclick="exportarFinanceiro()">↓ Exportar</button>
+            <button class="btn btn-secondary" onclick="verificarLancamentosOrfaos()" title="Localiza lançamentos pendentes cuja locação de origem já não existe mais">
+              <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M11 8v4M11 16h.01M21 11.5A9.5 9.5 0 1 1 11.5 2 9.5 9.5 0 0 1 21 11.5z"/></svg>
+              Verificar lançamentos órfãos
+            </button>
           </div>
         </div>
         <div class="fin-stats">
@@ -1212,7 +1216,10 @@ body.dark .tag{background:#111827;border-color:#374151;}
           <div class="stat-card"><div class="stat-label">Pendentes</div><div class="stat-value" id="lmb-pendentes">—</div></div>
           <div class="stat-card"><div class="stat-label">Vencidos</div><div class="stat-value" style="color:var(--danger)" id="lmb-vencidos">—</div></div>
         </div>
-        <div id="lembretes-lista" style="margin-top:.5rem"></div>
+        <div class="card" style="padding:0;overflow:hidden;margin-top:.5rem">
+          <div class="data-table fin-table-desktop" id="lmb-table"></div>
+          <div class="fin-cards-mobile" id="lmb-cards-mobile"></div>
+        </div>
       </div>
 
       <!-- ══ SERVIÇOS ══ -->
@@ -4243,15 +4250,20 @@ function editarLocacao(id, dataClicada) {
 // pendentes e "vencendo" normalmente, mesmo com a locação/turno já removidos.
 // Esta função remove os lançamentos PENDENTES (nunca os já pagos/históricos)
 // vinculados à locação, opcionalmente só a partir de uma data de corte.
-async function excluirLancamentosPendentesDaLocacao(locacaoId, dataCorte) {
+// destino: 'excluir' apaga os lançamentos pendentes; 'devolver' apenas os
+// desvincula da locação (remove origemLocacaoId), preservando-os como
+// pendências avulsas em A Pagar/A Receber.
+async function excluirLancamentosPendentesDaLocacao(locacaoId, dataCorte, destino) {
   try {
     let q = db.collection('receitas').where('origemLocacaoId','==',locacaoId).where('status','==','Pendente');
     const snap = await q.get();
-    const batchDeletes = snap.docs
-      .filter(d => !dataCorte || (d.data().vencimento && d.data().vencimento >= dataCorte))
-      .map(d => d.ref.delete());
-    await Promise.all(batchDeletes);
-  } catch(e) { console.error('Erro ao remover lançamentos pendentes da locação:', e); }
+    const alvo = snap.docs.filter(d => !dataCorte || (d.data().vencimento && d.data().vencimento >= dataCorte));
+    if(destino === 'devolver') {
+      await Promise.all(alvo.map(d => d.ref.update({ origemLocacaoId: firebase.firestore.FieldValue.delete() })));
+    } else {
+      await Promise.all(alvo.map(d => d.ref.delete()));
+    }
+  } catch(e) { console.error('Erro ao processar lançamentos pendentes da locação:', e); }
 }
 
 async function excluirLocacao() {
@@ -4262,24 +4274,22 @@ async function excluirLocacao() {
     if(!doc.exists) return;
     const l = doc.data();
     const isRecorrente = l.recorrencia && l.recorrencia !== 'Apenas este horário';
-    if(isRecorrente) {
-      // Guarda o id e a data clicada ANTES de fechar o modal de edição, pois
-      // closeModal('nova-locacao') limpa loc-edit-id como efeito colateral.
-      document.getElementById('loc-excl-pending-id').value = id;
-      document.getElementById('loc-excl-pending-date').value = document.getElementById('loc-clicked-date').value || '';
-      closeModal('nova-locacao');
-      openModal('loc-excluir-confirm');
-      return;
-    }
-    if(!confirm('Excluir esta locação da agenda?')) return;
-    await reverterPacoteNaExclusao(id);
-    await excluirLancamentosPendentesDaLocacao(id);
-    await db.collection('locacoes').doc(id).delete();
+    // Guarda o id e a data clicada ANTES de fechar o modal de edição, pois
+    // closeModal('nova-locacao') limpa loc-edit-id como efeito colateral.
+    document.getElementById('loc-excl-pending-id').value = id;
+    document.getElementById('loc-excl-pending-date').value = document.getElementById('loc-clicked-date').value || '';
     closeModal('nova-locacao');
-    showToast('Locação excluída!','success');
-    renderAgendaDia();
-    renderAgendaSemana();
-    renderAgendaMes();
+    // Locações sem recorrência não têm "ocorrência única/futura/série" — vão
+    // direto para a série inteira, mas ainda perguntam o destino dos lançamentos.
+    document.getElementById('loc-excl-scope-wrap').style.display = isRecorrente ? '' : 'none';
+    if(!isRecorrente) document.getElementById('loc-excl-opt-all').checked = true;
+    // Aviso: se esta locação já teve várias ocorrências excluídas individualmente,
+    // é provável que o usuário queira encerrar a série inteira (e não apenas mais
+    // uma ocorrência) — sinalizamos isso para evitar cobranças mensais persistentes.
+    const jaExcluidas = Array.isArray(l.datasExcecao) ? l.datasExcecao.length : 0;
+    const avisoEl = document.getElementById('loc-excl-aviso-serie');
+    if(avisoEl) avisoEl.style.display = (isRecorrente && jaExcluidas >= 2) ? '' : 'none';
+    openModal('loc-excluir-confirm');
   } catch(e){showToast('Erro ao excluir locação.','error');}
 }
 
@@ -4287,11 +4297,12 @@ async function confirmarExclusaoLocacao() {
   const id=document.getElementById('loc-excl-pending-id').value;
   const dataClicada=document.getElementById('loc-excl-pending-date').value;
   const escopo=document.querySelector('input[name="loc-excl-scope"]:checked')?.value || 'single';
+  const destino=document.querySelector('input[name="loc-lanc-destino"]:checked')?.value || 'excluir';
   if(!id) { showToast('Não foi possível identificar a locação a excluir.','error'); closeModal('loc-excluir-confirm'); return; }
   try {
     if(escopo === 'all') {
       await reverterPacoteNaExclusao(id);
-      await excluirLancamentosPendentesDaLocacao(id);
+      await excluirLancamentosPendentesDaLocacao(id, null, destino);
       await db.collection('locacoes').doc(id).delete();
       showToast('Série excluída!','success');
     } else if(escopo === 'future') {
@@ -4304,7 +4315,7 @@ async function confirmarExclusaoLocacao() {
         // Se a ocorrência selecionada é a primeira da série, não há "passado"
         // a preservar — excluir a série inteira é o resultado equivalente.
         await reverterPacoteNaExclusao(id);
-        await excluirLancamentosPendentesDaLocacao(id);
+        await excluirLancamentosPendentesDaLocacao(id, null, destino);
         await db.collection('locacoes').doc(id).delete();
         showToast('Série excluída!','success');
       } else {
@@ -4312,17 +4323,19 @@ async function confirmarExclusaoLocacao() {
         dClicada.setDate(dClicada.getDate()-1);
         const novoFim = toDateStrLocal(dClicada);
         await db.collection('locacoes').doc(id).update({ dataFim: novoFim });
-        // Remove lançamentos pendentes gerados para vencimentos após o encerramento
-        await excluirLancamentosPendentesDaLocacao(id, novoFim);
+        // Remove/desvincula lançamentos pendentes gerados para vencimentos após o encerramento
+        await excluirLancamentosPendentesDaLocacao(id, novoFim, destino);
         showToast('Série encerrada a partir desta data!','success');
       }
     } else {
-      // Exclusão de ocorrência única: grava a data como exceção, sem apagar a série
+      // Exclusão de ocorrência única: grava a data como exceção, sem apagar a série.
+      // IMPORTANTE: isso não afeta o lançamento financeiro mensal — a locação
+      // recorrente continua ativa e gerando cobranças normalmente.
       if(!dataClicada) { showToast('Não foi possível identificar a data da ocorrência.','error'); return; }
       await db.collection('locacoes').doc(id).update({
         datasExcecao: firebase.firestore.FieldValue.arrayUnion(dataClicada)
       });
-      showToast('Ocorrência removida!','success');
+      showToast('Ocorrência removida! A locação recorrente continua ativa.','success');
     }
     document.getElementById('loc-excl-pending-id').value='';
     document.getElementById('loc-excl-pending-date').value='';
@@ -6930,6 +6943,44 @@ function toggleParcelas(sel) {
 }
 
 // ── EXCLUIR LANÇAMENTO ──
+// ── DIAGNÓSTICO: LANÇAMENTOS ÓRFÃOS ──
+// Lançamentos pendentes com origemLocacaoId apontando para uma locação que já
+// não existe mais no banco (ex: a locação foi excluída antes desta função
+// existir, ou uma exclusão foi interrompida no meio do caminho).
+// Apenas identifica — nenhuma exclusão automática é feita aqui.
+async function verificarLancamentosOrfaos() {
+  const btn = event?.currentTarget;
+  if(btn) btn.disabled = true;
+  showToast('Verificando lançamentos órfãos...', 'success');
+  try {
+    const recSnap = await db.collection('receitas').where('status','==','Pendente').get();
+    const comOrigem = recSnap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.origemLocacaoId);
+    const locacoesIds = [...new Set(comOrigem.map(r=>r.origemLocacaoId))];
+    const existentes = new Set();
+    await Promise.all(locacoesIds.map(async lid=>{
+      const doc = await db.collection('locacoes').doc(lid).get();
+      if(doc.exists) existentes.add(lid);
+    }));
+    const orfaos = comOrigem.filter(r=>!existentes.has(r.origemLocacaoId));
+    const listaEl = document.getElementById('orfaos-lista');
+    const countEl = document.getElementById('orfaos-count');
+    if(countEl) countEl.textContent = orfaos.length;
+    if(listaEl) {
+      listaEl.innerHTML = orfaos.length ? orfaos.map(r=>`
+        <div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 100px">
+          <span style="font-weight:500">${r.profissional||r.descricao||'—'}</span>
+          <span>${r.vencimento?formatDate(r.vencimento):'—'}</span>
+          <span style="font-weight:600">${formatMoney(r.valor)}</span>
+          <span style="font-size:.7rem;color:var(--text-lighter)">locação ${r.origemLocacaoId} (inexistente)</span>
+          <span><button class="btn btn-danger" style="font-size:.72rem;padding:4px 9px" onclick="excluirLancamento('${r.id}','receitas');this.closest('.dt-row').remove()">Excluir</button></span>
+        </div>`).join('')
+        : '<div style="padding:1rem;text-align:center;color:var(--text-lighter);font-size:.85rem">Nenhum lançamento órfão encontrado.</div>';
+    }
+    openModal('orfaos-resultado');
+  } catch(e) { console.error(e); showToast('Erro ao verificar lançamentos órfãos.','error'); }
+  finally { if(btn) btn.disabled = false; }
+}
+
 async function excluirLancamento(id, colecao) {
   if(!confirm('Excluir este lançamento? Esta ação não pode ser desfeita.')) return;
   try {
@@ -7164,9 +7215,10 @@ if('serviceWorker' in navigator) {
 // ══ LEMBRETES ══
 // ══════════════════════════════════════════
 async function loadLembretes() {
-  const lista = document.getElementById('lembretes-lista');
-  if(!lista) return;
-  lista.innerHTML = '<div style="color:var(--text-lighter);font-size:.83rem;padding:1rem">Carregando...</div>';
+  const table = document.getElementById('lmb-table');
+  const mobileEl = document.getElementById('lmb-cards-mobile');
+  if(!table) return;
+  table.innerHTML = '<div style="color:var(--text-lighter);font-size:.83rem;padding:1rem">Carregando...</div>';
   try {
     const snap = await db.collection('lembretes').orderBy('data','asc').get();
     let docs = snap.docs.map(d=>({id:d.id,...d.data()}));
@@ -7190,39 +7242,50 @@ async function loadLembretes() {
     if(pendEl) pendEl.textContent = docs.filter(d=>d.status!=='Concluído').length;
     if(vencEl) vencEl.textContent = docs.filter(d=>d.data && d.data<hoje && d.status!=='Concluído').length;
     if(!docs.length) {
-      lista.innerHTML = '<div style="color:var(--text-lighter);font-size:.83rem;padding:1rem;text-align:center">Nenhum lembrete encontrado.</div>';
+      table.innerHTML = emptyState('calendar','Nenhum lembrete encontrado','Ajuste os filtros ou cadastre um novo lembrete.','Novo lembrete',"openModal('novo-lembrete')");
+      if(mobileEl) mobileEl.innerHTML = emptyState('calendar','Nenhum lembrete encontrado','','Novo lembrete',"openModal('novo-lembrete')");
       return;
     }
-    lista.innerHTML = docs.map(l => {
+    const priBadge = l => l.prioridade && l.prioridade!=='Normal'
+      ? `<span class="badge ${l.prioridade==='Urgente'?'badge-danger':'badge-warning'}" style="font-size:.68rem;margin-left:4px">${l.prioridade}</span>` : '';
+    table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 80px 40px"><span>Lembrete</span><span>Prioridade</span><span>Data</span><span>Status</span><span></span><span></span></div>` +
+      docs.map(l=>{
+        const vencido = l.data && l.data < hoje && l.status !== 'Concluído';
+        return `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 80px 40px">
+        <span style="font-weight:500;cursor:pointer;color:var(--gold)${l.status==='Concluído'?';text-decoration:line-through;color:var(--text-lighter)':''}" onclick="editarLembrete('${l.id}')">${l.titulo||'—'}${l.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">${l.obs}</span>`:''}</span>
+        <span>${priBadge(l)||'—'}</span>
+        <span style="color:var(--text-light)">${l.data?formatDate(l.data):'—'}${vencido?'<br><span style="color:var(--danger);font-weight:600;font-size:.72rem">Vencido</span>':''}</span>
+        <span><span class="badge ${l.status==='Concluído'?'badge-success':'badge-warning'} status-click" onclick="toggleLembreteConcluido('${l.id}',this)">${l.status||'Pendente'}</span></span>
+        <span><button class="btn btn-secondary" style="font-size:.72rem;padding:4px 9px" onclick="editarLembrete('${l.id}')">Editar</button></span>
+        <span><button class="fin-del-btn" style="opacity:1" onclick="excluirLembreteRapido('${l.id}')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></span>
+      </div>`;
+      }).join('');
+    if(mobileEl) mobileEl.innerHTML = docs.map(l=>{
       const vencido = l.data && l.data < hoje && l.status !== 'Concluído';
-      const priColor = l.prioridade==='Urgente' ? 'var(--danger)' : l.prioridade==='Alta' ? 'var(--warning)' : 'var(--text-lighter)';
-      const statusColor = l.status==='Concluído' ? 'var(--success)' : vencido ? 'var(--danger)' : 'var(--warning)';
-      return `<div class="card" style="margin-bottom:.6rem;opacity:${l.status==='Concluído'?.65:1}">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
-          <input type="checkbox" ${l.status==='Concluído'?'checked':''} onchange="toggleLembreteConcluido('${l.id}',this.checked)"
-            title="Marcar como concluído" style="margin-top:3px;width:18px;height:18px;flex-shrink:0;accent-color:var(--success);cursor:pointer">
-          <div style="flex:1">
-            <div style="font-weight:600;font-size:.88rem;margin-bottom:2px${l.status==='Concluído'?';text-decoration:line-through':''}">${l.titulo||'—'}
-              ${l.prioridade&&l.prioridade!=='Normal'?`<span class="badge" style="background:${priColor};color:#fff;margin-left:4px;font-size:.68rem">${l.prioridade}</span>`:''}
-            </div>
-            ${l.obs?`<div style="font-size:.79rem;color:var(--text-light);margin-bottom:4px">${l.obs}</div>`:''}
-            <div style="font-size:.76rem;display:flex;gap:.75rem">
-              <span style="color:${statusColor}">${l.status||'Pendente'}</span>
-              ${l.data?`<span style="color:var(--text-lighter)">${formatDate(l.data)}</span>`:''}
-              ${vencido?`<span style="color:var(--danger);font-weight:600">Vencido</span>`:''}
-            </div>
-          </div>
-          <button class="btn btn-secondary" style="font-size:.72rem;padding:4px 9px" onclick="editarLembrete('${l.id}')">Editar</button>
+      return `<div class="fin-card-item">
+        <div class="fin-card-item-top">
+          <div class="fin-card-item-name"${l.status==='Concluído'?' style="text-decoration:line-through;color:var(--text-lighter)"':''}>${l.titulo||'—'} ${priBadge(l)}</div>
+        </div>
+        <div class="fin-card-item-meta">
+          <span class="badge ${l.status==='Concluído'?'badge-success':'badge-warning'}" onclick="toggleLembreteConcluido('${l.id}',this)" style="cursor:pointer">${l.status||'Pendente'}</span>
+          ${l.data?`<span><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> ${formatDate(l.data)}</span>`:''}
+          ${vencido?'<span style="color:var(--danger);font-weight:600">Vencido</span>':''}
+          ${l.obs?`<span title="${l.obs}">${l.obs.substring(0,30)}${l.obs.length>30?'...':''}</span>`:''}
+        </div>
+        <div class="fin-card-item-actions">
+          <button class="btn btn-secondary btn-sm" onclick="editarLembrete('${l.id}')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Editar</button>
+          <button class="fin-del-btn" onclick="excluirLembreteRapido('${l.id}')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>
       </div>`;
     }).join('');
   } catch(e) {
-    lista.innerHTML = '<div style="color:var(--danger);font-size:.83rem;padding:1rem">Erro ao carregar lembretes.</div>';
+    table.innerHTML = '<div style="color:var(--danger);font-size:.83rem;padding:1rem">Erro ao carregar lembretes.</div>';
   }
 }
 
-// Marca/desmarca conclusão direto pela lista (checkbox), sem abrir o modal
-async function toggleLembreteConcluido(id, concluido) {
+// Alterna Pendente/Concluído clicando no badge de status — mesmo padrão do Finanças (status-click)
+async function toggleLembreteConcluido(id, el) {
+  const concluido = !el.classList.contains('badge-success'); // estado ainda não trocado no DOM
   try {
     await db.collection('lembretes').doc(id).update({
       status: concluido ? 'Concluído' : 'Pendente',
@@ -7230,6 +7293,16 @@ async function toggleLembreteConcluido(id, concluido) {
     });
     loadLembretes();
   } catch(e) { showToast('Erro ao atualizar lembrete.', 'error'); }
+}
+
+// Exclusão rápida pela lista (ícone de lixeira), sem abrir o modal de edição
+async function excluirLembreteRapido(id) {
+  if(!confirm('Excluir este lembrete? Esta ação não pode ser desfeita.')) return;
+  try {
+    await db.collection('lembretes').doc(id).delete();
+    showToast('Lembrete excluído!','success');
+    loadLembretes();
+  } catch(e){ showToast('Erro ao excluir.','error'); }
 }
 
 async function salvarLembrete() {
@@ -7616,34 +7689,68 @@ async function verHistoricoProf(profId) {
 </div>
 
 <!-- Exclusão de Locação Recorrente -->
+<div class="modal-overlay" id="modal-orfaos-resultado" onclick="closeModalBg(event,'orfaos-resultado')">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-title">Lançamentos órfãos (<span id="orfaos-count">0</span>)</div>
+    <p style="font-size:.82rem;color:var(--text-light);margin-bottom:1rem;line-height:1.5">
+      Lançamentos pendentes vinculados a uma locação que já não existe mais no sistema. Revise e exclua individualmente se confirmar que são cobranças indevidas.
+    </p>
+    <div id="orfaos-lista" style="max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:9px"></div>
+    <div class="modal-actions" style="margin-top:1rem">
+      <button class="btn btn-secondary" onclick="closeModal('orfaos-resultado')">Fechar</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-loc-excluir-confirm" onclick="closeModalBg(event,'loc-excluir-confirm')">
   <div class="modal" style="max-width:420px">
     <div class="modal-title">Excluir locação</div>
     <input type="hidden" id="loc-excl-pending-id">
     <input type="hidden" id="loc-excl-pending-date">
-    <p style="font-size:.88rem;color:var(--text-light);margin-bottom:1.25rem;line-height:1.6">
-      Esta locação se repete em vários dias. O que você deseja excluir?
-    </p>
+    <div id="loc-excl-aviso-serie" style="display:none;background:var(--warning-bg);border:1px solid #fde68a;border-radius:9px;padding:.7rem .85rem;margin-bottom:1rem;font-size:.8rem;color:var(--warning);line-height:1.5">
+      <strong>Atenção:</strong> esta locação já teve ocorrências excluídas individualmente antes. Se a intenção é cancelar definitivamente, escolha <strong>"Toda a série"</strong> — excluir só esta ocorrência não impede a cobrança mensal de continuar sendo gerada.
+    </div>
+    <div id="loc-excl-scope-wrap">
+      <p style="font-size:.88rem;color:var(--text-light);margin-bottom:1.25rem;line-height:1.6">
+        Esta locação se repete em vários dias. O que você deseja excluir?
+      </p>
+      <div style="display:flex;flex-direction:column;gap:.625rem;margin-bottom:1.5rem">
+        <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px;transition:border-color .15s" id="loc-excl-opt-single-wrap">
+          <input type="radio" name="loc-excl-scope" id="loc-excl-opt-single" value="single" style="margin-top:2px;accent-color:var(--gold)" checked>
+          <div>
+            <div style="font-size:.88rem;font-weight:600">Somente esta ocorrência</div>
+            <div style="font-size:.78rem;color:var(--text-lighter);margin-top:2px">Remove apenas o dia selecionado. As demais datas da série continuam normalmente, <strong>inclusive a cobrança mensal</strong>.</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px;transition:border-color .15s" id="loc-excl-opt-future-wrap">
+          <input type="radio" name="loc-excl-scope" id="loc-excl-opt-future" value="future" style="margin-top:2px;accent-color:var(--gold)">
+          <div>
+            <div style="font-size:.88rem;font-weight:600">Esta ocorrência e as futuras</div>
+            <div style="font-size:.78rem;color:var(--text-lighter);margin-top:2px">Encerra a série nesta data. As ocorrências anteriores à data selecionada são preservadas.</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px;transition:border-color .15s" id="loc-excl-opt-all-wrap">
+          <input type="radio" name="loc-excl-scope" id="loc-excl-opt-all" value="all" style="margin-top:2px;accent-color:var(--gold)">
+          <div>
+            <div style="font-size:.88rem;font-weight:600">Toda a série</div>
+            <div style="font-size:.78rem;color:var(--text-lighter);margin-top:2px">Exclui a locação por completo, incluindo todas as ocorrências passadas e futuras.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+    <p style="font-size:.82rem;font-weight:600;color:var(--text-light);margin-bottom:.625rem">Lançamentos financeiros pendentes vinculados a esta locação:</p>
     <div style="display:flex;flex-direction:column;gap:.625rem;margin-bottom:1.5rem">
-      <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px;transition:border-color .15s" id="loc-excl-opt-single-wrap">
-        <input type="radio" name="loc-excl-scope" id="loc-excl-opt-single" value="single" style="margin-top:2px;accent-color:var(--gold)" checked>
+      <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px">
+        <input type="radio" name="loc-lanc-destino" value="excluir" style="margin-top:2px;accent-color:var(--gold)" checked>
         <div>
-          <div style="font-size:.88rem;font-weight:600">Somente esta ocorrência</div>
-          <div style="font-size:.78rem;color:var(--text-lighter);margin-top:2px">Remove apenas o dia selecionado. As demais datas da série continuam normalmente.</div>
+          <div style="font-size:.86rem;font-weight:600">Excluir também os lançamentos pendentes</div>
+          <div style="font-size:.77rem;color:var(--text-lighter);margin-top:2px">Remove da Movimentação todos os lançamentos ainda não pagos gerados por esta locação.</div>
         </div>
       </label>
-      <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px;transition:border-color .15s" id="loc-excl-opt-future-wrap">
-        <input type="radio" name="loc-excl-scope" id="loc-excl-opt-future" value="future" style="margin-top:2px;accent-color:var(--gold)">
+      <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px">
+        <input type="radio" name="loc-lanc-destino" value="devolver" style="margin-top:2px;accent-color:var(--gold)">
         <div>
-          <div style="font-size:.88rem;font-weight:600">Esta ocorrência e as futuras</div>
-          <div style="font-size:.78rem;color:var(--text-lighter);margin-top:2px">Encerra a série nesta data. As ocorrências anteriores à data selecionada são preservadas.</div>
-        </div>
-      </label>
-      <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px;transition:border-color .15s" id="loc-excl-opt-all-wrap">
-        <input type="radio" name="loc-excl-scope" id="loc-excl-opt-all" value="all" style="margin-top:2px;accent-color:var(--gold)">
-        <div>
-          <div style="font-size:.88rem;font-weight:600">Toda a série</div>
-          <div style="font-size:.78rem;color:var(--text-lighter);margin-top:2px">Exclui a locação por completo, incluindo todas as ocorrências passadas e futuras.</div>
+          <div style="font-size:.86rem;font-weight:600">Devolver — manter como lançamento avulso</div>
+          <div style="font-size:.77rem;color:var(--text-lighter);margin-top:2px">Os lançamentos pendentes continuam em A Pagar/A Receber, apenas desvinculados desta locação.</div>
         </div>
       </label>
     </div>
