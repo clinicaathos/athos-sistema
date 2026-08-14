@@ -376,7 +376,26 @@
         const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const nomesCurtos = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v43')) || [];
+        // Sincronização automática via localStorage unificado do sistema principal ou fallback limpo
+        let lancamentos = [];
+        function carregarDadosAutomaticosDoSistema() {
+            try {
+                // Tenta buscar de chaves comuns que o sistema principal possa salvar
+                let chavesPossiveis = ['simulador_lancamentos_athos_v43', 'athos_lancamentos', 'dados_financeiros', 'financeiro_clinica'];
+                for (let k of chavesPossiveis) {
+                    let dadosSalvos = localStorage.getItem(k);
+                    if (dadosSalvos) {
+                        let parsed = JSON.parse(dadosSalvos);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            lancamentos = parsed;
+                            return;
+                        }
+                    }
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        carregarDadosAutomaticosDoSistema();
 
         let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v43')) || [
             { id: 0, nome: 'Áthos Continuidade (Maior Turno)', tipo: 'Pacote Mensal', horas: 10, valor: 300.00, desc: '10h/mês — R$ 30,00/h' },
@@ -400,15 +419,24 @@
             const lancData = document.getElementById('lanc-data');
             if(lancData) lancData.valueAsDate = new Date();
             
-            // Tenta carregar automaticamente um arquivo Excel padrão salvo no projeto ou via fetch automático
-            tentarCarregarExcelAutomatico();
-
             renderDropdownCheckboxes();
             atualizarCustosAutomaticosSemanticamente();
             renderPacotesUI();
             renderDonaMatrix();
             sincronizarConfigTurnosUI();
             renderApp();
+
+            // Ouve atualizações em tempo real enviadas por outras abas ou pelo sistema pai via postMessage
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.tipo === 'SINCRONIZAR_DADOS') {
+                    if (Array.isArray(event.data.dados)) {
+                        lancamentos = event.data.dados;
+                        localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
+                        renderApp();
+                        triggerToast("Dados atualizados pelo sistema!", "🔄");
+                    }
+                }
+            });
             
             document.addEventListener('click', (e) => {
                 const menu = document.getElementById('dropdown-menu'), btn = document.getElementById('dropdown-btn');
@@ -416,96 +444,74 @@
             });
         });
 
-        // Função para buscar e ler automaticamente um arquivo Excel padrão (ex: backup.xlsx na mesma pasta ou URL)
-        async function tentarCarregarExcelAutomatico() {
-            // Se já tiver dados salvos no navegador, não sobrescreve a menos que queira forçar
-            if (lancamentos.length > 0) return;
-
-            try {
-                let resposta = await fetch('backup_clinica.xlsx'); // Nome padrão caso coloque o excel no repositório
-                if (!resposta.ok) return;
-                let blob = await resposta.blob();
-                let reader = new FileReader();
-                reader.onload = function(e) {
-                    processarWorkbookExcel(new Uint8Array(e.target.result));
-                };
-                reader.readAsArrayBuffer(blob);
-            } catch(err) {
-                // Arquivo padrão não encontrado na raiz, aguardando upload manual ou dados do sistema
-            }
-        }
-
         function importFile(input) {
             const file = input.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
-                processarWorkbookExcel(new Uint8Array(e.target.result));
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    let count = 0;
+
+                    workbook.SheetNames.forEach(sheetName => {
+                        try {
+                            const nameLower = sheetName.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                            if (nameLower.includes('locac') || nameLower.includes('prof')) return;
+
+                            const sheet = workbook.Sheets[sheetName];
+                            const rows = XLSX.utils.sheet_to_json(sheet, { raw: true });
+                            if (!rows || rows.length === 0) return;
+
+                            const normalizedRows = rows.map(r => {
+                                let nr = {};
+                                for (let k in r) nr[normalizeKey(k)] = r[k];
+                                return nr;
+                            });
+
+                            const keys = Object.keys(normalizedRows[0] || {});
+                            let isRec = nameLower.includes('receita') || (keys.includes('profissional') && keys.includes('valor'));
+                            let isDesp = nameLower.includes('despesa') || (keys.includes('descricao') && keys.includes('valor'));
+
+                            if (isRec) {
+                                normalizedRows.forEach(r => {
+                                    let rawId = (r['id'] || '').toString().trim() || ('rec-' + Date.now() + '-' + Math.random());
+                                    let dt = normalizeDate(r['vencimento'] || r['data']);
+                                    let prof = r['profissional'] || 'Receita Avulsa';
+                                    let obs = r['observacao'] || r['obs'] || '';
+                                    let val = parseRawValue(r['valorfinal'] !== undefined && r['valorfinal'] !== "" ? r['valorfinal'] : r['valor']);
+                                    if(val === 0) return;
+                                    let sala = ((obs || '').toString().toUpperCase().includes('ÁTHOS II') || (obs || '').toString().toUpperCase().includes('SALA 2')) ? 'sala2' : 'sala1';
+                                    if (!lancamentos.some(l => l.id === rawId)) {
+                                        lancamentos.push({ id: rawId, data: dt, tipo: 'receita', sala: sala, desc: prof + (obs ? ' - ' + obs : ''), valor: val });
+                                        count++;
+                                    }
+                                });
+                            } else if (isDesp) {
+                                normalizedRows.forEach(r => {
+                                    let rawId = (r['id'] || '').toString().trim() || ('desp-' + Date.now() + '-' + Math.random());
+                                    let dt = normalizeDate(r['vencimento'] || r['data']);
+                                    let desc = r['descricao'] || r['desc'] || 'Despesa';
+                                    let val = parseRawValue(r['valor']);
+                                    if(val === 0) return;
+                                    let descLow = desc.toLowerCase();
+                                    let tipo = ['obra', 'reforma', 'santiago', 'pedreiro', 'moveis'].some(k => descLow.includes(k)) ? 'investimento' : 'despesa';
+                                    let isFix = ['aluguel', 'condominio', 'enel', 'energia', 'internet', 'agua'].some(k => descLow.includes(k));
+                                    if (!lancamentos.some(l => l.id === rawId)) {
+                                        lancamentos.push({ id: rawId, data: dt, tipo: tipo, sala: '-', desc: desc, valor: val, isFixo: isFix });
+                                        count++;
+                                    }
+                                });
+                            }
+                        } catch(err) { console.error(err); }
+                    });
+
+                    localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
+                    atualizarCustosAutomaticosSemanticamente();
+                    triggerToast(`Planilha integrada com sucesso! (${count} registros)`, "📥");
+                    renderApp(); switchTab('dash');
+                } catch(err) { alert("Erro ao processar arquivo Excel."); }
             };
             reader.readAsArrayBuffer(file);
-        }
-
-        function processarWorkbookExcel(dataBytes) {
-            try {
-                const workbook = XLSX.read(dataBytes, { type: 'array', cellDates: true });
-                let count = 0;
-
-                workbook.SheetNames.forEach(sheetName => {
-                    try {
-                        const nameLower = sheetName.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                        if (nameLower.includes('locac') || nameLower.includes('prof')) return;
-
-                        const sheet = workbook.Sheets[sheetName];
-                        const rows = XLSX.utils.sheet_to_json(sheet, { raw: true });
-                        if (!rows || rows.length === 0) return;
-
-                        const normalizedRows = rows.map(r => {
-                            let nr = {};
-                            for (let k in r) nr[normalizeKey(k)] = r[k];
-                            return nr;
-                        });
-
-                        const keys = Object.keys(normalizedRows[0] || {});
-                        let isRec = nameLower.includes('receita') || (keys.includes('profissional') && keys.includes('valor'));
-                        let isDesp = nameLower.includes('despesa') || (keys.includes('descricao') && keys.includes('valor'));
-
-                        if (isRec) {
-                            normalizedRows.forEach(r => {
-                                let rawId = (r['id'] || '').toString().trim() || ('rec-' + Date.now() + '-' + Math.random());
-                                let dt = normalizeDate(r['vencimento'] || r['data']);
-                                let prof = r['profissional'] || 'Receita Avulsa';
-                                let obs = r['observacao'] || r['obs'] || '';
-                                let val = parseRawValue(r['valorfinal'] !== undefined && r['valorfinal'] !== "" ? r['valorfinal'] : r['valor']);
-                                if(val === 0) return;
-                                let sala = ((obs || '').toString().toUpperCase().includes('ÁTHOS II') || (obs || '').toString().toUpperCase().includes('SALA 2')) ? 'sala2' : 'sala1';
-                                if (!lancamentos.some(l => l.id === rawId)) {
-                                    lancamentos.push({ id: rawId, data: dt, tipo: 'receita', sala: sala, desc: prof + (obs ? ' - ' + obs : ''), valor: val });
-                                    count++;
-                                }
-                            });
-                        } else if (isDesp) {
-                            normalizedRows.forEach(r => {
-                                let rawId = (r['id'] || '').toString().trim() || ('desp-' + Date.now() + '-' + Math.random());
-                                let dt = normalizeDate(r['vencimento'] || r['data']);
-                                let desc = r['descricao'] || r['desc'] || 'Despesa';
-                                let val = parseRawValue(r['valor']);
-                                if(val === 0) return;
-                                let descLow = desc.toLowerCase();
-                                let tipo = ['obra', 'reforma', 'santiago', 'pedreiro', 'moveis'].some(k => descLow.includes(k)) ? 'investimento' : 'despesa';
-                                let isFix = ['aluguel', 'condominio', 'enel', 'energia', 'internet', 'agua'].some(k => descLow.includes(k));
-                                if (!lancamentos.some(l => l.id === rawId)) {
-                                    lancamentos.push({ id: rawId, data: dt, tipo: tipo, sala: '-', desc: desc, valor: val, isFixo: isFix });
-                                    count++;
-                                }
-                            });
-                        }
-                    } catch(err) { console.error(err); }
-                });
-
-                localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
-                atualizarCustosAutomaticosSemanticamente();
-                triggerToast(`Planilha Excel integrada com sucesso! (${count} registros)`, "📥");
-                renderApp(); switchTab('dash');
-            } catch(err) { alert("Erro ao processar arquivo Excel."); }
         }
 
         const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
