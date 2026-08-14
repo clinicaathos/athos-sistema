@@ -22,7 +22,7 @@
     </div>
 
     <!-- MODAL DE EDIÇÃO DE PACOTE -->
-    <div id="modal-pacote" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div id="modal-pacote" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <h3 class="text-sm font-bold text-slate-800">Editar Pacote / Turno</h3>
             <div class="space-y-3">
@@ -41,22 +41,22 @@
             </div>
             <div class="flex gap-2 pt-2">
                 <button type="button" onclick="fecharModalPacote()" class="flex-1 h-11 border border-slate-200 text-slate-600 font-semibold rounded-xl text-xs hover:bg-slate-50 cursor-pointer">Cancelar</button>
-                <button type="button" onclick="salvarPacoteEditado()" class="flex-1 h-11 bg-indigo-600 text-white font-semibold rounded-xl text-xs hover:bg-indigo-700 cursor-pointer shadow-xs">Salvar</button>
+                <button type="button" onclick="salvarPacoteEditado()" class="flex-1 h-11 bg-slate-900 text-white font-semibold rounded-xl text-xs hover:bg-slate-800 cursor-pointer shadow-xs">Salvar</button>
             </div>
         </div>
     </div>
 
-    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30 border-b border-stone-800">
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30 border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
             <div class="text-center lg:text-left w-full lg:w-auto">
                 <h1 class="text-lg lg:text-xl font-bold tracking-tight">Simulador Financeiro</h1>
-                <p class="text-[11px] text-indigo-200 mt-0.5">Gestão Estratégica &bull; Clínica Áthos</p>
+                <p class="text-[11px] text-stone-400 mt-0.5">Gestão Estratégica &bull; Clínica Áthos</p>
             </div>
-            <nav class="flex gap-1 bg-indigo-950 p-1 rounded-xl w-full lg:w-auto overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap snap-x">
-                <button onclick="switchTab('dash')" id="btn-dash" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg bg-indigo-600 text-white shadow-xs cursor-pointer">Dashboard</button>
-                <button onclick="switchTab('lanc')" id="btn-lanc" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-indigo-200 hover:text-white cursor-pointer">Lançamentos</button>
-                <button onclick="switchTab('extrato')" id="btn-extrato" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-indigo-200 hover:text-white cursor-pointer">Histórico</button>
-                <button onclick="switchTab('config')" id="btn-config" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-indigo-200 hover:text-white cursor-pointer">Configurações</button>
+            <nav class="flex gap-1 bg-slate-950 p-1 rounded-xl w-full lg:w-auto overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap snap-x border border-slate-800">
+                <button onclick="switchTab('dash')" id="btn-dash" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg bg-slate-800 text-white shadow-xs cursor-pointer">Dashboard</button>
+                <button onclick="switchTab('lanc')" id="btn-lanc" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-slate-400 hover:text-white cursor-pointer">Lançamentos</button>
+                <button onclick="switchTab('extrato')" id="btn-extrato" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-slate-400 hover:text-white cursor-pointer">Histórico</button>
+                <button onclick="switchTab('config')" id="btn-config" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-slate-400 hover:text-white cursor-pointer">Configurações</button>
             </nav>
         </div>
     </header>
@@ -93,7 +93,7 @@
 
                         <div id="dropdown-menu" onclick="event.stopPropagation()" class="hidden absolute left-0 md:right-0 top-18 md:top-16 z-20 w-full md:w-64 max-h-72 overflow-y-auto rounded-2xl bg-white shadow-xl border border-slate-200 p-2 space-y-0.5">
                             <div class="flex items-center justify-between border-b border-slate-100 pb-2 pt-1 mb-1 px-2">
-                                <button onclick="selecionarTodosMeses(true)" class="text-xs font-bold text-indigo-600 hover:underline cursor-pointer">Marcar todos</button>
+                                <button onclick="selecionarTodosMeses(true)" class="text-xs font-bold text-slate-900 hover:underline cursor-pointer">Marcar todos</button>
                                 <button onclick="selecionarTodosMeses(false)" class="text-xs font-bold text-slate-400 hover:underline cursor-pointer">Limpar</button>
                             </div>
                             <div id="dropdown-checkboxes-container" class="space-y-0.5"></div>
@@ -132,17 +132,17 @@
             </div>
 
             <!-- SIMULADOR POR TURNOS -->
-            <div class="bg-gradient-to-r from-indigo-900 to-indigo-950 text-white p-5 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-center gap-4 border border-slate-800">
                 <div class="space-y-1 w-full md:w-auto">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-300 block">Simulador por Turnos (Meta de Capex & Despesas)</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">Simulador por Turnos (Meta de Capex & Despesas)</span>
                     <h3 class="text-lg font-bold">Quantos turnos alugar para recuperar o investimento?</h3>
-                    <p class="text-xs text-indigo-200">Baseado no maior pacote (10h) e na grade comercial configurada.</p>
+                    <p class="text-xs text-stone-400">Baseado no maior pacote (10h) e na grade comercial configurada.</p>
                 </div>
                 
                 <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
                     <div class="flex flex-col gap-1 w-full sm:w-40">
-                        <label for="meta-meses-payback" class="text-[10px] font-bold uppercase text-indigo-300">Prazo Desejado</label>
-                        <select id="meta-meses-payback" onchange="renderApp()" class="h-11 px-3 bg-indigo-900 border border-indigo-700 rounded-xl text-sm font-semibold text-white focus:outline-hidden cursor-pointer">
+                        <label for="meta-meses-payback" class="text-[10px] font-bold uppercase text-stone-400">Prazo Desejado</label>
+                        <select id="meta-meses-payback" onchange="renderApp()" class="h-11 px-3 bg-slate-950 border border-slate-800 rounded-xl text-sm font-semibold text-white focus:outline-hidden cursor-pointer">
                             <option value="6">6 meses</option>
                             <option value="12" selected>12 meses</option>
                             <option value="18">18 meses</option>
@@ -151,10 +151,10 @@
                         </select>
                     </div>
                     
-                    <div class="bg-white/10 p-3 rounded-xl border border-indigo-800 flex flex-col justify-center min-w-[220px] w-full sm:w-auto">
-                        <span class="text-[10px] font-bold uppercase text-indigo-300">Faturamento Alvo por Turnos</span>
+                    <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex flex-col justify-center min-w-[220px] w-full sm:w-auto">
+                        <span class="text-[10px] font-bold uppercase text-stone-400">Faturamento Alvo por Turnos</span>
                         <span id="kpi-fat-meta" class="text-xl font-black text-emerald-400">R$ 0,00</span>
-                        <span id="kpi-turnos-meta" class="text-[10px] text-indigo-200">Meta: 0 turnos/mês</span>
+                        <span id="kpi-turnos-meta" class="text-[10px] text-stone-400">Meta: 0 turnos/mês</span>
                     </div>
                 </div>
             </div>
@@ -174,23 +174,23 @@
                         <div class="grid grid-cols-2 lg:grid-cols-1 gap-3">
                             <div class="p-3 bg-slate-50 rounded-xl">
                                 <span class="text-[10px] font-bold text-slate-400 block uppercase">Sala 01</span>
-                                <span id="faturamento-sala1" class="text-lg font-bold text-indigo-600 mt-0.5 block">R$ 0,00</span>
+                                <span id="faturamento-sala1" class="text-lg font-bold text-slate-900 mt-0.5 block">R$ 0,00</span>
                             </div>
                             <div class="p-3 bg-slate-50 rounded-xl">
                                 <span class="text-[10px] font-bold text-slate-400 block uppercase">Sala 02</span>
-                                <span id="faturamento-sala2" class="text-lg font-bold text-purple-600 mt-0.5 block">R$ 0,00</span>
+                                <span id="faturamento-sala2" class="text-lg font-bold text-slate-700 mt-0.5 block">R$ 0,00</span>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="bg-indigo-50 p-4 rounded-xl space-y-2.5">
+                    <div class="bg-slate-50 p-4 rounded-xl space-y-2.5 border border-slate-200/60">
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
-                            <span class="text-[11px] font-bold text-indigo-700 uppercase">Resultado Operacional:</span>
+                            <span class="text-[11px] font-bold text-slate-500 uppercase">Resultado Operacional:</span>
                             <span id="sum-operacional" class="text-sm lg:text-base font-bold text-slate-800">R$ 0,00</span>
                         </div>
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 border-t border-indigo-100 pt-2.5">
-                            <span class="text-[11px] font-bold text-indigo-900 uppercase">Fluxo Líquido do Período:</span>
-                            <span id="sum-liquido" class="text-sm lg:text-lg font-black text-indigo-900">R$ 0,00</span>
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 border-t border-slate-200 pt-2.5">
+                            <span class="text-[11px] font-bold text-slate-900 uppercase">Fluxo Líquido do Período:</span>
+                            <span id="sum-liquido" class="text-sm lg:text-lg font-black text-slate-900">R$ 0,00</span>
                         </div>
                     </div>
                 </div>
@@ -232,7 +232,7 @@
                     <div id="sala-selector-block">
                         <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1.5">2. Destinação da Receita</label>
                         <div class="grid grid-cols-2 gap-2">
-                            <button type="button" onclick="setFormSala('sala1')" id="btn-sala1" class="sala-btn h-11 border rounded-xl font-semibold text-sm transition-all bg-indigo-50 border-indigo-500 text-indigo-800 cursor-pointer text-center w-full">Sala 01</button>
+                            <button type="button" onclick="setFormSala('sala1')" id="btn-sala1" class="sala-btn h-11 border rounded-xl font-semibold text-sm transition-all bg-slate-900 border-slate-900 text-white cursor-pointer text-center w-full">Sala 01</button>
                             <button type="button" onclick="setFormSala('sala2')" id="btn-sala2" class="sala-btn h-11 border border-slate-200 rounded-xl font-semibold text-sm transition-all text-slate-600 hover:bg-slate-50 cursor-pointer text-center w-full">Sala 02</button>
                         </div>
                     </div>
@@ -252,7 +252,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-xs transition-all cursor-pointer mt-2">Salvar Lançamento</button>
+                    <button type="submit" class="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm shadow-xs transition-all cursor-pointer mt-2">Salvar Lançamento</button>
                 </form>
             </div>
         </div>
@@ -323,9 +323,9 @@
                     </table>
                 </div>
 
-                <div class="flex flex-col sm:flex-row justify-between items-center bg-indigo-50 p-4 rounded-xl gap-3">
-                    <span class="text-xs font-bold text-indigo-900">Total de Turnos Comerciais Disponíveis (2 Salas):</span>
-                    <span id="cfg-total-turnos-badge" class="text-lg font-black text-indigo-900">84 turnos/mês</span>
+                <div class="flex flex-col sm:flex-row justify-between items-center bg-slate-100 p-4 rounded-xl gap-3">
+                    <span class="text-xs font-bold text-slate-700">Total de Turnos Comerciais Disponíveis (2 Salas):</span>
+                    <span id="cfg-total-turnos-badge" class="text-lg font-black text-slate-900">84 turnos/mês</span>
                 </div>
             </div>
 
@@ -358,7 +358,7 @@
                         </div>
                     </div>
 
-                    <button onclick="saveConfig()" class="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-xs transition-all mt-2 cursor-pointer">Salvar Parâmetros Operacionais</button>
+                    <button onclick="saveConfig()" class="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm shadow-xs transition-all mt-2 cursor-pointer">Salvar Parâmetros Operacionais</button>
                 </div>
             </div>
 
@@ -376,7 +376,6 @@
         const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const nomesCurtos = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-        // Chaves de armazenamento persistente otimizadas (v43)
         let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v43')) || [
             { id: '8Itjnat1UwZOqqmhnZIh', data: '2026-06-08', tipo: 'receita', sala: 'sala1', desc: 'Receita avulsa - Recarga gás', valor: 200.00 },
             { id: 'FPSqPHBXckuuCvrSo0TM', data: '2026-05-17', tipo: 'receita', sala: 'sala1', desc: 'Estorno cartao - Estorno de 1 caixa de rodapé', valor: 309.54 },
@@ -437,7 +436,7 @@
                 diasSemana.forEach((d, dIdx) => {
                     let key = `${dIdx}_${t.id}`;
                     let checked = config.donaSlots && config.donaSlots[key] ? 'checked' : '';
-                    rowsHtml += `<td class="p-3 text-center"><input type="checkbox" data-key="${key}" ${checked} onchange="toggleDonaSlot(this)" class="h-4 w-4 rounded-sm text-indigo-600 cursor-pointer"></td>`;
+                    rowsHtml += `<td class="p-3 text-center"><input type="checkbox" data-key="${key}" ${checked} onchange="toggleDonaSlot(this)" class="h-4 w-4 rounded-sm text-slate-900 cursor-pointer"></td>`;
                 });
                 rowsHtml += `</tr>`;
             });
@@ -491,7 +490,7 @@
                             <span class="text-[10px] font-bold uppercase text-slate-400 block">${p.tipo}</span>
                             <h4 class="text-sm font-bold text-slate-800">${p.nome}</h4>
                             <p class="text-xs text-slate-500">${p.horas}h/mês &bull; R$ ${(p.valor/p.horas).toFixed(2)}/h</p>
-                            <div class="text-lg font-black text-indigo-600 pt-1">${formatCurrency(p.valor)}</div>
+                            <div class="text-lg font-black text-slate-900 pt-1">${formatCurrency(p.valor)}</div>
                         </div>
                         <button type="button" onclick="abrirModalPacote(${idx})" class="mt-2 w-full h-9 bg-white border border-slate-200 hover:bg-slate-100 font-semibold text-slate-700 rounded-xl text-xs cursor-pointer shadow-2xs">Editar</button>
                     </div>`;
@@ -542,7 +541,6 @@
             localStorage.setItem('simulador_config_athos_v43', JSON.stringify(config));
         }
 
-        // --- IMPORTAÇÃO INTELIGENTE DE EXCEL ---
         function parseRawValue(val) {
             if (val === undefined || val === null) return 0;
             if (typeof val === 'number') return val;
@@ -646,7 +644,6 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // --- CÁLCULOS FINANCEIROS AVANÇADOS ---
         function calcularTIRCronologica(cashFlows) {
             if (!cashFlows || cashFlows.length === 0) return 0;
             let hasNegative = cashFlows.some(cf => cf < 0), hasPositive = cashFlows.some(cf => cf > 0);
@@ -678,7 +675,6 @@
             return { atingiuRetorno, mesesAteRetorno };
         }
 
-        // --- RENDERIZAÇÃO OTIMIZADA DA APLICAÇÃO ---
         function renderApp() {
             const filtroAno = document.getElementById('dash-filtro-ano').value;
             let sala1Tot = 0, sala2Tot = 0, totalDespesas = 0, totalInvestido = 0, countReg = 0;
@@ -696,7 +692,7 @@
                     if(item.tipo === 'despesa') totalDespesas += item.valor;
                     if(item.tipo === 'investimento') totalInvestido += item.valor;
 
-                    let badge = item.tipo === 'receita' ? '<span class="px-2 py-0.5 text-[10px] font-semibold rounded-sm bg-emerald-50 text-emerald-700">Entrada</span>' : (item.tipo === 'despesa' ? '<span class="px-2 py-0.5 text-[10px] font-semibold rounded-sm bg-rose-50 text-rose-700">Saída</span>' : '<span class="px-2 py-0.5 text-[10px] font-semibold rounded-sm bg-indigo-50 text-indigo-700">Invest.</span>');
+                    let badge = item.tipo === 'receita' ? '<span class="px-2 py-0.5 text-[10px] font-semibold rounded-sm bg-emerald-50 text-emerald-700">Entrada</span>' : (item.tipo === 'despesa' ? '<span class="px-2 py-0.5 text-[10px] font-semibold rounded-sm bg-rose-50 text-rose-700">Saída</span>' : '<span class="px-2 py-0.5 text-[10px] font-semibold rounded-sm bg-slate-100 text-slate-700">Invest.</span>');
 
                     tableRowsHtml += `
                         <tr>
@@ -704,7 +700,7 @@
                             <td class="p-4">${badge}</td>
                             <td class="p-4 font-semibold text-slate-600">${item.tipo==='receita'?(item.sala==='sala1'?'Sala 01':'Sala 02'):'Geral'}</td>
                             <td class="p-4 text-slate-700">${item.desc}</td>
-                            <td class="p-4 text-right font-bold ${item.tipo==='receita'?'text-emerald-600':(item.tipo==='despesa'?'text-rose-600':'text-indigo-600')}">${formatCurrency(item.valor)}</td>
+                            <td class="p-4 text-right font-bold ${item.tipo==='receita'?'text-emerald-600':(item.tipo==='despesa'?'text-rose-600':'text-slate-900')}">${formatCurrency(item.valor)}</td>
                             <td class="p-4 text-center"><button onclick="deleteLancamento('${item.id}')" class="text-xs text-rose-500 font-semibold hover:underline cursor-pointer">Remover</button></td>
                         </tr>`;
 
@@ -712,7 +708,7 @@
                         <div class="p-4 space-y-2">
                             <div class="flex justify-between items-center"><span class="text-xs text-slate-400 font-bold">${item.data.split('-').reverse().join('/')}</span> ${badge}</div>
                             <div class="text-sm font-bold text-slate-800">${item.desc}</div>
-                            <div class="flex justify-between items-center pt-1"><span class="text-xs text-slate-500">${item.tipo==='receita'?(item.sala==='sala1'?'Sala 01':'Sala 02'):'Geral'}</span> <span class="text-base font-black ${item.tipo==='receita'?'text-emerald-600':(item.tipo==='despesa'?'text-rose-600':'text-indigo-600')}">${formatCurrency(item.valor)}</span></div>
+                            <div class="flex justify-between items-center pt-1"><span class="text-xs text-slate-500">${item.tipo==='receita'?(item.sala==='sala1'?'Sala 01':'Sala 02'):'Geral'}</span> <span class="text-base font-black ${item.tipo==='receita'?'text-emerald-600':(item.tipo==='despesa'?'text-rose-600':'text-slate-900')}">${formatCurrency(item.valor)}</span></div>
                         </div>`;
                 }
             });
@@ -750,7 +746,6 @@
             document.getElementById('sum-operacional').innerText = formatCurrency(op);
             document.getElementById('sum-liquido').innerText = formatCurrency(liquido);
 
-            // Payback, ROI e TIR
             let vetorFluxo = [];
             mesesAtivos.forEach(idx => {
                 let r = 0, ds = 0, inv = 0;
@@ -806,14 +801,14 @@
                 chartInstance.data.datasets[0].data = lucros;
                 chartInstance.data.datasets[1].data = recs;
                 chartInstance.data.datasets[2].data = desps;
-                chartInstance.update('none'); // Atualização instantânea sem recriar o canvas
+                chartInstance.update('none');
             } else {
                 chartInstance = new Chart(ctx, {
                     data: {
                         labels: lbs,
                         datasets: [
                             { type: 'line', label: 'Resultado Líquido', data: lucros, borderColor: '#10b981', backgroundColor: '#10b981', borderWidth: 2.5, pointRadius: 3, tension: 0.15 },
-                            { type: 'bar', label: 'Receitas', data: recs, backgroundColor: '#4f46e5', borderRadius: 4 },
+                            { type: 'bar', label: 'Receitas', data: recs, backgroundColor: '#0f172a', borderRadius: 4 },
                             { type: 'bar', label: 'Despesas', data: desps, backgroundColor: '#ef4444', borderRadius: 4 }
                         ]
                     },
@@ -822,13 +817,12 @@
             }
         }
 
-        // --- NAVEGAÇÃO E FORMULÁRIOS ---
         function switchTab(id) {
             if(id === 'config') { renderPacotesUI(); renderDonaMatrix(); sincronizarConfigTurnosUI(); }
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.className = "tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-indigo-200 hover:text-white cursor-pointer");
+            document.querySelectorAll('.tab-btn').forEach(el => el.className = "tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-slate-400 hover:text-white cursor-pointer");
             document.getElementById(`tab-${id}`).classList.remove('hidden');
-            document.getElementById(`btn-${id}`).className = "tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg bg-indigo-600 text-white shadow-xs cursor-pointer";
+            document.getElementById(`btn-${id}`).className = "tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg bg-slate-800 text-white shadow-xs cursor-pointer";
             if(id === 'dash') renderApp();
         }
 
@@ -843,7 +837,7 @@
                 btn.className = "type-btn h-14 border rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all bg-emerald-50 border-emerald-500 text-emerald-800 cursor-pointer";
                 salaBlock.classList.remove('hidden');
             } else {
-                btn.className = `type-btn h-14 border rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all ${type==='despesa'?'bg-rose-50 border-rose-500 text-rose-800':'bg-indigo-50 border-indigo-500 text-indigo-800'} cursor-pointer`;
+                btn.className = `type-btn h-14 border rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all ${type==='despesa'?'bg-rose-50 border-rose-500 text-rose-800':'bg-slate-100 border-slate-300 text-slate-900'} cursor-pointer`;
                 salaBlock.classList.add('hidden'); selectedSala = '-';
             }
         }
@@ -853,15 +847,15 @@
             document.querySelectorAll('.sala-btn').forEach(el => {
                 el.className = "sala-btn h-11 border border-slate-200 rounded-xl font-semibold text-sm transition-all text-slate-600 hover:bg-slate-50 cursor-pointer text-center w-full";
             });
-            document.getElementById(`btn-${sala}`).className = "sala-btn h-11 border rounded-xl font-semibold text-sm transition-all bg-indigo-50 border-indigo-500 text-indigo-800 cursor-pointer text-center w-full";
+            document.getElementById(`btn-${sala}`).className = "sala-btn h-11 border rounded-xl font-semibold text-sm transition-all bg-slate-900 border-slate-900 text-white cursor-pointer text-center w-full";
         }
 
         function toggleDropdown(e) { e.stopPropagation(); document.getElementById('dropdown-menu').classList.toggle('hidden'); }
         function renderDropdownCheckboxes() {
             const c = document.getElementById('dropdown-checkboxes-container'); if(!c) return;
-            let html = `<div class="flex items-center justify-between border-b border-slate-100 pb-2 pt-1 mb-1 px-2"><button onclick="selecionarTodosMeses(true)" class="text-xs font-bold text-indigo-600 hover:underline cursor-pointer">Marcar todos</button><button onclick="selecionarTodosMeses(false)" class="text-xs font-bold text-slate-400 hover:underline cursor-pointer">Limpar</button></div>`;
+            let html = `<div class="flex items-center justify-between border-b border-slate-100 pb-2 pt-1 mb-1 px-2"><button onclick="selecionarTodosMeses(true)" class="text-xs font-bold text-slate-900 hover:underline cursor-pointer">Marcar todos</button><button onclick="selecionarTodosMeses(false)" class="text-xs font-bold text-slate-400 hover:underline cursor-pointer">Limpar</button></div>`;
             nomesMeses.forEach((m, idx) => {
-                html += `<label class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 text-sm font-semibold text-slate-700 cursor-pointer w-full"><input type="checkbox" id="chk-mes-${idx}" ${mesesAtivos.includes(idx)?'checked':''} onchange="onCheckboxChange(${idx})" class="h-5 w-5 rounded-md text-indigo-600"><span>${m}</span></label>`;
+                html += `<label class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 text-sm font-semibold text-slate-700 cursor-pointer w-full"><input type="checkbox" id="chk-mes-${idx}" ${mesesAtivos.includes(idx)?'checked':''} onchange="onCheckboxChange(${idx})" class="h-5 w-5 rounded-md text-slate-900"><span>${m}</span></label>`;
             });
             c.innerHTML = html;
         }
