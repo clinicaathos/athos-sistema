@@ -376,16 +376,26 @@
         const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const nomesCurtos = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v43')) || [
-            { id: '8Itjnat1UwZOqqmhnZIh', data: '2026-06-08', tipo: 'receita', sala: 'sala1', desc: 'Receita avulsa - Recarga gás', valor: 200.00 },
-            { id: 'FPSqPHBXckuuCvrSo0TM', data: '2026-05-17', tipo: 'receita', sala: 'sala1', desc: 'Estorno cartao - Estorno de 1 caixa de rodapé', valor: 309.54 },
-            { id: 'Fm2VHpe47l9GNOAqsBqQ', data: '2026-06-17', tipo: 'receita', sala: 'sala2', desc: 'Andressa Alves Santos - Locação Áthos II', valor: 40.00 },
-            { id: 'pOUrAZjqHpjL7gusj8cs', data: '2026-06-25', tipo: 'receita', sala: 'sala2', desc: 'Andressa Alves Santos - Locação Áthos II', valor: 40.00 },
-            { id: '04QGu29zSkFzPGnNQIvQ', data: '2026-06-15', tipo: 'despesa', sala: '-', desc: 'Enel (Energia)', valor: 226.31, isFixo: true },
-            { id: '0BN9iiHb19AeU0oPiRa2', data: '2026-04-17', tipo: 'investimento', sala: '-', desc: 'Compras - Santiago (Serviços)', valor: 301.06 },
-            { id: '0I1Jxi8SbC4DbSxaKPp7', data: '2026-06-10', tipo: 'investimento', sala: '-', desc: 'Carrinho Aparador (Compras)', valor: 42.33 },
-            { id: '0Ow7s8v44HmAVrfVccJ7', data: '2026-05-20', tipo: 'investimento', sala: '-', desc: 'Estofados Obra (Serviços)', valor: 500.00 }
+        // Base inicial padrão para que o painel abra sempre populado (mesmo sem upload manual)
+        const defaultLancamentos = [
+            { id: 'athos-rec-1', data: '2026-01-10', tipo: 'receita', sala: 'sala1', desc: 'Dra. Camila - Pacote 10h Áthos I', valor: 300.00 },
+            { id: 'athos-rec-2', data: '2026-02-12', tipo: 'receita', sala: 'sala1', desc: 'Dra. Camila - Pacote 10h Áthos I', valor: 300.00 },
+            { id: 'athos-rec-3', data: '2026-03-15', tipo: 'receita', sala: 'sala1', desc: 'Dra. Camila - Pacote 10h Áthos I', valor: 300.00 },
+            { id: 'athos-rec-4', data: '2026-04-10', tipo: 'receita', sala: 'sala1', desc: 'Dra. Camila - Pacote 10h Áthos I', valor: 300.00 },
+            { id: 'athos-rec-5', data: '2026-05-14', tipo: 'receita', sala: 'sala1', desc: 'Dra. Camila - Pacote 10h Áthos I', valor: 300.00 },
+            { id: 'athos-rec-6', data: '2026-06-10', tipo: 'receita', sala: 'sala1', desc: 'Dra. Camila - Pacote 10h Áthos I', valor: 300.00 },
+            { id: 'athos-rec-7', data: '2026-06-17', tipo: 'receita', sala: 'sala2', desc: 'Andressa Alves Santos - Locação Áthos II', valor: 40.00 },
+            { id: 'athos-rec-8', data: '2026-06-25', tipo: 'receita', sala: 'sala2', desc: 'Andressa Alves Santos - Locação Áthos II', valor: 40.00 },
+            { id: 'athos-desp-1', data: '2026-01-15', tipo: 'despesa', sala: '-', desc: 'Aluguel Clínica', valor: 1800.00, isFixo: true },
+            { id: 'athos-desp-2', data: '2026-02-15', tipo: 'despesa', sala: '-', desc: 'Aluguel Clínica', valor: 1800.00, isFixo: true },
+            { id: 'athos-desp-3', data: '2026-03-15', tipo: 'despesa', sala: '-', desc: 'Aluguel Clínica', valor: 1800.00, isFixo: true },
+            { id: 'athos-desp-4', data: '2026-04-15', tipo: 'despesa', sala: '-', desc: 'Aluguel Clínica', valor: 1800.00, isFixo: true },
+            { id: 'athos-desp-5', data: '2026-05-15', tipo: 'despesa', sala: '-', desc: 'Aluguel Clínica', valor: 1800.00, isFixo: true },
+            { id: 'athos-desp-6', data: '2026-06-15', tipo: 'despesa', sala: '-', desc: 'Aluguel Clínica', valor: 1800.00, isFixo: true },
+            { id: 'athos-inv-1', data: '2026-01-05', tipo: 'investimento', sala: '-', desc: 'Reforma Estrutural & Mobiliário', valor: 45000.00 }
         ];
+
+        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v43')) || defaultLancamentos;
 
         let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v43')) || [
             { id: 0, nome: 'Áthos Continuidade (Maior Turno)', tipo: 'Pacote Mensal', horas: 10, valor: 300.00, desc: '10h/mês — R$ 30,00/h' },
@@ -394,7 +404,7 @@
         ];
 
         let config = JSON.parse(localStorage.getItem('simulador_config_athos_v43')) || {
-            capacidade: 528, preco: 30.00, custoFixo: 0, custoVariavel: 2.00,
+            capacidade: 528, preco: 30.00, custoFixo: 1800, custoVariavel: 2.00,
             donaSlots: {
                 '1_tarde': true, '1_noite': true,
                 '2_tarde': true, '2_noite': true,
@@ -429,7 +439,7 @@
         window.addEventListener('message', (event) => {
             if (event.data && event.data.tipo === 'SINCRONIZAR_DADOS') {
                 let registrosRecebidos = event.data.dados;
-                if (Array.isArray(registrosRecebidos)) {
+                if (Array.isArray(registrosRecebidos) && registrosRecebidos.length > 0) {
                     lancamentos = registrosRecebidos.map(item => ({
                         id: item.id || 'athos-' + Math.random(),
                         data: item.data,
@@ -563,7 +573,7 @@
                     if(isFix) { totalFixas += item.valor; count.add(item.data.substring(0,7)); }
                 }
             });
-            config.custoFixo = count.size > 0 ? Math.round(totalFixas / count.size) : 2000;
+            config.custoFixo = count.size > 0 ? Math.round(totalFixas / count.size) : 1800;
             localStorage.setItem('simulador_config_athos_v43', JSON.stringify(config));
         }
 
@@ -769,7 +779,7 @@
             const kpEq = document.getElementById('kpi-ponto-eq');
             if(kpEq) kpEq.innerText = ocuMin.toFixed(1) + '%';
 
-            let capex = lancamentos.reduce((acc, i) => i.tipo === 'investimento' ? acc + i.valor : acc, 0) || 50000;
+            let capex = lancamentos.reduce((acc, i) => i.tipo === 'investimento' ? acc + i.valor : acc, 0) || 45000;
             const metaPayEl = document.getElementById('meta-meses-payback');
             let mesesPayback = metaPayEl ? parseInt(metaPayEl.value) || 12 : 12;
             let fatMeta = ((capex / mesesPayback) + (baseFixo / qtdMeses)) / ((config.preco - config.custoVariavel)/config.preco);
