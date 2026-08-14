@@ -199,6 +199,14 @@
 
         <!-- LANÇAMENTOS -->
         <div id="tab-lanc" class="tab-content hidden max-w-3xl mx-auto space-y-6">
+            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-700 mb-1">🔄 Sincronização Automática com o Sistema</h2>
+                    <p class="text-xs text-slate-400">Puxe os lançamentos atuais salvos no navegador da clínica.</p>
+                </div>
+                <button onclick="sincronizarDadosDoSistemaParent()" class="h-11 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs transition-all cursor-pointer shrink-0">Puxar Dados do Sistema</button>
+            </div>
+
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
                 <h2 class="text-sm font-bold text-slate-700 mb-1">📥 Importar Planilha do Excel (.xlsx / .xls)</h2>
                 <p class="text-xs text-slate-400 mb-4">Arraste ou selecione o arquivo consolidado da clínica para importação inteligente.</p>
@@ -376,26 +384,7 @@
         const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const nomesCurtos = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-        // Base inicial padrão para que o painel abra sempre populado (mesmo sem upload manual)
-        const defaultLancamentos = [
-            { id: 'athos-rec-1', data: '2026-01-10', tipo: 'receita', sala: 'sala1', desc: 'Dra. Camila - Pacote 10h Áthos I', valor: 300.00 },
-            { id: 'athos-rec-2', data: '2026-02-12', tipo: 'receita', sala: 'sala1', desc: 'Dra. Camila - Pacote 10h Áthos I', valor: 300.00 },
-            { id: 'athos-rec-3', data: '2026-03-15', tipo: 'receita', sala: 'sala1', desc: 'Dra. Camila - Pacote 10h Áthos I', valor: 300.00 },
-            { id: 'athos-rec-4', data: '2026-04-10', tipo: 'receita', sala: 'sala1', desc: 'Dra. Camila - Pacote 10h Áthos I', valor: 300.00 },
-            { id: 'athos-rec-5', data: '2026-05-14', tipo: 'receita', sala: 'sala1', desc: 'Dra. Camila - Pacote 10h Áthos I', valor: 300.00 },
-            { id: 'athos-rec-6', data: '2026-06-10', tipo: 'receita', sala: 'sala1', desc: 'Dra. Camila - Pacote 10h Áthos I', valor: 300.00 },
-            { id: 'athos-rec-7', data: '2026-06-17', tipo: 'receita', sala: 'sala2', desc: 'Andressa Alves Santos - Locação Áthos II', valor: 40.00 },
-            { id: 'athos-rec-8', data: '2026-06-25', tipo: 'receita', sala: 'sala2', desc: 'Andressa Alves Santos - Locação Áthos II', valor: 40.00 },
-            { id: 'athos-desp-1', data: '2026-01-15', tipo: 'despesa', sala: '-', desc: 'Aluguel Clínica', valor: 1800.00, isFixo: true },
-            { id: 'athos-desp-2', data: '2026-02-15', tipo: 'despesa', sala: '-', desc: 'Aluguel Clínica', valor: 1800.00, isFixo: true },
-            { id: 'athos-desp-3', data: '2026-03-15', tipo: 'despesa', sala: '-', desc: 'Aluguel Clínica', valor: 1800.00, isFixo: true },
-            { id: 'athos-desp-4', data: '2026-04-15', tipo: 'despesa', sala: '-', desc: 'Aluguel Clínica', valor: 1800.00, isFixo: true },
-            { id: 'athos-desp-5', data: '2026-05-15', tipo: 'despesa', sala: '-', desc: 'Aluguel Clínica', valor: 1800.00, isFixo: true },
-            { id: 'athos-desp-6', data: '2026-06-15', tipo: 'despesa', sala: '-', desc: 'Aluguel Clínica', valor: 1800.00, isFixo: true },
-            { id: 'athos-inv-1', data: '2026-01-05', tipo: 'investimento', sala: '-', desc: 'Reforma Estrutural & Mobiliário', valor: 45000.00 }
-        ];
-
-        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v43')) || defaultLancamentos;
+        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v43')) || [];
 
         let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v43')) || [
             { id: 0, nome: 'Áthos Continuidade (Maior Turno)', tipo: 'Pacote Mensal', horas: 10, valor: 300.00, desc: '10h/mês — R$ 30,00/h' },
@@ -419,6 +408,9 @@
             const lancData = document.getElementById('lanc-data');
             if(lancData) lancData.valueAsDate = new Date();
             
+            // Tenta puxar automaticamente do sistema pai se houver dados salvos em outras chaves
+            tentarSincronizarStorageParent();
+
             renderDropdownCheckboxes();
             atualizarCustosAutomaticosSemanticamente();
             renderPacotesUI();
@@ -426,9 +418,11 @@
             sincronizarConfigTurnosUI();
             renderApp();
             
-            if (window.parent && window.parent !== window) {
-                window.parent.postMessage({ tipo: 'SOLICITAR_SINCRONIZACAO' }, '*');
-            }
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.tipo === 'SINCRONIZAR_DADOS') {
+                    processarRegistrosExternos(event.data.dados);
+                }
+            });
             
             document.addEventListener('click', (e) => {
                 const menu = document.getElementById('dropdown-menu'), btn = document.getElementById('dropdown-btn');
@@ -436,25 +430,67 @@
             });
         });
 
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.tipo === 'SINCRONIZAR_DADOS') {
-                let registrosRecebidos = event.data.dados;
-                if (Array.isArray(registrosRecebidos) && registrosRecebidos.length > 0) {
-                    lancamentos = registrosRecebidos.map(item => ({
-                        id: item.id || 'athos-' + Math.random(),
-                        data: item.data,
-                        tipo: item.tipo,
-                        sala: item.sala || 'sala1',
-                        desc: item.descricao || item.desc || 'Lançamento Áthos',
-                        valor: parseFloat(item.valor) || 0
-                    }));
-                    localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
-                    atualizarCustosAutomaticosSemanticamente();
-                    renderApp();
-                    triggerToast("Dados sincronizados com o Áthos!", "🔄");
+        // Função para tentar varrer o localStorage do domínio pai ou chaves comuns do sistema
+        function tentarSincronizarStorageParent() {
+            try {
+                // Tenta ler do parent se estiver no mesmo domínio/origem
+                if (window.parent && window.parent !== window) {
+                    try {
+                        let parentStorage = window.parent.localStorage;
+                        for (let i = 0; i < parentStorage.length; i++) {
+                            let key = parentStorage.key(i);
+                            if (key && (key.includes('lancamento') || key.includes('financeiro') || key.includes('dados') || key.includes('athos'))) {
+                                let val = JSON.parse(parentStorage.getItem(key));
+                                if (Array.isArray(val) && val.length > 0) {
+                                    processarRegistrosExternos(val);
+                                    return;
+                                }
+                            }
+                        }
+                    } catch(err) {
+                        // Bloqueio de cross-origin comum em iframes de domínios diferentes
+                    }
                 }
+
+                // Tenta varrer o localStorage local por chaves alternativas do sistema principal
+                for (let i = 0; i < localStorage.length; i++) {
+                    let key = localStorage.key(i);
+                    if (key && key !== 'simulador_lancamentos_athos_v43' && (key.includes('lanc') || key.includes('fin') || key.includes('reg'))) {
+                        let val = JSON.parse(localStorage.getItem(key));
+                        if (Array.isArray(val) && val.length > 0) {
+                            processarRegistrosExternos(val);
+                            return;
+                        }
+                    }
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function sincronizarDadosDoSistemaParent() {
+            tentarSincronizarStorageParent();
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ tipo: 'SOLICITAR_SINCRONIZACAO' }, '*');
             }
-        });
+            triggerToast("Busca de dados concluída!", "🔄");
+            renderApp();
+        }
+
+        function processarRegistrosExternos(registrosRecebidos) {
+            if (Array.isArray(registrosRecebidos) && registrosRecebidos.length > 0) {
+                lancamentos = registrosRecebidos.map(item => ({
+                    id: item.id || 'athos-' + Math.random(),
+                    data: item.data || item.vencimento || new Date().toISOString().split('T')[0],
+                    tipo: item.tipo || (item.valor < 0 ? 'despesa' : 'receita'),
+                    sala: item.sala || (String(item.desc || item.descricao || '').toUpperCase().includes('SALA 2') ? 'sala2' : 'sala1'),
+                    desc: item.descricao || item.desc || item.profissional || 'Lançamento Sistema',
+                    valor: Math.abs(parseFloat(item.valor) || 0)
+                }));
+                localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
+                atualizarCustosAutomaticosSemanticamente();
+                renderApp();
+                triggerToast("Dados atualizados com o sistema!", "✅");
+            }
+        }
 
         const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
         const turnosDia = [
