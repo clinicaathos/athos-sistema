@@ -406,13 +406,20 @@
         let chartInstance = null;
 
         document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById('lanc-data').valueAsDate = new Date();
+            const lancData = document.getElementById('lanc-data');
+            if(lancData) lancData.valueAsDate = new Date();
+            
             renderDropdownCheckboxes();
             atualizarCustosAutomaticosSemanticamente();
             renderPacotesUI();
             renderDonaMatrix();
             sincronizarConfigTurnosUI();
             renderApp();
+            
+            // Pede para a janela pai (Áthos) reenviar os dados caso queira sincronizar na inicialização
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ tipo: 'SOLICITAR_SINCRONIZACAO' }, '*');
+            }
             
             document.addEventListener('click', (e) => {
                 const menu = document.getElementById('dropdown-menu'), btn = document.getElementById('dropdown-btn');
@@ -426,7 +433,7 @@
         window.addEventListener('message', (event) => {
             if (event.data && event.data.tipo === 'SINCRONIZAR_DADOS') {
                 let registrosRecebidos = event.data.dados;
-                if (Array.isArray(registrosRecebidos) && registrosRecebidos.length > 0) {
+                if (Array.isArray(registrosRecebidos)) {
                     lancamentos = registrosRecebidos.map(item => ({
                         id: item.id || 'athos-' + Math.random(),
                         data: item.data,
@@ -699,7 +706,9 @@
         }
 
         function renderApp() {
-            const filtroAno = document.getElementById('dash-filtro-ano').value;
+            const filtroAnoEl = document.getElementById('dash-filtro-ano');
+            if(!filtroAnoEl) return;
+            const filtroAno = filtroAnoEl.value;
             let sala1Tot = 0, sala2Tot = 0, totalDespesas = 0, totalInvestido = 0, countReg = 0;
             let tableRowsHtml = '';
             let mobileCardsHtml = '';
@@ -736,13 +745,20 @@
                 }
             });
 
-            document.getElementById('empty-state').classList.toggle('hidden', countReg > 0);
-            document.getElementById('desktop-table-container').classList.toggle('hidden', countReg === 0);
-            document.getElementById('table-body').innerHTML = tableRowsHtml;
-            document.getElementById('mobile-cards-container').innerHTML = mobileCardsHtml;
+            const emptyState = document.getElementById('empty-state');
+            const deskTable = document.getElementById('desktop-table-container');
+            if(emptyState) emptyState.classList.toggle('hidden', countReg > 0);
+            if(deskTable) deskTable.classList.toggle('hidden', countReg === 0);
+            
+            const tableBody = document.getElementById('table-body');
+            const mobileCards = document.getElementById('mobile-cards-container');
+            if(tableBody) tableBody.innerHTML = tableRowsHtml;
+            if(mobileCards) mobileCards.innerHTML = mobileCardsHtml;
 
-            document.getElementById('faturamento-sala1').innerText = formatCurrency(sala1Tot);
-            document.getElementById('faturamento-sala2').innerText = formatCurrency(sala2Tot);
+            const f1 = document.getElementById('faturamento-sala1');
+            const f2 = document.getElementById('faturamento-sala2');
+            if(f1) f1.innerText = formatCurrency(sala1Tot);
+            if(f2) f2.innerText = formatCurrency(sala2Tot);
 
             let qtdMeses = mesesAtivos.length || 1;
             atualizarCustosAutomaticosSemanticamente();
@@ -750,24 +766,31 @@
             let margemU = config.preco - config.custoVariavel;
             let fatMin = (baseFixo / (margemU > 0 ? margemU : 1)) * config.preco;
 
-            document.getElementById('kpi-break-even').innerText = formatCurrency(fatMin);
+            const kbEven = document.getElementById('kpi-break-even');
+            if(kbEven) kbEven.innerText = formatCurrency(fatMin);
             let ocuMin = (config.capacidade * qtdMeses) > 0 ? ((fatMin / config.preco) / (config.capacidade * qtdMeses)) * 100 : 0;
             if(ocuMin > 100) ocuMin = 100;
-            document.getElementById('kpi-ponto-eq').innerText = ocuMin.toFixed(1) + '%';
+            const kpEq = document.getElementById('kpi-ponto-eq');
+            if(kpEq) kpEq.innerText = ocuMin.toFixed(1) + '%';
 
             let capex = lancamentos.reduce((acc, i) => i.tipo === 'investimento' ? acc + i.valor : acc, 0) || 50000;
-            let mesesPayback = parseInt(document.getElementById('meta-meses-payback').value) || 12;
+            const metaPayEl = document.getElementById('meta-meses-payback');
+            let mesesPayback = metaPayEl ? parseInt(metaPayEl.value) || 12 : 12;
             let fatMeta = ((capex / mesesPayback) + (baseFixo / qtdMeses)) / ((config.preco - config.custoVariavel)/config.preco);
             let turnosMeta = Math.ceil(fatMeta / (config.preco * 4));
 
-            document.getElementById('kpi-fat-meta').innerText = formatCurrency(fatMeta);
-            document.getElementById('kpi-turnos-meta').innerText = `Meta: ${turnosMeta} turnos/mês`;
+            const fatMetaEl = document.getElementById('kpi-fat-meta');
+            const turnosMetaEl = document.getElementById('kpi-turnos-meta');
+            if(fatMetaEl) fatMetaEl.innerText = formatCurrency(fatMeta);
+            if(turnosMetaEl) turnosMetaEl.innerText = `Meta: ${turnosMeta} turnos/mês`;
 
             let op = (sala1Tot + sala2Tot) - totalDespesas;
             let liquido = op - totalInvestido;
 
-            document.getElementById('sum-operacional').innerText = formatCurrency(op);
-            document.getElementById('sum-liquido').innerText = formatCurrency(liquido);
+            const sumOp = document.getElementById('sum-operacional');
+            const sumLiq = document.getElementById('sum-liquido');
+            if(sumOp) sumOp.innerText = formatCurrency(op);
+            if(sumLiq) sumLiq.innerText = formatCurrency(liquido);
 
             let vetorFluxo = [];
             mesesAtivos.forEach(idx => {
@@ -785,16 +808,21 @@
 
             let paybackRes = calcularPaybackAcumulado(vetorFluxo);
             let pbEl = document.getElementById('kpi-payback');
-            pbEl.innerText = paybackRes.atingiuRetorno ? paybackRes.mesesAteRetorno.toFixed(1) + ' meses' : 'Déficit Ativo';
-            pbEl.className = `text-xl lg:text-2xl font-bold ${paybackRes.atingiuRetorno?'text-emerald-600':'text-rose-600'} block mt-1.5`;
+            if(pbEl) {
+                pbEl.innerText = paybackRes.atingiuRetorno ? paybackRes.mesesAteRetorno.toFixed(1) + ' meses' : 'Déficit Ativo';
+                pbEl.className = `text-xl lg:text-2xl font-bold ${paybackRes.atingiuRetorno?'text-emerald-600':'text-rose-600'} block mt-1.5`;
+            }
 
             let roi = (totalInvestido > 0) ? (((op / qtdMeses) * 12) / totalInvestido) * 100 : 0;
-            document.getElementById('kpi-roi').innerText = roi.toFixed(1) + '%';
+            const roiEl = document.getElementById('kpi-roi');
+            if(roiEl) roiEl.innerText = roi.toFixed(1) + '%';
 
             let tir = calcularTIRCronologica(vetorFluxo);
             let tirEl = document.getElementById('kpi-tir');
-            tirEl.innerText = tir.toFixed(1) + '%';
-            tirEl.className = `text-xl lg:text-2xl font-bold ${tir < 0 ? 'text-rose-600' : 'text-emerald-600'} block mt-1.5`;
+            if(tirEl) {
+                tirEl.innerText = tir.toFixed(1) + '%';
+                tirEl.className = `text-xl lg:text-2xl font-bold ${tir < 0 ? 'text-rose-600' : 'text-emerald-600'} block mt-1.5`;
+            }
 
             renderCharts();
         }
@@ -803,7 +831,9 @@
 
         function renderCharts() {
             const ctx = document.getElementById('mainChart'); if(!ctx) return;
-            const filtroAno = document.getElementById('dash-filtro-ano').value;
+            const filtroAnoEl = document.getElementById('dash-filtro-ano');
+            if(!filtroAnoEl) return;
+            const filtroAno = filtroAnoEl.value;
             let lbs = [], recs = [], desps = [], lucros = [];
             nomesCurtos.forEach((m, idx) => {
                 if (mesesAtivos.includes(idx)) {
@@ -858,10 +888,10 @@
             const salaBlock = document.getElementById('sala-selector-block');
             if(type === 'receita') {
                 btn.className = "type-btn h-14 border rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all bg-emerald-50 border-emerald-500 text-emerald-800 cursor-pointer";
-                salaBlock.classList.remove('hidden');
+                if(salaBlock) salaBlock.classList.remove('hidden');
             } else {
                 btn.className = `type-btn h-14 border rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all ${type==='despesa'?'bg-rose-50 border-rose-500 text-rose-800':'bg-slate-100 border-slate-300 text-slate-900'} cursor-pointer`;
-                salaBlock.classList.add('hidden'); selectedSala = '-';
+                if(salaBlock) salaBlock.classList.add('hidden'); selectedSala = '-';
             }
         }
 
@@ -870,7 +900,8 @@
             document.querySelectorAll('.sala-btn').forEach(el => {
                 el.className = "sala-btn h-11 border border-slate-200 rounded-xl font-semibold text-sm transition-all text-slate-600 hover:bg-slate-50 cursor-pointer text-center w-full";
             });
-            document.getElementById(`btn-${sala}`).className = "sala-btn h-11 border rounded-xl font-semibold text-sm transition-all bg-slate-900 border-slate-900 text-white cursor-pointer text-center w-full";
+            const btnSala = document.getElementById(`btn-${sala}`);
+            if(btnSala) btnSala.className = "sala-btn h-11 border rounded-xl font-semibold text-sm transition-all bg-slate-900 border-slate-900 text-white cursor-pointer text-center w-full";
         }
 
         function toggleDropdown(e) { e.stopPropagation(); document.getElementById('dropdown-menu').classList.toggle('hidden'); }
@@ -884,7 +915,7 @@
         }
         function onCheckboxChange(idx) {
             let chk = document.getElementById(`chk-mes-${idx}`);
-            if(chk.checked) { if(!mesesAtivos.includes(idx)) mesesAtivos.push(idx); } else { mesesAtivos = mesesAtivos.filter(m => m !== idx); }
+            if(chk && chk.checked) { if(!mesesAtivos.includes(idx)) mesesAtivos.push(idx); } else { mesesAtivos = mesesAtivos.filter(m => m !== idx); }
             mesesAtivos.sort((a,b)=>a-b); renderApp();
         }
         function selecionarTodosMeses(s) { mesesAtivos = s ? [0,1,2,3,4,5,6,7,8,9,10,11] : []; renderDropdownCheckboxes(); renderApp(); }
@@ -932,6 +963,7 @@
 
         function triggerToast(msg, icon = "ℹ️") {
             const t = document.getElementById('toast-notification');
+            if(!t) return;
             document.getElementById('toast-icon').innerText = icon;
             document.getElementById('toast-message').innerText = msg;
             t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 4000);
