@@ -416,7 +416,6 @@
             sincronizarConfigTurnosUI();
             renderApp();
             
-            // Pede para a janela pai (Áthos) reenviar os dados caso queira sincronizar na inicialização
             if (window.parent && window.parent !== window) {
                 window.parent.postMessage({ tipo: 'SOLICITAR_SINCRONIZACAO' }, '*');
             }
@@ -427,9 +426,6 @@
             });
         });
 
-        // =========================================================================
-        // ESCUTA DE POSTMESSAGE (Integração automática com o index.html via Iframe)
-        // =========================================================================
         window.addEventListener('message', (event) => {
             if (event.data && event.data.tipo === 'SINCRONIZAR_DADOS') {
                 let registrosRecebidos = event.data.dados;
