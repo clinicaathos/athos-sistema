@@ -651,7 +651,6 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="nav-item" onclick="showPage('lembretes',this)"><span class="nav-icon">◷</span>Lembretes</div>
       <div class="nav-item" onclick="showPage('servicos',this)"><span class="nav-icon">⊗</span>Serviços</div>
       <div class="nav-item" onclick="showPage('levantamento',this)"><span class="nav-icon">◐</span>Levantamento Financeiro</div>
-      <div class="nav-item" onclick="showPage('analise',this)"><span class="nav-icon">◎</span>Análise de Negócio</div>
       <div class="sb-group">Sistema</div>
       <div class="nav-item" onclick="showPage('configuracoes',this)"><span class="nav-icon">⊕</span>Configurações</div>
     </nav>
@@ -1613,78 +1612,6 @@ body.dark .tag{background:#111827;border-color:#374151;}
     </footer>
 
     
-      </div>
-
-      <!-- ══ ANÁLISE DE NEGÓCIO ══ -->
-      <div class="page" id="page-analise">
-        <div class="sec-header">
-          <span class="sec-title">Análise de Negócio</span>
-          <button class="btn btn-secondary" onclick="calcularAnalise()">↻ Recalcular</button>
-        </div>
-
-        <!-- Parâmetros de entrada -->
-        <div class="card" style="margin-bottom:.75rem">
-          <div style="font-size:.82rem;font-weight:600;margin-bottom:.75rem">Parâmetros do período de análise</div>
-          <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
-            <div class="form-group" style="margin:0;min-width:130px"><label class="form-label">Período</label>
-              <select class="form-select" id="analise-periodo">
-                <option value="3">Últimos 3 meses</option>
-                <option value="6" selected>Últimos 6 meses</option>
-                <option value="12">Último ano</option>
-                <option value="24">Últimos 2 anos</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin:0;min-width:160px"><label class="form-label">Investimento inicial (R$)</label>
-              <input class="form-input" type="number" id="analise-investimento" placeholder="Ex: 50000" min="0">
-            </div>
-            <div class="form-group" style="margin:0;min-width:160px"><label class="form-label">Custo fixo mensal (R$) <span style="font-size:.68rem;color:var(--text-lighter)">(se quiser sobrescrever)</span></label>
-              <input class="form-input" type="number" id="analise-custo-fixo" placeholder="Calculado das despesas">
-            </div>
-            <button class="btn btn-primary" onclick="calcularAnalise()">Calcular</button>
-          </div>
-        </div>
-
-        <!-- KPIs principais -->
-        <div class="stats-grid" style="margin-bottom:.75rem">
-          <div class="stat-card">
-            <div class="stat-label">ROI do Período</div>
-            <div class="stat-value" id="analise-roi" style="color:var(--gold)">—</div>
-            <div class="stat-sub" id="analise-roi-sub">Retorno sobre o investimento</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Payback</div>
-            <div class="stat-value" id="analise-payback">—</div>
-            <div class="stat-sub">Meses para recuperar o investimento</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Break-Even Mensal</div>
-            <div class="stat-value" id="analise-breakeven">—</div>
-            <div class="stat-sub">Receita mínima para cobrir custos</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Margem Líquida Média</div>
-            <div class="stat-value" id="analise-margem">—</div>
-            <div class="stat-sub">Lucro / Receita bruta</div>
-          </div>
-        </div>
-
-        <!-- Detalhamento financeiro do período -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
-          <div class="card">
-            <div style="font-size:.82rem;font-weight:600;margin-bottom:.75rem">Receitas no período</div>
-            <div id="analise-rec-detalhe"><div style="color:var(--text-lighter);font-size:.8rem">Aguardando cálculo.</div></div>
-          </div>
-          <div class="card">
-            <div style="font-size:.82rem;font-weight:600;margin-bottom:.75rem">Despesas no período</div>
-            <div id="analise-desp-detalhe"><div style="color:var(--text-lighter);font-size:.8rem">Aguardando cálculo.</div></div>
-          </div>
-        </div>
-
-        <!-- Projeção de longo prazo -->
-        <div class="card">
-          <div style="font-size:.82rem;font-weight:600;margin-bottom:.75rem">📈 Projeção de longo prazo (com base na média do período)</div>
-          <div id="analise-projecao"><div style="color:var(--text-lighter);font-size:.8rem">Aguardando cálculo.</div></div>
-        </div>
       </div>
 
     </div><!-- /content -->
