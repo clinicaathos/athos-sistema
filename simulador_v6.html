@@ -201,10 +201,13 @@
         <div id="tab-lanc" class="tab-content hidden max-w-3xl mx-auto space-y-6">
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div>
-                    <h2 class="text-sm font-bold text-slate-700 mb-1">🔄 Sincronização Automática com o Sistema</h2>
-                    <p class="text-xs text-slate-400">Puxe os lançamentos atuais salvos no navegador da clínica.</p>
+                    <h2 class="text-sm font-bold text-slate-700 mb-1">📂 Importar Backup Automático (.json)</h2>
+                    <p class="text-xs text-slate-400">Suba o arquivo de backup exportado do sistema para popular os indicadores.</p>
                 </div>
-                <button onclick="sincronizarDadosDoSistemaParent()" class="h-11 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs transition-all cursor-pointer shrink-0">Puxar Dados do Sistema</button>
+                <label for="backup-uploader" class="h-11 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center shrink-0">
+                    Carregar Backup JSON
+                    <input type="file" id="backup-uploader" accept=".json" class="hidden" onchange="importBackupJSON(this)" />
+                </label>
             </div>
 
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
@@ -408,9 +411,6 @@
             const lancData = document.getElementById('lanc-data');
             if(lancData) lancData.valueAsDate = new Date();
             
-            // Tenta puxar automaticamente do sistema pai se houver dados salvos em outras chaves
-            tentarSincronizarStorageParent();
-
             renderDropdownCheckboxes();
             atualizarCustosAutomaticosSemanticamente();
             renderPacotesUI();
@@ -418,78 +418,41 @@
             sincronizarConfigTurnosUI();
             renderApp();
             
-            window.addEventListener('message', (event) => {
-                if (event.data && event.data.tipo === 'SINCRONIZAR_DADOS') {
-                    processarRegistrosExternos(event.data.dados);
-                }
-            });
-            
             document.addEventListener('click', (e) => {
                 const menu = document.getElementById('dropdown-menu'), btn = document.getElementById('dropdown-btn');
                 if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) menu.classList.add('hidden');
             });
         });
 
-        // Função para tentar varrer o localStorage do domínio pai ou chaves comuns do sistema
-        function tentarSincronizarStorageParent() {
-            try {
-                // Tenta ler do parent se estiver no mesmo domínio/origem
-                if (window.parent && window.parent !== window) {
-                    try {
-                        let parentStorage = window.parent.localStorage;
-                        for (let i = 0; i < parentStorage.length; i++) {
-                            let key = parentStorage.key(i);
-                            if (key && (key.includes('lancamento') || key.includes('financeiro') || key.includes('dados') || key.includes('athos'))) {
-                                let val = JSON.parse(parentStorage.getItem(key));
-                                if (Array.isArray(val) && val.length > 0) {
-                                    processarRegistrosExternos(val);
-                                    return;
-                                }
-                            }
-                        }
-                    } catch(err) {
-                        // Bloqueio de cross-origin comum em iframes de domínios diferentes
+        // Função específica para importar o JSON de Backup gerado pelo sistema
+        function importBackupJSON(input) {
+            const file = input.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const dadosImportados = JSON.parse(e.target.result);
+                    if (Array.isArray(dadosImportados)) {
+                        lancamentos = dadosImportados.map(item => ({
+                            id: item.id || 'athos-' + Math.random(),
+                            data: item.data || new Date().toISOString().split('T')[0],
+                            tipo: item.tipo || 'receita',
+                            sala: item.sala || 'sala1',
+                            desc: item.desc || item.descricao || 'Lançamento',
+                            valor: parseFloat(item.valor) || 0
+                        }));
+                        localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
+                        atualizarCustosAutomaticosSemanticamente();
+                        renderApp();
+                        triggerToast(`Backup carregado com sucesso! (${lancamentos.length} registros)`, "📂");
+                        switchTab('dash');
+                    } else {
+                        alert("O formato do arquivo JSON de backup é inválido.");
                     }
+                } catch(err) {
+                    alert("Erro ao ler o arquivo JSON de backup.");
                 }
-
-                // Tenta varrer o localStorage local por chaves alternativas do sistema principal
-                for (let i = 0; i < localStorage.length; i++) {
-                    let key = localStorage.key(i);
-                    if (key && key !== 'simulador_lancamentos_athos_v43' && (key.includes('lanc') || key.includes('fin') || key.includes('reg'))) {
-                        let val = JSON.parse(localStorage.getItem(key));
-                        if (Array.isArray(val) && val.length > 0) {
-                            processarRegistrosExternos(val);
-                            return;
-                        }
-                    }
-                }
-            } catch(e) { console.error(e); }
-        }
-
-        function sincronizarDadosDoSistemaParent() {
-            tentarSincronizarStorageParent();
-            if (window.parent && window.parent !== window) {
-                window.parent.postMessage({ tipo: 'SOLICITAR_SINCRONIZACAO' }, '*');
-            }
-            triggerToast("Busca de dados concluída!", "🔄");
-            renderApp();
-        }
-
-        function processarRegistrosExternos(registrosRecebidos) {
-            if (Array.isArray(registrosRecebidos) && registrosRecebidos.length > 0) {
-                lancamentos = registrosRecebidos.map(item => ({
-                    id: item.id || 'athos-' + Math.random(),
-                    data: item.data || item.vencimento || new Date().toISOString().split('T')[0],
-                    tipo: item.tipo || (item.valor < 0 ? 'despesa' : 'receita'),
-                    sala: item.sala || (String(item.desc || item.descricao || '').toUpperCase().includes('SALA 2') ? 'sala2' : 'sala1'),
-                    desc: item.descricao || item.desc || item.profissional || 'Lançamento Sistema',
-                    valor: Math.abs(parseFloat(item.valor) || 0)
-                }));
-                localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
-                atualizarCustosAutomaticosSemanticamente();
-                renderApp();
-                triggerToast("Dados atualizados com o sistema!", "✅");
-            }
+            };
+            reader.readAsText(file);
         }
 
         const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
