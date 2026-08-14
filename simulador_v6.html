@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Simulador Financeiro - Gestão Estratégica &bull; Áthos</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <div id="toast-notification" class="hidden fixed bottom-5 right-5 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl z-50 transition-all duration-300 flex items-center gap-2 border border-slate-700">
+        <span id="toast-icon">ℹ️</span>
+        <span id="toast-message">Notificação</span>
+    </div>
+
+    <!-- MODAL DE EDIÇÃO DE PACOTE -->
+    <div id="modal-pacote" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <h3 class="text-sm font-bold text-slate-800">Editar Pacote / Turno</h3>
+            <div class="space-y-3">
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-bold uppercase text-slate-400">Nome do Pacote</label>
+                    <input type="text" id="edit-pacote-nome" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 font-semibold text-slate-700 w-full">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-bold uppercase text-slate-400">Franquia (Horas/Mês)</label>
+                    <input type="number" id="edit-pacote-horas" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 font-semibold text-slate-700 w-full">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-bold uppercase text-slate-400">Valor (R$)</label>
+                    <input type="text" id="edit-pacote-valor" oninput="handleCurrencyInput(this)" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 font-bold text-slate-700 w-full">
+                </div>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="fecharModalPacote()" class="flex-1 h-11 border border-slate-200 text-slate-600 font-semibold rounded-xl text-xs hover:bg-slate-50 cursor-pointer">Cancelar</button>
+                <button type="button" onclick="salvarPacoteEditado()" class="flex-1 h-11 bg-indigo-600 text-white font-semibold rounded-xl text-xs hover:bg-indigo-700 cursor-pointer shadow-xs">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30 border-b border-stone-800">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
+            <div class="text-center lg:text-left w-full lg:w-auto">
+                <h1 class="text-lg lg:text-xl font-bold tracking-tight">Simulador Financeiro</h1>
+                <p class="text-[11px] text-indigo-200 mt-0.5">Gestão Estratégica &bull; Clínica Áthos</p>
+            </div>
+            <nav class="flex gap-1 bg-indigo-950 p-1 rounded-xl w-full lg:w-auto overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap snap-x">
+                <button onclick="switchTab('dash')" id="btn-dash" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg bg-indigo-600 text-white shadow-xs cursor-pointer">Dashboard</button>
+                <button onclick="switchTab('lanc')" id="btn-lanc" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-indigo-200 hover:text-white cursor-pointer">Lançamentos</button>
+                <button onclick="switchTab('extrato')" id="btn-extrato" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-indigo-200 hover:text-white cursor-pointer">Histórico</button>
+                <button onclick="switchTab('config')" id="btn-config" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-indigo-200 hover:text-white cursor-pointer">Configurações</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
+        
+        <!-- DASHBOARD -->
+        <div id="tab-dash" class="tab-content space-y-6">
+            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div class="space-y-1">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Filtro de Período</h2>
+                    <p class="text-sm font-bold text-slate-700">Selecione múltiplos meses e anos para análise</p>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full md:w-auto">
+                    <div class="flex flex-col gap-1">
+                        <label for="dash-filtro-ano" class="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">Ano de Análise</label>
+                        <select id="dash-filtro-ano" onchange="renderApp()" class="w-full h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 font-semibold text-slate-700 focus:bg-white focus:outline-hidden cursor-pointer">
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                            <option value="2029">2029</option>
+                            <option value="2030">2030</option>
+                        </select>
+                    </div>
+
+                    <div class="relative flex flex-col gap-1">
+                        <label for="dropdown-btn" class="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">Múltiplos Meses</label>
+                        <button type="button" id="dropdown-btn" onclick="toggleDropdown(event)" class="w-full h-11 flex justify-between items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700 shadow-xs hover:bg-slate-100 focus:outline-hidden cursor-pointer">
+                            <span id="dropdown-label" class="truncate">Todos os meses</span>
+                            <svg class="h-4 w-4 text-slate-400 shrink-0 ml-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
+                        </button>
+
+                        <div id="dropdown-menu" onclick="event.stopPropagation()" class="hidden absolute left-0 md:right-0 top-18 md:top-16 z-20 w-full md:w-64 max-h-72 overflow-y-auto rounded-2xl bg-white shadow-xl border border-slate-200 p-2 space-y-0.5">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-2 pt-1 mb-1 px-2">
+                                <button onclick="selecionarTodosMeses(true)" class="text-xs font-bold text-indigo-600 hover:underline cursor-pointer">Marcar todos</button>
+                                <button onclick="selecionarTodosMeses(false)" class="text-xs font-bold text-slate-400 hover:underline cursor-pointer">Limpar</button>
+                            </div>
+                            <div id="dropdown-checkboxes-container" class="space-y-0.5"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPIS -->
+            <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 col-span-1">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ocupação Mínima</span>
+                    <span id="kpi-ponto-eq" class="text-xl lg:text-2xl font-bold text-slate-800 block mt-1.5">0.0%</span>
+                    <span id="lbl-metrica-eq" class="text-[10px] text-slate-400 block mt-0.5">Ponto de Equilíbrio</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 col-span-1">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Faturamento Mínimo</span>
+                    <span id="kpi-break-even" class="text-xl lg:text-2xl font-bold text-slate-800 block mt-1.5 truncate">R$ 0,00</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Break-Even Período</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 col-span-1">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Payback Acumulado</span>
+                    <span id="kpi-payback" class="text-xl lg:text-2xl font-bold text-slate-800 block mt-1.5">0 meses</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Retorno Investimento</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 col-span-1">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ROI Anualizado</span>
+                    <span id="kpi-roi" class="text-xl lg:text-2xl font-bold text-slate-800 block mt-1.5">0.0%</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Taxa de Retorno s/ Cap.</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 col-span-2 lg:col-span-1">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">TIR Mensal Real</span>
+                    <span id="kpi-tir" class="text-xl lg:text-2xl font-bold text-emerald-600 block mt-1.5">0.0%</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Taxa Interna Retorno</span>
+                </div>
+            </div>
+
+            <!-- SIMULADOR POR TURNOS -->
+            <div class="bg-gradient-to-r from-indigo-900 to-indigo-950 text-white p-5 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="space-y-1 w-full md:w-auto">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-300 block">Simulador por Turnos (Meta de Capex & Despesas)</span>
+                    <h3 class="text-lg font-bold">Quantos turnos alugar para recuperar o investimento?</h3>
+                    <p class="text-xs text-indigo-200">Baseado no maior pacote (10h) e na grade comercial configurada.</p>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                    <div class="flex flex-col gap-1 w-full sm:w-40">
+                        <label for="meta-meses-payback" class="text-[10px] font-bold uppercase text-indigo-300">Prazo Desejado</label>
+                        <select id="meta-meses-payback" onchange="renderApp()" class="h-11 px-3 bg-indigo-900 border border-indigo-700 rounded-xl text-sm font-semibold text-white focus:outline-hidden cursor-pointer">
+                            <option value="6">6 meses</option>
+                            <option value="12" selected>12 meses</option>
+                            <option value="18">18 meses</option>
+                            <option value="24">24 meses</option>
+                            <option value="36">36 meses</option>
+                        </select>
+                    </div>
+                    
+                    <div class="bg-white/10 p-3 rounded-xl border border-indigo-800 flex flex-col justify-center min-w-[220px] w-full sm:w-auto">
+                        <span class="text-[10px] font-bold uppercase text-indigo-300">Faturamento Alvo por Turnos</span>
+                        <span id="kpi-fat-meta" class="text-xl font-black text-emerald-400">R$ 0,00</span>
+                        <span id="kpi-turnos-meta" class="text-[10px] text-indigo-200">Meta: 0 turnos/mês</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRÁFICO E SALAS -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 lg:col-span-2">
+                    <h3 class="text-sm font-bold text-slate-700 mb-3">Evolução de Fluxo Misto (Receitas vs. Despesas + Linha de Resultado)</h3>
+                    <div class="h-60 sm:h-64 relative" id="chart-wrapper">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 flex flex-col justify-between gap-4">
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-bold text-slate-700">Desempenho por sala (Receita)</h3>
+                        <div class="grid grid-cols-2 lg:grid-cols-1 gap-3">
+                            <div class="p-3 bg-slate-50 rounded-xl">
+                                <span class="text-[10px] font-bold text-slate-400 block uppercase">Sala 01</span>
+                                <span id="faturamento-sala1" class="text-lg font-bold text-indigo-600 mt-0.5 block">R$ 0,00</span>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-xl">
+                                <span class="text-[10px] font-bold text-slate-400 block uppercase">Sala 02</span>
+                                <span id="faturamento-sala2" class="text-lg font-bold text-purple-600 mt-0.5 block">R$ 0,00</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-indigo-50 p-4 rounded-xl space-y-2.5">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
+                            <span class="text-[11px] font-bold text-indigo-700 uppercase">Resultado Operacional:</span>
+                            <span id="sum-operacional" class="text-sm lg:text-base font-bold text-slate-800">R$ 0,00</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 border-t border-indigo-100 pt-2.5">
+                            <span class="text-[11px] font-bold text-indigo-900 uppercase">Fluxo Líquido do Período:</span>
+                            <span id="sum-liquido" class="text-sm lg:text-lg font-black text-indigo-900">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LANÇAMENTOS -->
+        <div id="tab-lanc" class="tab-content hidden max-w-3xl mx-auto space-y-6">
+            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
+                <h2 class="text-sm font-bold text-slate-700 mb-1">📥 Importar Planilha do Excel (.xlsx / .xls)</h2>
+                <p class="text-xs text-slate-400 mb-4">Arraste ou selecione o arquivo consolidado da clínica para importação inteligente.</p>
+                <div class="w-full">
+                    <label for="file-uploader" class="flex flex-col items-center justify-center w-full h-28 border-2 border-slate-200 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all p-4 text-center">
+                        <svg class="w-6 h-6 mb-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                        <p class="text-xs text-slate-500 font-semibold">Toque para selecionar o Excel da Clínica</p>
+                        <input type="file" id="file-uploader" accept=".xlsx, .xls" class="hidden" onchange="importFile(this)" />
+                    </label>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
+                <h2 class="text-sm font-bold text-slate-700 mb-4">✍️ Novo Lançamento Manual</h2>
+                <form id="form-lancamento" onsubmit="saveLancamento(event)" class="space-y-5">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1.5">1. Tipo de Movimentação</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <button type="button" onclick="setFormType('receita')" id="btn-type-receita" class="type-btn h-14 border rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all bg-emerald-50 border-emerald-500 text-emerald-800 cursor-pointer">
+                                <span class="text-lg">🟢</span> <span>Receita</span>
+                            </button>
+                            <button type="button" onclick="setFormType('despesa')" id="btn-type-despesa" class="type-btn h-14 border border-slate-200 rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all text-slate-600 hover:bg-slate-50 cursor-pointer">
+                                <span class="text-lg">🔴</span> <span>Despesa</span>
+                            </button>
+                            <button type="button" onclick="setFormType('investimento')" id="btn-type-investimento" class="type-btn h-14 border border-slate-200 rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all text-slate-600 hover:bg-slate-50 cursor-pointer">
+                                <span class="text-lg">🔵</span> <span>Investimento</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="sala-selector-block">
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1.5">2. Destinação da Receita</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="setFormSala('sala1')" id="btn-sala1" class="sala-btn h-11 border rounded-xl font-semibold text-sm transition-all bg-indigo-50 border-indigo-500 text-indigo-800 cursor-pointer text-center w-full">Sala 01</button>
+                            <button type="button" onclick="setFormSala('sala2')" id="btn-sala2" class="sala-btn h-11 border border-slate-200 rounded-xl font-semibold text-sm transition-all text-slate-600 hover:bg-slate-50 cursor-pointer text-center w-full">Sala 02</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="flex flex-col gap-1">
+                            <label for="lanc-data" class="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">Data</label>
+                            <input type="date" id="lanc-data" required class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label for="lanc-desc" class="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">Descrição / Notas</label>
+                            <input type="text" id="lanc-desc" required placeholder="Ex: Aluguel / Enel / IPTU" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label for="lanc-valor" class="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">Valor (R$)</label>
+                            <input type="text" id="lanc-valor" required placeholder="R$ 0,00" oninput="handleCurrencyInput(this)" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full font-bold text-slate-700">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-xs transition-all cursor-pointer mt-2">Salvar Lançamento</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- HISTÓRICO -->
+        <div id="tab-extrato" class="tab-content hidden">
+            <div class="bg-white rounded-2xl shadow-xs border border-slate-100 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-700">Histórico Completo</h2>
+                        <p class="text-xs text-slate-400">Registros filtrados de acordo com o ano e meses ativos selecionados.</p>
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button onclick="clearData()" class="flex-1 sm:flex-none h-9 px-3 text-xs font-bold text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-xl cursor-pointer">Limpar Banco</button>
+                        <button onclick="exportJSON()" class="flex-1 sm:flex-none h-9 px-3 text-xs font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-xl cursor-pointer">Exportar Backup</button>
+                    </div>
+                </div>
+
+                <div id="empty-state" class="hidden p-12 text-center space-y-3">
+                    <span class="text-3xl block">📁</span>
+                    <h3 class="text-sm font-bold text-slate-700">Nenhum registro encontrado</h3>
+                    <p class="text-xs text-slate-400 max-w-xs mx-auto">Não existem movimentações salvas para os meses ou ano ativos selecionados.</p>
+                </div>
+
+                <div id="desktop-table-container" class="hidden md:block overflow-x-auto w-full">
+                    <table class="w-full text-left border-collapse min-w-[600px]">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-400 text-[10px] font-bold uppercase tracking-wider border-b border-slate-100">
+                                <th class="p-4">Data</th>
+                                <th class="p-4">Fluxo</th>
+                                <th class="p-4">Origem / Destino</th>
+                                <th class="p-4">Descrição</th>
+                                <th class="p-4 text-right">Valor</th>
+                                <th class="p-4 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body" class="text-xs lg:text-sm divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+
+                <div id="mobile-cards-container" class="block md:hidden divide-y divide-slate-100 bg-white"></div>
+            </div>
+        </div>
+
+        <!-- CONFIGURAÇÕES -->
+        <div id="tab-config" class="tab-content hidden max-w-4xl mx-auto space-y-6">
+            
+            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-700 mb-1">⚙️ Matriz de Uso Próprio da Proprietária (Sala 01)</h2>
+                    <p class="text-xs text-slate-400">Marque ou desmarque livremente os dias e turnos para a proprietária na Sala 01. A quantidade total de turnos comerciais ajusta-se automaticamente.</p>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-center border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 font-bold uppercase text-[10px]">
+                                <th class="p-3 text-left">Turno / Período</th>
+                                <th class="p-3">Segunda</th>
+                                <th class="p-3">Terça</th>
+                                <th class="p-3">Quarta</th>
+                                <th class="p-3">Quinta</th>
+                                <th class="p-3">Sexta</th>
+                                <th class="p-3">Sábado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dona-matrix-tbody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-between items-center bg-indigo-50 p-4 rounded-xl gap-3">
+                    <span class="text-xs font-bold text-indigo-900">Total de Turnos Comerciais Disponíveis (2 Salas):</span>
+                    <span id="cfg-total-turnos-badge" class="text-lg font-black text-indigo-900">84 turnos/mês</span>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-700 mb-1">Planos e Pacotes de Horas (Áthos)</h2>
+                        <p class="text-xs text-slate-400">O Pacote Principal (10h) define a âncora de preço e capacidade.</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="pacotes-container"></div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
+                <h2 class="text-sm font-bold text-slate-700 mb-1">Parâmetros Operacionais & Capacidade</h2>
+                <p class="text-xs text-slate-400 mb-5">Ajuste os parâmetros de cálculo baseados nos turnos ativos.</p>
+                
+                <div class="space-y-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] font-bold uppercase text-slate-500">Capacidade Total Mensal (Horas)</label>
+                            <input type="number" id="cfg-capacidade" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full font-bold text-slate-700">
+                        </div>
+                        
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] font-bold uppercase text-slate-500">Preço Base do Maior Turno (10h)</label>
+                            <input type="number" step="0.01" id="cfg-preco" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full font-bold text-slate-700" readonly>
+                            <span class="text-[10px] text-slate-400">Derivado do pacote de 10h (&times; 4h por turno).</span>
+                        </div>
+                    </div>
+
+                    <button onclick="saveConfig()" class="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-xs transition-all mt-2 cursor-pointer">Salvar Parâmetros Operacionais</button>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="bg-slate-100 border-t border-slate-200 py-4 text-center text-[10px] lg:text-xs text-slate-400 mt-auto">
+        Simulador Financeiro &bull; Gestão Estratégica de Clínicas.
+    </footer>
+
+    <script>
+        let selectedType = 'receita', selectedSala = 'sala1';
+        let mesesAtivos = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; 
+        const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        const nomesCurtos = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+        // Chaves de armazenamento persistente otimizadas (v43)
+        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v43')) || [
+            { id: '8Itjnat1UwZOqqmhnZIh', data: '2026-06-08', tipo: 'receita', sala: 'sala1', desc: 'Receita avulsa - Recarga gás', valor: 200.00 },
+            { id: 'FPSqPHBXckuuCvrSo0TM', data: '2026-05-17', tipo: 'receita', sala: 'sala1', desc: 'Estorno cartao - Estorno de 1 caixa de rodapé', valor: 309.54 },
+            { id: 'Fm2VHpe47l9GNOAqsBqQ', data: '2026-06-17', tipo: 'receita', sala: 'sala2', desc: 'Andressa Alves Santos - Locação Áthos II', valor: 40.00 },
+            { id: 'pOUrAZjqHpjL7gusj8cs', data: '2026-06-25', tipo: 'receita', sala: 'sala2', desc: 'Andressa Alves Santos - Locação Áthos II', valor: 40.00 },
+            { id: '04QGu29zSkFzPGnNQIvQ', data: '2026-06-15', tipo: 'despesa', sala: '-', desc: 'Enel (Energia)', valor: 226.31, isFixo: true },
+            { id: '0BN9iiHb19AeU0oPiRa2', data: '2026-04-17', tipo: 'investimento', sala: '-', desc: 'Compras - Santiago (Serviços)', valor: 301.06 },
+            { id: '0I1Jxi8SbC4DbSxaKPp7', data: '2026-06-10', tipo: 'investimento', sala: '-', desc: 'Carrinho Aparador (Compras)', valor: 42.33 },
+            { id: '0Ow7s8v44HmAVrfVccJ7', data: '2026-05-20', tipo: 'investimento', sala: '-', desc: 'Estofados Obra (Serviços)', valor: 500.00 }
+        ];
+
+        let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v43')) || [
+            { id: 0, nome: 'Áthos Continuidade (Maior Turno)', tipo: 'Pacote Mensal', horas: 10, valor: 300.00, desc: '10h/mês — R$ 30,00/h' },
+            { id: 1, nome: 'Áthos Essencial', tipo: 'Pacote Mensal', horas: 5, valor: 175.00, desc: '5h/mês — R$ 35,00/h' },
+            { id: 2, nome: 'Áthos Singular', tipo: 'Pacote Mensal', horas: 1, valor: 40.00, desc: '1h/mês — R$ 40,00/h' }
+        ];
+
+        let config = JSON.parse(localStorage.getItem('simulador_config_athos_v43')) || {
+            capacidade: 528, preco: 30.00, custoFixo: 0, custoVariavel: 2.00,
+            donaSlots: {
+                '1_tarde': true, '1_noite': true,
+                '2_tarde': true, '2_noite': true,
+                '5_manha': true
+            }
+        };
+
+        let editingPackageId = null;
+        let chartInstance = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('lanc-data').valueAsDate = new Date();
+            renderDropdownCheckboxes();
+            atualizarCustosAutomaticosSemanticamente();
+            renderPacotesUI();
+            renderDonaMatrix();
+            sincronizarConfigTurnosUI();
+            renderApp();
+            
+            document.addEventListener('click', (e) => {
+                const menu = document.getElementById('dropdown-menu'), btn = document.getElementById('dropdown-btn');
+                if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) menu.classList.add('hidden');
+            });
+        });
+
+        const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        const turnosDia = [
+            { id: 'manha', label: 'Manhã' },
+            { id: 'tarde', label: 'Tarde' },
+            { id: 'noite', label: 'Noite' }
+        ];
+
+        function renderDonaMatrix() {
+            const tbody = document.getElementById('dona-matrix-tbody');
+            if(!tbody) return;
+            let rowsHtml = '';
+            turnosDia.forEach(t => {
+                rowsHtml += `<tr><td class="p-3 text-left font-bold text-slate-700">${t.label}</td>`;
+                diasSemana.forEach((d, dIdx) => {
+                    let key = `${dIdx}_${t.id}`;
+                    let checked = config.donaSlots && config.donaSlots[key] ? 'checked' : '';
+                    rowsHtml += `<td class="p-3 text-center"><input type="checkbox" data-key="${key}" ${checked} onchange="toggleDonaSlot(this)" class="h-4 w-4 rounded-sm text-indigo-600 cursor-pointer"></td>`;
+                });
+                rowsHtml += `</tr>`;
+            });
+            tbody.innerHTML = rowsHtml;
+            calcularTurnosComerciaisDisponiveis();
+        }
+
+        function toggleDonaSlot(checkbox) {
+            let key = checkbox.getAttribute('data-key');
+            if(!config.donaSlots) config.donaSlots = {};
+            config.donaSlots[key] = checkbox.checked;
+            localStorage.setItem('simulador_config_athos_v43', JSON.stringify(config));
+            renderApp();
+        }
+
+        function calcularTurnosComerciaisDisponiveis() {
+            let turnosTotaisSala1 = 52, turnosTotaisSala2 = 52;
+            let countDonaSlots = 0;
+            if(config.donaSlots) {
+                Object.values(config.donaSlots).forEach(val => { if(val) countDonaSlots++; });
+            }
+            let turnosDonaMes = countDonaSlots * 4;
+            let sala1Comercial = Math.max(turnosTotaisSala1 - turnosDonaMes, 0);
+            let totalComercial = sala1Comercial + turnosTotaisSala2;
+
+            const badge = document.getElementById('cfg-total-turnos-badge');
+            if(badge) badge.innerText = `${totalComercial} turnos/mês`;
+            return totalComercial;
+        }
+
+        function sincronizarConfigTurnosUI() {
+            const capInput = document.getElementById('cfg-capacidade');
+            if(capInput) capInput.value = config.capacidade;
+            atualizarPrecoMaiorTurno();
+        }
+
+        function saveConfig() {
+            config.capacidade = parseInt(document.getElementById('cfg-capacidade').value) || 528;
+            localStorage.setItem('simulador_config_athos_v43', JSON.stringify(config));
+            triggerToast("Parâmetros operacionais salvos!", "⚙️");
+            renderApp();
+        }
+
+        function renderPacotesUI() {
+            const container = document.getElementById('pacotes-container'); if(!container) return;
+            let html = '';
+            pacotes.forEach((p, idx) => {
+                html += `
+                    <div class="p-4 border border-slate-200 rounded-2xl bg-slate-50/50 space-y-2 flex flex-col justify-between">
+                        <div class="space-y-1">
+                            <span class="text-[10px] font-bold uppercase text-slate-400 block">${p.tipo}</span>
+                            <h4 class="text-sm font-bold text-slate-800">${p.nome}</h4>
+                            <p class="text-xs text-slate-500">${p.horas}h/mês &bull; R$ ${(p.valor/p.horas).toFixed(2)}/h</p>
+                            <div class="text-lg font-black text-indigo-600 pt-1">${formatCurrency(p.valor)}</div>
+                        </div>
+                        <button type="button" onclick="abrirModalPacote(${idx})" class="mt-2 w-full h-9 bg-white border border-slate-200 hover:bg-slate-100 font-semibold text-slate-700 rounded-xl text-xs cursor-pointer shadow-2xs">Editar</button>
+                    </div>`;
+            });
+            container.innerHTML = html;
+            atualizarPrecoMaiorTurno();
+        }
+
+        function abrirModalPacote(idx) {
+            editingPackageId = idx;
+            let p = pacotes[idx];
+            document.getElementById('edit-pacote-nome').value = p.nome;
+            document.getElementById('edit-pacote-horas').value = p.horas;
+            document.getElementById('edit-pacote-valor').value = 'R$ ' + p.valor.toFixed(2).replace('.', ',');
+            document.getElementById('modal-pacote').classList.remove('hidden');
+        }
+
+        function fecharModalPacote() { document.getElementById('modal-pacote').classList.add('hidden'); editingPackageId = null; }
+
+        function salvarPacoteEditado() {
+            if (editingPackageId === null) return;
+            pacotes[editingPackageId].nome = document.getElementById('edit-pacote-nome').value;
+            pacotes[editingPackageId].horas = parseInt(document.getElementById('edit-pacote-horas').value) || 1;
+            pacotes[editingPackageId].valor = parseCurrencyToFloat(document.getElementById('edit-pacote-valor').value);
+            localStorage.setItem('simulador_pacotes_athos_v43', JSON.stringify(pacotes));
+            renderPacotesUI(); fecharModalPacote(); triggerToast("Pacote atualizado!", "✏️"); renderApp();
+        }
+
+        function atualizarPrecoMaiorTurno() {
+            let pacote10h = pacotes.find(p => p.horas === 10) || pacotes.reduce((prev, curr) => (prev.horas > curr.horas) ? prev : curr, pacotes[0]);
+            let taxaHora = pacote10h.horas > 0 ? (pacote10h.valor / pacote10h.horas) : 30.00;
+            config.preco = Math.round(taxaHora * 100) / 100;
+            
+            const precoInput = document.getElementById('cfg-preco');
+            if(precoInput) precoInput.value = config.preco.toFixed(2);
+            localStorage.setItem('simulador_config_athos_v43', JSON.stringify(config));
+        }
+
+        function atualizarCustosAutomaticosSemanticamente() {
+            let totalFixas = 0, count = new Set();
+            lancamentos.forEach(item => {
+                if (item.tipo === 'despesa') {
+                    let isFix = ['aluguel', 'condominio', 'enel', 'energia', 'internet', 'agua'].some(kw => item.desc.toLowerCase().includes(kw));
+                    if(isFix) { totalFixas += item.valor; count.add(item.data.substring(0,7)); }
+                }
+            });
+            config.custoFixo = count.size > 0 ? Math.round(totalFixas / count.size) : 2000;
+            localStorage.setItem('simulador_config_athos_v43', JSON.stringify(config));
+        }
+
+        // --- IMPORTAÇÃO INTELIGENTE DE EXCEL ---
+        function parseRawValue(val) {
+            if (val === undefined || val === null) return 0;
+            if (typeof val === 'number') return val;
+            let clean = val.toString().trim().replace(/[\xA0\s]/g, '').replace(/R\$/g, '');
+            if (clean === '') return 0;
+            if (clean.includes('.') && clean.includes(',')) clean = clean.replace(/\./g, '').replace(',', '.');
+            else if (clean.includes(',')) clean = clean.replace(',', '.');
+            return parseFloat(clean) || 0;
+        }
+
+        function normalizeKey(key) {
+            return key ? key.toString().toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "") : ''; 
+        }
+
+        function normalizeDate(dateVal) {
+            if (!dateVal) return new Date().toISOString().split('T')[0];
+            if (dateVal instanceof Date) {
+                return `${dateVal.getFullYear()}-${String(dateVal.getMonth() + 1).padStart(2, '0')}-${String(dateVal.getDate()).padStart(2, '0')}`;
+            }
+            if (typeof dateVal === 'number' && dateVal > 30000 && dateVal < 60000) {
+                let obj = XLSX.SSF.parse_date_code(dateVal);
+                return `${obj.y}-${String(obj.m).padStart(2, '0')}-${String(obj.d).padStart(2, '0')}`;
+            }
+            let str = dateVal.toString().trim();
+            if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.split(' ')[0].split('T')[0];
+            if (str.includes('/')) {
+                let parts = str.split(' ')[0].split('/');
+                if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+            return str;
+        }
+
+        function importFile(input) {
+            const file = input.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    let count = 0;
+
+                    workbook.SheetNames.forEach(sheetName => {
+                        try {
+                            const nameLower = sheetName.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                            if (nameLower.includes('locac') || nameLower.includes('prof')) return;
+
+                            const sheet = workbook.Sheets[sheetName];
+                            const rows = XLSX.utils.sheet_to_json(sheet, { raw: true });
+                            if (!rows || rows.length === 0) return;
+
+                            const normalizedRows = rows.map(r => {
+                                let nr = {};
+                                for (let k in r) nr[normalizeKey(k)] = r[k];
+                                return nr;
+                            });
+
+                            const keys = Object.keys(normalizedRows[0] || {});
+                            let isRec = nameLower.includes('receita') || (keys.includes('profissional') && keys.includes('valor'));
+                            let isDesp = nameLower.includes('despesa') || (keys.includes('descricao') && keys.includes('valor'));
+
+                            if (isRec) {
+                                normalizedRows.forEach(r => {
+                                    let rawId = (r['id'] || '').toString().trim() || ('rec-' + Date.now() + '-' + Math.random());
+                                    let dt = normalizeDate(r['vencimento'] || r['data']);
+                                    let prof = r['profissional'] || 'Receita Avulsa';
+                                    let obs = r['observacao'] || r['obs'] || '';
+                                    let val = parseRawValue(r['valorfinal'] !== undefined && r['valorfinal'] !== "" ? r['valorfinal'] : r['valor']);
+                                    if(val === 0) return;
+                                    let sala = ((obs || '').toString().toUpperCase().includes('ÁTHOS II') || (obs || '').toString().toUpperCase().includes('SALA 2')) ? 'sala2' : 'sala1';
+                                    if (!lancamentos.some(l => l.id === rawId)) {
+                                        lancamentos.push({ id: rawId, data: dt, tipo: 'receita', sala: sala, desc: prof + (obs ? ' - ' + obs : ''), valor: val });
+                                        count++;
+                                    }
+                                });
+                            } else if (isDesp) {
+                                normalizedRows.forEach(r => {
+                                    let rawId = (r['id'] || '').toString().trim() || ('desp-' + Date.now() + '-' + Math.random());
+                                    let dt = normalizeDate(r['vencimento'] || r['data']);
+                                    let desc = r['descricao'] || r['desc'] || 'Despesa';
+                                    let val = parseRawValue(r['valor']);
+                                    if(val === 0) return;
+                                    let descLow = desc.toLowerCase();
+                                    let tipo = ['obra', 'reforma', 'santiago', 'pedreiro', 'moveis'].some(k => descLow.includes(k)) ? 'investimento' : 'despesa';
+                                    let isFix = ['aluguel', 'condominio', 'enel', 'energia', 'internet', 'agua'].some(k => descLow.includes(k));
+                                    if (!lancamentos.some(l => l.id === rawId)) {
+                                        lancamentos.push({ id: rawId, data: dt, tipo: tipo, sala: '-', desc: desc, valor: val, isFixo: isFix });
+                                        count++;
+                                    }
+                                });
+                            }
+                        } catch(err) { console.error(err); }
+                    });
+
+                    localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
+                    atualizarCustosAutomaticosSemanticamente();
+                    triggerToast(`Planilha integrada com sucesso! (${count} registros)`, "📥");
+                    renderApp(); switchTab('dash');
+                } catch(err) { alert("Erro ao processar arquivo Excel."); }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- CÁLCULOS FINANCEIROS AVANÇADOS ---
+        function calcularTIRCronologica(cashFlows) {
+            if (!cashFlows || cashFlows.length === 0) return 0;
+            let hasNegative = cashFlows.some(cf => cf < 0), hasPositive = cashFlows.some(cf => cf > 0);
+            if (!hasNegative || !hasPositive) return 0;
+            function calcularVPL(r) {
+                let vpl = 0; for (let t = 0; t < cashFlows.length; t++) { vpl += cashFlows[t] / Math.pow(1 + r, t + 1); } return vpl;
+            }
+            let low = -0.999, high = 20.0;
+            if (calcularVPL(low) < 0) return -100.0;
+            if (calcularVPL(high) > 0) return high * 100;
+            for (let i = 0; i < 100; i++) {
+                let mid = (low + high) / 2, vplMid = calcularVPL(mid);
+                if (Math.abs(vplMid) < 1e-5) return mid * 100;
+                if (vplMid > 0) low = mid; else high = mid;
+            }
+            return ((low + high) / 2) * 100;
+        }
+
+        function calcularPaybackAcumulado(cashFlows) {
+            let acumulado = 0, mesesAteRetorno = null, atingiuRetorno = false;
+            for (let i = 0; i < cashFlows.length; i++) {
+                let anterior = acumulado; acumulado += cashFlows[i];
+                if (acumulado >= 0 && anterior < 0) {
+                    mesesAteRetorno = i + (Math.abs(anterior) / cashFlows[i]); atingiuRetorno = true; break;
+                } else if (acumulado >= 0 && i === 0 && cashFlows[0] >= 0) {
+                    mesesAteRetorno = 0; atingiuRetorno = true; break;
+                }
+            }
+            return { atingiuRetorno, mesesAteRetorno };
+        }
+
+        // --- RENDERIZAÇÃO OTIMIZADA DA APLICAÇÃO ---
+        function renderApp() {
+            const filtroAno = document.getElementById('dash-filtro-ano').value;
+            let sala1Tot = 0, sala2Tot = 0, totalDespesas = 0, totalInvestido = 0, countReg = 0;
+            let tableRowsHtml = '';
+            let mobileCardsHtml = '';
+
+            const sorted = [...lancamentos].sort((a,b) => new Date(b.data) - new Date(a.data));
+
+            sorted.forEach(item => {
+                let d = new Date(item.data + 'T00:00:00');
+                if (d.getFullYear().toString() === filtroAno && mesesAtivos.includes(d.getMonth())) {
+                    countReg++;
+                    if(item.tipo === 'receita' && item.sala === 'sala1') sala1Tot += item.valor;
+                    if(item.tipo === 'receita' && item.sala === 'sala2') sala2Tot += item.valor;
+                    if(item.tipo === 'despesa') totalDespesas += item.valor;
+                    if(item.tipo === 'investimento') totalInvestido += item.valor;
+
+                    let badge = item.tipo === 'receita' ? '<span class="px-2 py-0.5 text-[10px] font-semibold rounded-sm bg-emerald-50 text-emerald-700">Entrada</span>' : (item.tipo === 'despesa' ? '<span class="px-2 py-0.5 text-[10px] font-semibold rounded-sm bg-rose-50 text-rose-700">Saída</span>' : '<span class="px-2 py-0.5 text-[10px] font-semibold rounded-sm bg-indigo-50 text-indigo-700">Invest.</span>');
+
+                    tableRowsHtml += `
+                        <tr>
+                            <td class="p-4 text-slate-500 whitespace-nowrap">${item.data.split('-').reverse().join('/')}</td>
+                            <td class="p-4">${badge}</td>
+                            <td class="p-4 font-semibold text-slate-600">${item.tipo==='receita'?(item.sala==='sala1'?'Sala 01':'Sala 02'):'Geral'}</td>
+                            <td class="p-4 text-slate-700">${item.desc}</td>
+                            <td class="p-4 text-right font-bold ${item.tipo==='receita'?'text-emerald-600':(item.tipo==='despesa'?'text-rose-600':'text-indigo-600')}">${formatCurrency(item.valor)}</td>
+                            <td class="p-4 text-center"><button onclick="deleteLancamento('${item.id}')" class="text-xs text-rose-500 font-semibold hover:underline cursor-pointer">Remover</button></td>
+                        </tr>`;
+
+                    mobileCardsHtml += `
+                        <div class="p-4 space-y-2">
+                            <div class="flex justify-between items-center"><span class="text-xs text-slate-400 font-bold">${item.data.split('-').reverse().join('/')}</span> ${badge}</div>
+                            <div class="text-sm font-bold text-slate-800">${item.desc}</div>
+                            <div class="flex justify-between items-center pt-1"><span class="text-xs text-slate-500">${item.tipo==='receita'?(item.sala==='sala1'?'Sala 01':'Sala 02'):'Geral'}</span> <span class="text-base font-black ${item.tipo==='receita'?'text-emerald-600':(item.tipo==='despesa'?'text-rose-600':'text-indigo-600')}">${formatCurrency(item.valor)}</span></div>
+                        </div>`;
+                }
+            });
+
+            document.getElementById('empty-state').classList.toggle('hidden', countReg > 0);
+            document.getElementById('desktop-table-container').classList.toggle('hidden', countReg === 0);
+            document.getElementById('table-body').innerHTML = tableRowsHtml;
+            document.getElementById('mobile-cards-container').innerHTML = mobileCardsHtml;
+
+            document.getElementById('faturamento-sala1').innerText = formatCurrency(sala1Tot);
+            document.getElementById('faturamento-sala2').innerText = formatCurrency(sala2Tot);
+
+            let qtdMeses = mesesAtivos.length || 1;
+            atualizarCustosAutomaticosSemanticamente();
+            let baseFixo = Math.max(config.custoFixo * qtdMeses, totalDespesas);
+            let margemU = config.preco - config.custoVariavel;
+            let fatMin = (baseFixo / (margemU > 0 ? margemU : 1)) * config.preco;
+
+            document.getElementById('kpi-break-even').innerText = formatCurrency(fatMin);
+            let ocuMin = (config.capacidade * qtdMeses) > 0 ? ((fatMin / config.preco) / (config.capacidade * qtdMeses)) * 100 : 0;
+            if(ocuMin > 100) ocuMin = 100;
+            document.getElementById('kpi-ponto-eq').innerText = ocuMin.toFixed(1) + '%';
+
+            let capex = lancamentos.reduce((acc, i) => i.tipo === 'investimento' ? acc + i.valor : acc, 0) || 50000;
+            let mesesPayback = parseInt(document.getElementById('meta-meses-payback').value) || 12;
+            let fatMeta = ((capex / mesesPayback) + (baseFixo / qtdMeses)) / ((config.preco - config.custoVariavel)/config.preco);
+            let turnosMeta = Math.ceil(fatMeta / (config.preco * 4));
+
+            document.getElementById('kpi-fat-meta').innerText = formatCurrency(fatMeta);
+            document.getElementById('kpi-turnos-meta').innerText = `Meta: ${turnosMeta} turnos/mês`;
+
+            let op = (sala1Tot + sala2Tot) - totalDespesas;
+            let liquido = op - totalInvestido;
+
+            document.getElementById('sum-operacional').innerText = formatCurrency(op);
+            document.getElementById('sum-liquido').innerText = formatCurrency(liquido);
+
+            // Payback, ROI e TIR
+            let vetorFluxo = [];
+            mesesAtivos.forEach(idx => {
+                let r = 0, ds = 0, inv = 0;
+                lancamentos.forEach(i => {
+                    let dt = new Date(i.data + 'T00:00:00');
+                    if(dt.getFullYear().toString() === filtroAno && dt.getMonth() === idx) {
+                        if(i.tipo === 'receita') r += i.valor;
+                        if(i.tipo === 'despesa') ds += i.valor;
+                        if(i.tipo === 'investimento') inv += i.valor;
+                    }
+                });
+                vetorFluxo.push((r - ds) - inv);
+            });
+
+            let paybackRes = calcularPaybackAcumulado(vetorFluxo);
+            let pbEl = document.getElementById('kpi-payback');
+            pbEl.innerText = paybackRes.atingiuRetorno ? paybackRes.mesesAteRetorno.toFixed(1) + ' meses' : 'Déficit Ativo';
+            pbEl.className = `text-xl lg:text-2xl font-bold ${paybackRes.atingiuRetorno?'text-emerald-600':'text-rose-600'} block mt-1.5`;
+
+            let roi = (totalInvestido > 0) ? (((op / qtdMeses) * 12) / totalInvestido) * 100 : 0;
+            document.getElementById('kpi-roi').innerText = roi.toFixed(1) + '%';
+
+            let tir = calcularTIRCronologica(vetorFluxo);
+            let tirEl = document.getElementById('kpi-tir');
+            tirEl.innerText = tir.toFixed(1) + '%';
+            tirEl.className = `text-xl lg:text-2xl font-bold ${tir < 0 ? 'text-rose-600' : 'text-emerald-600'} block mt-1.5`;
+
+            renderCharts();
+        }
+
+        function formatCurrency(v) { return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+
+        function renderCharts() {
+            const ctx = document.getElementById('mainChart'); if(!ctx) return;
+            const filtroAno = document.getElementById('dash-filtro-ano').value;
+            let lbs = [], recs = [], desps = [], lucros = [];
+            nomesCurtos.forEach((m, idx) => {
+                if (mesesAtivos.includes(idx)) {
+                    lbs.push(m); let r = 0, d = 0;
+                    lancamentos.forEach(i => {
+                        let dt = new Date(i.data + 'T00:00:00');
+                        if(dt.getFullYear().toString() === filtroAno && dt.getMonth() === idx) {
+                            if(i.tipo === 'receita') r += i.valor;
+                            if(i.tipo === 'despesa') d += i.valor;
+                        }
+                    });
+                    recs.push(r); desps.push(d); lucros.push(r - d);
+                }
+            });
+
+            if(chartInstance) {
+                chartInstance.data.labels = lbs;
+                chartInstance.data.datasets[0].data = lucros;
+                chartInstance.data.datasets[1].data = recs;
+                chartInstance.data.datasets[2].data = desps;
+                chartInstance.update('none'); // Atualização instantânea sem recriar o canvas
+            } else {
+                chartInstance = new Chart(ctx, {
+                    data: {
+                        labels: lbs,
+                        datasets: [
+                            { type: 'line', label: 'Resultado Líquido', data: lucros, borderColor: '#10b981', backgroundColor: '#10b981', borderWidth: 2.5, pointRadius: 3, tension: 0.15 },
+                            { type: 'bar', label: 'Receitas', data: recs, backgroundColor: '#4f46e5', borderRadius: 4 },
+                            { type: 'bar', label: 'Despesas', data: desps, backgroundColor: '#ef4444', borderRadius: 4 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
+                });
+            }
+        }
+
+        // --- NAVEGAÇÃO E FORMULÁRIOS ---
+        function switchTab(id) {
+            if(id === 'config') { renderPacotesUI(); renderDonaMatrix(); sincronizarConfigTurnosUI(); }
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.className = "tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-indigo-200 hover:text-white cursor-pointer");
+            document.getElementById(`tab-${id}`).classList.remove('hidden');
+            document.getElementById(`btn-${id}`).className = "tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg bg-indigo-600 text-white shadow-xs cursor-pointer";
+            if(id === 'dash') renderApp();
+        }
+
+        function setFormType(type) {
+            selectedType = type;
+            document.querySelectorAll('.type-btn').forEach(el => {
+                el.className = "type-btn h-14 border border-slate-200 rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all text-slate-600 hover:bg-slate-50 cursor-pointer";
+            });
+            const btn = document.getElementById(`btn-type-${type}`);
+            const salaBlock = document.getElementById('sala-selector-block');
+            if(type === 'receita') {
+                btn.className = "type-btn h-14 border rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all bg-emerald-50 border-emerald-500 text-emerald-800 cursor-pointer";
+                salaBlock.classList.remove('hidden');
+            } else {
+                btn.className = `type-btn h-14 border rounded-xl flex items-center px-4 gap-3 font-semibold text-sm transition-all ${type==='despesa'?'bg-rose-50 border-rose-500 text-rose-800':'bg-indigo-50 border-indigo-500 text-indigo-800'} cursor-pointer`;
+                salaBlock.classList.add('hidden'); selectedSala = '-';
+            }
+        }
+
+        function setFormSala(sala) {
+            selectedSala = sala;
+            document.querySelectorAll('.sala-btn').forEach(el => {
+                el.className = "sala-btn h-11 border border-slate-200 rounded-xl font-semibold text-sm transition-all text-slate-600 hover:bg-slate-50 cursor-pointer text-center w-full";
+            });
+            document.getElementById(`btn-${sala}`).className = "sala-btn h-11 border rounded-xl font-semibold text-sm transition-all bg-indigo-50 border-indigo-500 text-indigo-800 cursor-pointer text-center w-full";
+        }
+
+        function toggleDropdown(e) { e.stopPropagation(); document.getElementById('dropdown-menu').classList.toggle('hidden'); }
+        function renderDropdownCheckboxes() {
+            const c = document.getElementById('dropdown-checkboxes-container'); if(!c) return;
+            let html = `<div class="flex items-center justify-between border-b border-slate-100 pb-2 pt-1 mb-1 px-2"><button onclick="selecionarTodosMeses(true)" class="text-xs font-bold text-indigo-600 hover:underline cursor-pointer">Marcar todos</button><button onclick="selecionarTodosMeses(false)" class="text-xs font-bold text-slate-400 hover:underline cursor-pointer">Limpar</button></div>`;
+            nomesMeses.forEach((m, idx) => {
+                html += `<label class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 text-sm font-semibold text-slate-700 cursor-pointer w-full"><input type="checkbox" id="chk-mes-${idx}" ${mesesAtivos.includes(idx)?'checked':''} onchange="onCheckboxChange(${idx})" class="h-5 w-5 rounded-md text-indigo-600"><span>${m}</span></label>`;
+            });
+            c.innerHTML = html;
+        }
+        function onCheckboxChange(idx) {
+            let chk = document.getElementById(`chk-mes-${idx}`);
+            if(chk.checked) { if(!mesesAtivos.includes(idx)) mesesAtivos.push(idx); } else { mesesAtivos = mesesAtivos.filter(m => m !== idx); }
+            mesesAtivos.sort((a,b)=>a-b); renderApp();
+        }
+        function selecionarTodosMeses(s) { mesesAtivos = s ? [0,1,2,3,4,5,6,7,8,9,10,11] : []; renderDropdownCheckboxes(); renderApp(); }
+
+        function saveLancamento(e) {
+            e.preventDefault();
+            let d = document.getElementById('lanc-data').value;
+            let desc = document.getElementById('lanc-desc').value;
+            let val = parseCurrencyToFloat(document.getElementById('lanc-valor').value);
+            let sala = selectedType === 'receita' ? selectedSala : '-';
+            if(val <= 0) return;
+
+            lancamentos.push({ id: 'man-' + Date.now(), data: d, tipo: selectedType, sala, desc, valor: val });
+            localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
+            document.getElementById('lanc-desc').value = '';
+            document.getElementById('lanc-valor').value = '';
+            renderApp(); switchTab('dash'); triggerToast("Lançamento salvo com sucesso!", "🟢");
+        }
+
+        function deleteLancamento(id) {
+            lancamentos = lancamentos.filter(i => i.id !== id);
+            localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
+            renderApp(); triggerToast("Registro removido.", "🔴");
+        }
+
+        function clearData() {
+            if(confirm("Deseja apagar todos os dados locais?")) {
+                lancamentos = []; 
+                localStorage.removeItem('simulador_lancamentos_athos_v43');
+                renderApp(); triggerToast("Banco limpo.", "🧹");
+            }
+        }
+
+        function exportJSON() {
+            let a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(lancamentos));
+            a.download = "backup_simulador.json"; a.click(); a.remove();
+        }
+
+        function handleCurrencyInput(input) {
+            let v = input.value.replace(/\D/g, ''); if(v === '') { input.value = ''; return; }
+            input.value = 'R$ ' + (v / 100).toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+        }
+
+        function parseCurrencyToFloat(s) { return s ? parseFloat(s.replace(/[^\d,]/g, '').replace(',', '.')) || 0 : 0; }
+
+        function triggerToast(msg, icon = "ℹ️") {
+            const t = document.getElementById('toast-notification');
+            document.getElementById('toast-icon').innerText = icon;
+            document.getElementById('toast-message').innerText = msg;
+            t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 4000);
+        }
+    </script>
+</body>
+</html>
