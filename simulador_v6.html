@@ -420,6 +420,29 @@
             });
         });
 
+        // =========================================================================
+        // ESCUTA DE POSTMESSAGE (Integração automática com o index.html via Iframe)
+        // =========================================================================
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.tipo === 'SINCRONIZAR_DADOS') {
+                let registrosRecebidos = event.data.dados;
+                if (Array.isArray(registrosRecebidos) && registrosRecebidos.length > 0) {
+                    lancamentos = registrosRecebidos.map(item => ({
+                        id: item.id || 'athos-' + Math.random(),
+                        data: item.data,
+                        tipo: item.tipo,
+                        sala: item.sala || 'sala1',
+                        desc: item.descricao || item.desc || 'Lançamento Áthos',
+                        valor: parseFloat(item.valor) || 0
+                    }));
+                    localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
+                    atualizarCustosAutomaticosSemanticamente();
+                    renderApp();
+                    triggerToast("Dados sincronizados com o Áthos!", "🔄");
+                }
+            }
+        });
+
         const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
         const turnosDia = [
             { id: 'manha', label: 'Manhã' },
