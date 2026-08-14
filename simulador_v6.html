@@ -199,17 +199,6 @@
 
         <!-- LANÇAMENTOS -->
         <div id="tab-lanc" class="tab-content hidden max-w-3xl mx-auto space-y-6">
-            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div>
-                    <h2 class="text-sm font-bold text-slate-700 mb-1">📂 Importar Backup Automático (.json)</h2>
-                    <p class="text-xs text-slate-400">Suba o arquivo de backup exportado do sistema para popular os indicadores.</p>
-                </div>
-                <label for="backup-uploader" class="h-11 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center shrink-0">
-                    Carregar Backup JSON
-                    <input type="file" id="backup-uploader" accept=".json" class="hidden" onchange="importBackupJSON(this)" />
-                </label>
-            </div>
-
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
                 <h2 class="text-sm font-bold text-slate-700 mb-1">📥 Importar Planilha do Excel (.xlsx / .xls)</h2>
                 <p class="text-xs text-slate-400 mb-4">Arraste ou selecione o arquivo consolidado da clínica para importação inteligente.</p>
@@ -411,6 +400,9 @@
             const lancData = document.getElementById('lanc-data');
             if(lancData) lancData.valueAsDate = new Date();
             
+            // Tenta carregar automaticamente um arquivo Excel padrão salvo no projeto ou via fetch automático
+            tentarCarregarExcelAutomatico();
+
             renderDropdownCheckboxes();
             atualizarCustosAutomaticosSemanticamente();
             renderPacotesUI();
@@ -424,35 +416,96 @@
             });
         });
 
-        // Função específica para importar o JSON de Backup gerado pelo sistema
-        function importBackupJSON(input) {
+        // Função para buscar e ler automaticamente um arquivo Excel padrão (ex: backup.xlsx na mesma pasta ou URL)
+        async function tentarCarregarExcelAutomatico() {
+            // Se já tiver dados salvos no navegador, não sobrescreve a menos que queira forçar
+            if (lancamentos.length > 0) return;
+
+            try {
+                let resposta = await fetch('backup_clinica.xlsx'); // Nome padrão caso coloque o excel no repositório
+                if (!resposta.ok) return;
+                let blob = await resposta.blob();
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    processarWorkbookExcel(new Uint8Array(e.target.result));
+                };
+                reader.readAsArrayBuffer(blob);
+            } catch(err) {
+                // Arquivo padrão não encontrado na raiz, aguardando upload manual ou dados do sistema
+            }
+        }
+
+        function importFile(input) {
             const file = input.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
-                try {
-                    const dadosImportados = JSON.parse(e.target.result);
-                    if (Array.isArray(dadosImportados)) {
-                        lancamentos = dadosImportados.map(item => ({
-                            id: item.id || 'athos-' + Math.random(),
-                            data: item.data || new Date().toISOString().split('T')[0],
-                            tipo: item.tipo || 'receita',
-                            sala: item.sala || 'sala1',
-                            desc: item.desc || item.descricao || 'Lançamento',
-                            valor: parseFloat(item.valor) || 0
-                        }));
-                        localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
-                        atualizarCustosAutomaticosSemanticamente();
-                        renderApp();
-                        triggerToast(`Backup carregado com sucesso! (${lancamentos.length} registros)`, "📂");
-                        switchTab('dash');
-                    } else {
-                        alert("O formato do arquivo JSON de backup é inválido.");
-                    }
-                } catch(err) {
-                    alert("Erro ao ler o arquivo JSON de backup.");
-                }
+                processarWorkbookExcel(new Uint8Array(e.target.result));
             };
-            reader.readAsText(file);
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processarWorkbookExcel(dataBytes) {
+            try {
+                const workbook = XLSX.read(dataBytes, { type: 'array', cellDates: true });
+                let count = 0;
+
+                workbook.SheetNames.forEach(sheetName => {
+                    try {
+                        const nameLower = sheetName.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        if (nameLower.includes('locac') || nameLower.includes('prof')) return;
+
+                        const sheet = workbook.Sheets[sheetName];
+                        const rows = XLSX.utils.sheet_to_json(sheet, { raw: true });
+                        if (!rows || rows.length === 0) return;
+
+                        const normalizedRows = rows.map(r => {
+                            let nr = {};
+                            for (let k in r) nr[normalizeKey(k)] = r[k];
+                            return nr;
+                        });
+
+                        const keys = Object.keys(normalizedRows[0] || {});
+                        let isRec = nameLower.includes('receita') || (keys.includes('profissional') && keys.includes('valor'));
+                        let isDesp = nameLower.includes('despesa') || (keys.includes('descricao') && keys.includes('valor'));
+
+                        if (isRec) {
+                            normalizedRows.forEach(r => {
+                                let rawId = (r['id'] || '').toString().trim() || ('rec-' + Date.now() + '-' + Math.random());
+                                let dt = normalizeDate(r['vencimento'] || r['data']);
+                                let prof = r['profissional'] || 'Receita Avulsa';
+                                let obs = r['observacao'] || r['obs'] || '';
+                                let val = parseRawValue(r['valorfinal'] !== undefined && r['valorfinal'] !== "" ? r['valorfinal'] : r['valor']);
+                                if(val === 0) return;
+                                let sala = ((obs || '').toString().toUpperCase().includes('ÁTHOS II') || (obs || '').toString().toUpperCase().includes('SALA 2')) ? 'sala2' : 'sala1';
+                                if (!lancamentos.some(l => l.id === rawId)) {
+                                    lancamentos.push({ id: rawId, data: dt, tipo: 'receita', sala: sala, desc: prof + (obs ? ' - ' + obs : ''), valor: val });
+                                    count++;
+                                }
+                            });
+                        } else if (isDesp) {
+                            normalizedRows.forEach(r => {
+                                let rawId = (r['id'] || '').toString().trim() || ('desp-' + Date.now() + '-' + Math.random());
+                                let dt = normalizeDate(r['vencimento'] || r['data']);
+                                let desc = r['descricao'] || r['desc'] || 'Despesa';
+                                let val = parseRawValue(r['valor']);
+                                if(val === 0) return;
+                                let descLow = desc.toLowerCase();
+                                let tipo = ['obra', 'reforma', 'santiago', 'pedreiro', 'moveis'].some(k => descLow.includes(k)) ? 'investimento' : 'despesa';
+                                let isFix = ['aluguel', 'condominio', 'enel', 'energia', 'internet', 'agua'].some(k => descLow.includes(k));
+                                if (!lancamentos.some(l => l.id === rawId)) {
+                                    lancamentos.push({ id: rawId, data: dt, tipo: tipo, sala: '-', desc: desc, valor: val, isFixo: isFix });
+                                    count++;
+                                }
+                            });
+                        }
+                    } catch(err) { console.error(err); }
+                });
+
+                localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
+                atualizarCustosAutomaticosSemanticamente();
+                triggerToast(`Planilha Excel integrada com sucesso! (${count} registros)`, "📥");
+                renderApp(); switchTab('dash');
+            } catch(err) { alert("Erro ao processar arquivo Excel."); }
         }
 
         const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -607,76 +660,6 @@
                 return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
             }
             return str;
-        }
-
-        function importFile(input) {
-            const file = input.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                    let count = 0;
-
-                    workbook.SheetNames.forEach(sheetName => {
-                        try {
-                            const nameLower = sheetName.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                            if (nameLower.includes('locac') || nameLower.includes('prof')) return;
-
-                            const sheet = workbook.Sheets[sheetName];
-                            const rows = XLSX.utils.sheet_to_json(sheet, { raw: true });
-                            if (!rows || rows.length === 0) return;
-
-                            const normalizedRows = rows.map(r => {
-                                let nr = {};
-                                for (let k in r) nr[normalizeKey(k)] = r[k];
-                                return nr;
-                            });
-
-                            const keys = Object.keys(normalizedRows[0] || {});
-                            let isRec = nameLower.includes('receita') || (keys.includes('profissional') && keys.includes('valor'));
-                            let isDesp = nameLower.includes('despesa') || (keys.includes('descricao') && keys.includes('valor'));
-
-                            if (isRec) {
-                                normalizedRows.forEach(r => {
-                                    let rawId = (r['id'] || '').toString().trim() || ('rec-' + Date.now() + '-' + Math.random());
-                                    let dt = normalizeDate(r['vencimento'] || r['data']);
-                                    let prof = r['profissional'] || 'Receita Avulsa';
-                                    let obs = r['observacao'] || r['obs'] || '';
-                                    let val = parseRawValue(r['valorfinal'] !== undefined && r['valorfinal'] !== "" ? r['valorfinal'] : r['valor']);
-                                    if(val === 0) return;
-                                    let sala = ((obs || '').toString().toUpperCase().includes('ÁTHOS II') || (obs || '').toString().toUpperCase().includes('SALA 2')) ? 'sala2' : 'sala1';
-                                    if (!lancamentos.some(l => l.id === rawId)) {
-                                        lancamentos.push({ id: rawId, data: dt, tipo: 'receita', sala: sala, desc: prof + (obs ? ' - ' + obs : ''), valor: val });
-                                        count++;
-                                    }
-                                });
-                            } else if (isDesp) {
-                                normalizedRows.forEach(r => {
-                                    let rawId = (r['id'] || '').toString().trim() || ('desp-' + Date.now() + '-' + Math.random());
-                                    let dt = normalizeDate(r['vencimento'] || r['data']);
-                                    let desc = r['descricao'] || r['desc'] || 'Despesa';
-                                    let val = parseRawValue(r['valor']);
-                                    if(val === 0) return;
-                                    let descLow = desc.toLowerCase();
-                                    let tipo = ['obra', 'reforma', 'santiago', 'pedreiro', 'moveis'].some(k => descLow.includes(k)) ? 'investimento' : 'despesa';
-                                    let isFix = ['aluguel', 'condominio', 'enel', 'energia', 'internet', 'agua'].some(k => descLow.includes(k));
-                                    if (!lancamentos.some(l => l.id === rawId)) {
-                                        lancamentos.push({ id: rawId, data: dt, tipo: tipo, sala: '-', desc: desc, valor: val, isFixo: isFix });
-                                        count++;
-                                    }
-                                });
-                            }
-                        } catch(err) { console.error(err); }
-                    });
-
-                    localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
-                    atualizarCustosAutomaticosSemanticamente();
-                    triggerToast(`Planilha integrada com sucesso! (${count} registros)`, "📥");
-                    renderApp(); switchTab('dash');
-                } catch(err) { alert("Erro ao processar arquivo Excel."); }
-            };
-            reader.readAsArrayBuffer(file);
         }
 
         function calcularTIRCronologica(cashFlows) {
