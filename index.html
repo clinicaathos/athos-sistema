@@ -1561,6 +1561,19 @@ body.dark .tag{background:#111827;border-color:#374151;}
   <div class="modal modal-lg" id="ver-prof-content"></div>
 </div>
 
+<!-- Locação Recorrente do Profissional -->
+<div class="modal-overlay" id="modal-loc-recorrente-prof" onclick="closeModalBg(event,'loc-recorrente-prof')">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title">Locação Recorrente</div>
+    <input type="hidden" id="locrec-prof-id">
+    <div id="locrec-lista" style="display:flex;flex-direction:column;gap:.625rem;margin-bottom:1rem"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('loc-recorrente-prof')">Fechar</button>
+      <button class="btn btn-primary" onclick="novaLocacaoRecorrenteProf()">+ Nova Locação Recorrente</button>
+    </div>
+  </div>
+</div>
+
 <!-- Renovar Contrato -->
 <div class="modal-overlay" id="modal-renovar" onclick="closeModalBg(event,'renovar')">
   <div class="modal" id="renovar-content">
@@ -2346,9 +2359,91 @@ function verProfissional(id) {
       <button class="btn btn-danger" onclick="excluirProfissional('${id}')">Excluir</button>
       <button class="btn btn-secondary" onclick="closeModal('ver-prof')">Fechar</button>
       <button class="btn btn-secondary" onclick="closeModal('ver-prof');verHistoricoProf('${id}')">Histórico</button>
+      <button class="btn btn-secondary" onclick="closeModal('ver-prof');abrirLocacaoRecorrenteProf('${id}')">🔁 Locação Recorrente</button>
       <button class="btn btn-primary" onclick="closeModal('ver-prof');editarProfissional('${id}')">Editar Cadastro</button>
     </div>`;
   openModal('ver-prof');
+}
+
+// ── LOCAÇÃO RECORRENTE — acesso pelo cadastro do Profissional ──
+// Antes, a única forma de configurar/gerenciar a locação recorrente de um
+// profissional era clicando num bloco específico na Agenda. Este painel dá
+// acesso direto pelo cadastro do profissional (Profissionais → Ver → Locação
+// Recorrente), sem depender de encontrar a ocorrência certa no calendário.
+async function abrirLocacaoRecorrenteProf(profId) {
+  document.getElementById('locrec-prof-id').value = profId;
+  const lista = document.getElementById('locrec-lista');
+  lista.innerHTML = '<div style="font-size:.82rem;color:var(--text-light);text-align:center;padding:1rem">Carregando...</div>';
+  openModal('loc-recorrente-prof');
+  try {
+    const snap = await db.collection('locacoes').where('profId','==',profId).get();
+    const hoje = toDateStrLocal(new Date());
+    const ativas = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(l => l.recorrencia && l.recorrencia !== 'Apenas este horário')
+      .filter(l => !l.dataFim || l.dataFim >= hoje);
+    if(ativas.length === 0) {
+      lista.innerHTML = '<div style="font-size:.82rem;color:var(--text-light);text-align:center;padding:1rem">Nenhuma locação recorrente ativa para este profissional.</div>';
+      return;
+    }
+    lista.innerHTML = ativas.map(l => {
+      const salaNome = l.sala==='mista' ? 'Sala Mista' : (String(l.sala)==='2' ? (appConfig.sala2||'Áthos II') : (appConfig.sala1||'Áthos I'));
+      const valorNum = l.valorLancamento !== undefined && l.valorLancamento !== null ? parseFloat(l.valorLancamento) : null;
+      const valorTxt = valorNum !== null && !isNaN(valorNum) ? formatMoney(valorNum) : '—';
+      const descontoTxt = l.desconto && parseFloat(l.desconto) > 0 ? ` (desconto ${l.desconto}%)` : '';
+      return `<div style="border:1px solid var(--border);border-radius:9px;padding:.75rem">
+        <div style="font-size:.85rem;font-weight:600">${l.vinculo||''} — ${salaNome}</div>
+        <div style="font-size:.78rem;color:var(--text-light);margin-top:2px">${l.recorrencia} · vencimento dia ${l.diaVencimento||'—'} · ${valorTxt}${descontoTxt}</div>
+        <div style="font-size:.76rem;color:var(--text-lighter);margin-top:2px">Desde ${l.dataInicio?formatDate(l.dataInicio):'—'}${l.dataFim?` até ${formatDate(l.dataFim)}`:''}</div>
+        <div style="display:flex;gap:.5rem;margin-top:.6rem">
+          <button class="btn btn-secondary btn-sm" onclick="closeModal('loc-recorrente-prof');editarLocacao('${l.id}','${l.dataInicio||''}')">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="encerrarRecorrenciaLocacao('${l.id}')">Encerrar Recorrência</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    lista.innerHTML = '<div style="font-size:.82rem;color:var(--danger)">Erro ao carregar locações.</div>';
+    console.error(e);
+  }
+}
+
+// Abre "Nova Locação" já com o profissional selecionado e recorrência
+// pré-marcada como Mensal, para configurar uma locação recorrente sem
+// precisar passar pela Agenda.
+function novaLocacaoRecorrenteProf() {
+  const profId = document.getElementById('locrec-prof-id').value;
+  closeModal('loc-recorrente-prof');
+  document.getElementById('loc-edit-id').value = '';
+  document.getElementById('loc-modal-title').textContent = 'Nova Locação';
+  document.getElementById('loc-excluir-btn').style.display = 'none';
+  openModal('nova-locacao');
+  const profSel = document.getElementById('loc-prof');
+  if(profSel) profSel.value = profId;
+  const recSel = document.getElementById('loc-recorrencia');
+  if(recSel) { recSel.value = 'Mensal'; toggleDiasSemana(); }
+}
+
+// Encerra uma locação recorrente sem data de término de forma direta, sem
+// precisar excluir manualmente cada lançamento futuro um a um (problema
+// relatado: recorrência mensal sem data fim continuava gerando cobranças
+// mesmo após excluir lançamentos futuros até 2030). Reaproveita o fluxo de
+// exclusão "esta ocorrência e as futuras" já existente, usando a data de
+// hoje como referência — isso grava dataFim = ontem na locação (impedindo
+// gerarLancamentosLocacoesMensais de continuar gerando) e resolve/exclui os
+// lançamentos pendentes futuros de uma vez.
+async function encerrarRecorrenciaLocacao(id) {
+  try {
+    const doc = await db.collection('locacoes').doc(id).get();
+    if(!doc.exists) { showToast('Locação não encontrada.','error'); return; }
+    document.getElementById('loc-excl-pending-id').value = id;
+    document.getElementById('loc-excl-pending-date').value = toDateStrLocal(new Date());
+    document.getElementById('loc-excl-scope-wrap').style.display = 'none';
+    const optFuture = document.getElementById('loc-excl-opt-future');
+    if(optFuture) optFuture.checked = true;
+    document.getElementById('loc-excl-aviso-serie').style.display = 'none';
+    document.getElementById('loc-excl-encerrar-info').style.display = '';
+    closeModal('loc-recorrente-prof');
+    openModal('loc-excluir-confirm');
+  } catch(e) { showToast('Erro ao encerrar recorrência.','error'); console.error(e); }
 }
 
 function editarProfissional(id) {
@@ -2607,8 +2702,9 @@ function loadDashboard() {
       miniItems.push(`<div class="mini-item"><span class="mini-time" style="width:auto;min-width:78px">${horario}</span><span class="mini-room">${salaLabel}</span><span class="mini-name">${prof}</span></div>`);
     });
     const ocupados = Math.min(hoje_loc.length, 6);
-    document.getElementById('dash-turnos').textContent=`${ocupados} / 6`;
-    document.getElementById('dash-turnos-sub').textContent=`${6-ocupados} turno(s) disponível(is)`;
+    // (removidas referências a #dash-turnos/#dash-turnos-sub — esses elementos
+    // não existem mais no HTML atual; a linha antiga lançava um erro aqui e
+    // interrompia a execução, impedindo o card "Hoje" de carregar a agenda)
     const badgeEl = document.getElementById('dash-hoje-count');
     if(badgeEl) badgeEl.textContent=`${ocupados} turno${ocupados!==1?'s':''}`;
     document.getElementById('dash-hoje-list').innerHTML=miniItems.length?miniItems.join(''):emptyState('calendar','Nenhuma locação hoje','As duas salas estão livres.','Nova locação',"openModal('nova-locacao')");
@@ -3401,7 +3497,38 @@ async function renderPrevisao() {
     const recFuturas = recSnap.docs
       .map(d => ({id: d.id, ...d.data()}))
       .filter(r => r.status !== 'Pago');
-    const recPrev = recFuturas.reduce((s, r) => s + (parseMoney(r.valor) || 0), 0);
+
+    // ── RECEITAS PROJETADAS DE LOCAÇÕES RECORRENTES ──
+    // A geração automática (gerarLancamentosLocacoesMensais) só cria o
+    // lançamento do MÊS VIGENTE — o do próximo mês só passa a existir quando
+    // o mês chegar. Sem isso, a previsão ignorava receita certa de locações
+    // recorrentes ativas (ex: agendamentos/turnos fixos de profissionais) que
+    // ainda não tinham o lançamento do próximo mês gerado.
+    const locSnap = await db.collection('locacoes').get();
+    const jaGeradas = new Set(recFuturas.filter(r => r.origemLocacaoId).map(r => `${r.origemLocacaoId}_${r.vencimento}`));
+    const locacoesPrevistas = [];
+    locSnap.docs.forEach(doc => {
+      const l = { id: doc.id, ...doc.data() };
+      if(!l.recorrencia || l.recorrencia === 'Apenas este horário') return;
+      if(!l.diaVencimento || !l.valorLancamento || parseFloat(l.valorLancamento) <= 0) return;
+      if(l.dataFim && l.dataFim < proxMesInicio) return; // encerrada antes do próximo mês
+      if(l.dataInicio && l.dataInicio > proxMesFim) return; // ainda não começou
+      const dia = Math.min(l.diaVencimento, ultimoDia);
+      const vencStr = `${proxAnoNum}-${String(proxMesNum + 1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+      if(Array.isArray(l.vencimentosCancelados) && l.vencimentosCancelados.includes(vencStr)) return;
+      if(jaGeradas.has(`${l.id}_${vencStr}`)) return; // já existe lançamento gerado para este mês
+      const prof = profissionaisCache.find(p => p.id === l.profId);
+      locacoesPrevistas.push({
+        profissional: prof?.nome || 'Profissional',
+        categoria: 'Locação',
+        vencimento: vencStr,
+        valor: l.valorLancamento,
+        origemLocacaoId: l.id,
+        _prevista: true
+      });
+    });
+    const recFuturasCompletas = [...recFuturas, ...locacoesPrevistas];
+    const recPrev = recFuturasCompletas.reduce((s, r) => s + (parseMoney(r.valor) || 0), 0);
 
     // Alerta de contrato vencendo
     const profs = profissionaisCache.filter(p => p.status === 'Ativo');
@@ -3424,7 +3551,7 @@ async function renderPrevisao() {
       <div class="prev-card">
         <div class="prev-label">Receitas Previstas — ${proxMesLabel}</div>
         <div class="prev-value" style="color:var(--success)">${formatMoney(recPrev)}</div>
-        <div class="prev-sub">${recFuturas.length} lançamento${recFuturas.length !== 1 ? 's' : ''} pendente${recFuturas.length !== 1 ? 's' : ''}</div>
+        <div class="prev-sub">${recFuturasCompletas.length} lançamento${recFuturasCompletas.length !== 1 ? 's' : ''} pendente${recFuturasCompletas.length !== 1 ? 's' : ''}</div>
       </div>
       <div class="prev-card">
         <div class="prev-label">Despesas Previstas — ${proxMesLabel}</div>
@@ -3449,13 +3576,14 @@ async function renderPrevisao() {
       return `<span class="badge ${map[cat]||'badge-neutral'}" style="font-size:.65rem">${cat||'—'}</span>`;
     };
 
-    document.getElementById('prev-receitas').innerHTML = recFuturas.length > 0
-      ? recFuturas
+    document.getElementById('prev-receitas').innerHTML = recFuturasCompletas.length > 0
+      ? recFuturasCompletas
           .sort((a, b) => a.vencimento > b.vencimento ? 1 : -1)
           .map(r => `<div class="prev-row">
             <span class="prev-row-label">
               ${r.profissional || r.descricao || '—'}
               ${r.categoria ? catChip(r.categoria) : ''}
+              ${r._prevista ? '<span class="badge badge-info" style="font-size:.63rem">Previsto</span>' : ''}
               <span style="font-size:.72rem;color:var(--text-lighter);margin-left:3px">${formatDate(r.vencimento)}</span>
             </span>
             <span class="prev-row-value" style="color:var(--success)">${formatMoney(r.valor)}</span>
@@ -3979,6 +4107,7 @@ async function excluirLocacao() {
     // closeModal('nova-locacao') limpa loc-edit-id como efeito colateral.
     document.getElementById('loc-excl-pending-id').value = id;
     document.getElementById('loc-excl-pending-date').value = document.getElementById('loc-clicked-date').value || '';
+    document.getElementById('loc-excl-encerrar-info').style.display = 'none';
     closeModal('nova-locacao');
     // Locações sem recorrência não têm "ocorrência única/futura/série" — vão
     // direto para a série inteira, mas ainda perguntam o destino dos lançamentos.
@@ -4196,10 +4325,14 @@ async function salvarLocacao() {
   const sala = document.getElementById('loc-sala').value;
   const vinculo = document.getElementById('loc-vinculo').value;
   const desconto = document.getElementById('loc-desconto').value || '0';
-  const valorFinalCampo = parseMoney(document.getElementById('loc-valor-final').value);
   const valorBase = valorBaseLocacao(sala, vinculo);
-  // Se o campo de valor final estiver vazio (ex: sem desconto digitado), usa o valor base calculado
-  const valorLancamento = valorFinalCampo > 0 ? valorFinalCampo : valorBase;
+  // Recalcula o valor final direto do desconto (%) sobre o valor base, em vez de
+  // reaproveitar o campo de texto "Valor final". O campo, quando o desconto é
+  // 100%, mostra "R$ 0,00" — e 0 falhava no teste "> 0" abaixo, fazendo o sistema
+  // cair no valor base (preço cheio) em vez de cobrar R$ 0,00. Bug corrigido em
+  // ago/2026: causava cobrança indevida de locações com 100% de desconto.
+  const descontoNum = parseFloat(desconto) || 0;
+  const valorLancamento = valorBase * (1 - descontoNum/100);
   const diaVencimento = parseInt(document.getElementById('loc-dia-vencimento').value) || null;
 
   const data={
@@ -4215,7 +4348,7 @@ async function salvarLocacao() {
     obs:document.getElementById('loc-obs').value,
     cor:selectedColor,
     desconto: desconto,
-    valorLancamento: valorLancamento ? valorLancamento.toFixed(2) : null,
+    valorLancamento: valorLancamento >= 0 ? valorLancamento.toFixed(2) : null,
     diaVencimento: rec !== 'Apenas este horário' ? diaVencimento : null,
     updatedAt:firebase.firestore.FieldValue.serverTimestamp()
   };
@@ -6682,24 +6815,78 @@ async function verificarLancamentosOrfaos() {
   finally { if(btn) btn.disabled = false; }
 }
 
+// ── EXCLUSÃO DE LANÇAMENTO (Movimentação Financeira) ──
+// Antes usava um confirm() simples, que não permitia analisar o lançamento
+// antes de apagar nem escolher entre excluir de vez ou apenas devolver
+// (desvincular da locação de origem, mantendo como pendência avulsa). Agora
+// abre um modal com os detalhes do lançamento e, quando aplicável, as opções
+// Excluir/Devolver e o alcance da recorrência (somente este, futuros, série).
+window._finExclPendente = null;
+
 async function excluirLancamento(id, colecao) {
-  if(!confirm('Excluir este lançamento? Esta ação não pode ser desfeita.')) return;
   try {
-    // Antes de apagar, verifica se este lançamento veio de uma locação
-    // recorrente. Se vier, é preciso registrar o vencimento cancelado nela
-    // (vencimentosCancelados) — senão a geração mensal automática recria o
-    // mesmo lançamento no próximo carregamento, pois ela só checa se o
-    // documento existe, não se foi excluído manualmente por aqui.
-    if(colecao === 'receitas') {
-      const doc = await db.collection(colecao).doc(id).get();
-      const r = doc.exists ? doc.data() : null;
-      if(r?.origemLocacaoId && r?.vencimento) {
-        await registrarExclusaoLancamentoLocacao(r.origemLocacaoId, r.vencimento);
+    const doc = await db.collection(colecao).doc(id).get();
+    if(!doc.exists) { showToast('Lançamento não encontrado.', 'error'); return; }
+    const r = doc.data();
+    window._finExclPendente = { id, colecao, data: r };
+
+    const desc = r.profissional || r.categoria || r.descricao || (colecao === 'receitas' ? 'Receita' : 'Despesa');
+    const valor = formatMoney(parseMoney(r.valorFinal ?? r.valor) || 0);
+    const infoEl = document.getElementById('fin-excl-info');
+    if(infoEl) infoEl.innerHTML = `<strong>${desc}</strong> — ${valor}${r.vencimento ? ` · vence em ${formatDate(r.vencimento)}` : ''}${r.status ? ` · ${r.status}` : ''}`;
+
+    const isLigadoLocacao = colecao === 'receitas' && !!r.origemLocacaoId;
+    const destinoWrap = document.getElementById('fin-excl-destino-wrap');
+    if(destinoWrap) destinoWrap.style.display = isLigadoLocacao ? '' : 'none';
+    const optExcluir = document.getElementById('fin-excl-destino-excluir');
+    if(optExcluir) optExcluir.checked = true;
+
+    const isRecorrente = !!r.recorrenciaId;
+    const scopeWrap = document.getElementById('fin-excl-scope-wrap');
+    if(scopeWrap) scopeWrap.style.display = isRecorrente ? '' : 'none';
+    const optSingle = document.getElementById('fin-excl-scope-single');
+    if(optSingle) optSingle.checked = true;
+
+    openModal('fin-excluir-confirm');
+  } catch(e) { showToast('Erro ao carregar lançamento.', 'error'); console.error(e); }
+}
+
+async function confirmarExclusaoLancamento() {
+  const p = window._finExclPendente;
+  if(!p) { closeModal('fin-excluir-confirm'); return; }
+  const destino = document.querySelector('input[name="fin-excl-destino"]:checked')?.value || 'excluir';
+  const escopo = document.querySelector('input[name="fin-excl-scope"]:checked')?.value || 'single';
+  try {
+    // Devolver: mantém o registro, apenas desvincula da locação de origem —
+    // continua visível em A Pagar/A Receber como pendência avulsa.
+    if(p.data.origemLocacaoId && destino === 'devolver') {
+      if(p.data.vencimento) await registrarExclusaoLancamentoLocacao(p.data.origemLocacaoId, p.data.vencimento);
+      await db.collection(p.colecao).doc(p.id).update({ origemLocacaoId: firebase.firestore.FieldValue.delete() });
+      showToast('Lançamento devolvido — mantido como pendência avulsa.', 'success');
+    } else {
+      // Antes de apagar um lançamento vindo de locação recorrente, registra o
+      // vencimento cancelado nela — senão a geração mensal automática recria
+      // o mesmo lançamento, pois ela só checa se o documento existe.
+      if(p.colecao === 'receitas' && p.data.origemLocacaoId && p.data.vencimento) {
+        await registrarExclusaoLancamentoLocacao(p.data.origemLocacaoId, p.data.vencimento);
+      }
+      if(escopo === 'single' || !p.data.recorrenciaId) {
+        await db.collection(p.colecao).doc(p.id).delete();
+        showToast('Lançamento excluído!', 'success');
+      } else {
+        const snap = await db.collection(p.colecao).where('recorrenciaId', '==', p.data.recorrenciaId).get();
+        let alvo = snap.docs;
+        if(escopo === 'future') alvo = alvo.filter(d => (d.data().vencimento || '') >= (p.data.vencimento || ''));
+        const batch = db.batch();
+        alvo.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        showToast(`${alvo.length} lançamento(s) excluído(s)!`, 'success');
       }
     }
-    await db.collection(colecao).doc(id).delete();
-    showToast('Lançamento excluído!', 'success');
+    closeModal('fin-excluir-confirm');
+    window._finExclPendente = null;
     loadFinanceiro();
+    if(document.getElementById('fin-mov')?.classList.contains('active')) loadMovimentacao();
   } catch(e) { showToast('Erro ao excluir.', 'error'); console.error(e); }
 }
 
@@ -6949,10 +7136,18 @@ async function loadLembretes() {
     }
     const priBadge = l => l.prioridade && l.prioridade!=='Normal'
       ? `<span class="badge ${l.prioridade==='Urgente'?'badge-danger':'badge-warning'}" style="font-size:.68rem;margin-left:4px">${l.prioridade}</span>` : '';
-    table.innerHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 80px 40px"><span>Lembrete</span><span>Prioridade</span><span>Data</span><span>Status</span><span></span><span></span></div>` +
-      docs.map(l=>{
-        const vencido = l.data && l.data < hoje && l.status !== 'Concluído';
-        return `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 80px 40px">
+
+    // ── SEPARAÇÃO PENDENTES / CONCLUÍDOS ──
+    // Antes tudo vinha misturado numa lista só, ordenada por data. Agora os
+    // concluídos ficam numa seção própria, recolhida por padrão, para não
+    // poluir a tela com tarefas que já não exigem ação.
+    const pendentes = docs.filter(l => l.status !== 'Concluído');
+    const concluidos = docs.filter(l => l.status === 'Concluído');
+    const expandido = window._lmbConcluidosExpandido === true;
+
+    const rowDesktop = l => {
+      const vencido = l.data && l.data < hoje && l.status !== 'Concluído';
+      return `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 80px 40px">
         <span style="font-weight:500;cursor:pointer;color:var(--gold)${l.status==='Concluído'?';text-decoration:line-through;color:var(--text-lighter)':''}" onclick="editarLembrete('${l.id}')">${l.titulo||'—'}${l.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">${l.obs}</span>`:''}</span>
         <span>${priBadge(l)||'—'}</span>
         <span style="color:var(--text-light)">${l.data?formatDate(l.data):'—'}${vencido?'<br><span style="color:var(--danger);font-weight:600;font-size:.72rem">Vencido</span>':''}</span>
@@ -6960,8 +7155,8 @@ async function loadLembretes() {
         <span><button class="btn btn-secondary" style="font-size:.72rem;padding:4px 9px" onclick="editarLembrete('${l.id}')">Editar</button></span>
         <span><button class="fin-del-btn" style="opacity:1" onclick="excluirLembreteRapido('${l.id}')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></span>
       </div>`;
-      }).join('');
-    if(mobileEl) mobileEl.innerHTML = docs.map(l=>{
+    };
+    const cardMobile = l => {
       const vencido = l.data && l.data < hoje && l.status !== 'Concluído';
       return `<div class="fin-card-item">
         <div class="fin-card-item-top">
@@ -6978,10 +7173,49 @@ async function loadLembretes() {
           <button class="fin-del-btn" onclick="excluirLembreteRapido('${l.id}')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>
       </div>`;
-    }).join('');
+    };
+
+    let desktopHTML = `<div class="dt-head" style="grid-template-columns:2fr 1fr 1fr 1fr 80px 40px"><span>Lembrete</span><span>Prioridade</span><span>Data</span><span>Status</span><span></span><span></span></div>`;
+    desktopHTML += pendentes.length
+      ? pendentes.map(rowDesktop).join('')
+      : '<div style="padding:1rem;text-align:center;color:var(--text-lighter);font-size:.82rem">Nenhum lembrete pendente 🎉</div>';
+    if(concluidos.length) {
+      desktopHTML += `<div class="dt-row" style="grid-template-columns:1fr;cursor:pointer;user-select:none;background:#f9fafb" onclick="toggleLembretesConcluidosGrupo()">
+        <span style="font-size:.8rem;font-weight:600;color:var(--text-light);display:flex;align-items:center;gap:6px"><span id="lmb-concl-arrow">${expandido?'▼':'▶️'}</span> Concluídos (${concluidos.length})</span>
+      </div>
+      <div id="lmb-concluidos-rows" style="display:${expandido?'':'none'}">${concluidos.map(rowDesktop).join('')}</div>`;
+    }
+    table.innerHTML = desktopHTML;
+
+    if(mobileEl) {
+      let mobileHTML = pendentes.length
+        ? pendentes.map(cardMobile).join('')
+        : '<div style="padding:1rem;text-align:center;color:var(--text-lighter);font-size:.82rem">Nenhum lembrete pendente 🎉</div>';
+      if(concluidos.length) {
+        mobileHTML += `<div class="fin-card-item" style="cursor:pointer;user-select:none;background:#f9fafb" onclick="toggleLembretesConcluidosGrupo()">
+          <div class="fin-card-item-name" style="font-size:.8rem;font-weight:600;color:var(--text-light);display:flex;align-items:center;gap:6px"><span id="lmb-concl-arrow-mobile">${expandido?'▼':'▶️'}</span> Concluídos (${concluidos.length})</div>
+        </div>
+        <div id="lmb-concluidos-rows-mobile" style="display:${expandido?'':'none'}">${concluidos.map(cardMobile).join('')}</div>`;
+      }
+      mobileEl.innerHTML = mobileHTML;
+    }
   } catch(e) {
     table.innerHTML = '<div style="color:var(--danger);font-size:.83rem;padding:1rem">Erro ao carregar lembretes.</div>';
   }
+}
+
+// Expande/recolhe a seção "Concluídos" dos Lembretes (recolhida por padrão)
+function toggleLembretesConcluidosGrupo() {
+  window._lmbConcluidosExpandido = !(window._lmbConcluidosExpandido === true);
+  const expandido = window._lmbConcluidosExpandido;
+  const rows = document.getElementById('lmb-concluidos-rows');
+  const arrow = document.getElementById('lmb-concl-arrow');
+  if(rows) rows.style.display = expandido ? '' : 'none';
+  if(arrow) arrow.textContent = expandido ? '▼' : '▶️';
+  const rowsMob = document.getElementById('lmb-concluidos-rows-mobile');
+  const arrowMob = document.getElementById('lmb-concl-arrow-mobile');
+  if(rowsMob) rowsMob.style.display = expandido ? '' : 'none';
+  if(arrowMob) arrowMob.textContent = expandido ? '▼' : '▶️';
 }
 
 // Alterna Pendente/Concluído clicando no badge de status — mesmo padrão do Finanças (status-click)
@@ -7389,6 +7623,66 @@ async function verHistoricoProf(profId) {
   </div>
 </div>
 
+<!-- Exclusão de Lançamento (Movimentação Financeira) -->
+<div class="modal-overlay" id="modal-fin-excluir-confirm" onclick="closeModalBg(event,'fin-excluir-confirm')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">Excluir lançamento</div>
+    <div id="fin-excl-info" style="background:#f9fafb;border:1px solid var(--border);border-radius:9px;padding:.7rem .85rem;margin-bottom:1.25rem;font-size:.84rem;line-height:1.5"></div>
+
+    <div id="fin-excl-scope-wrap" style="display:none">
+      <p style="font-size:.86rem;color:var(--text-light);margin-bottom:.75rem">Este lançamento faz parte de uma série recorrente. O que deseja excluir?</p>
+      <div style="display:flex;flex-direction:column;gap:.625rem;margin-bottom:1.25rem">
+        <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px">
+          <input type="radio" name="fin-excl-scope" id="fin-excl-scope-single" value="single" style="margin-top:2px;accent-color:var(--gold)" checked>
+          <div>
+            <div style="font-size:.86rem;font-weight:600">Somente este lançamento</div>
+            <div style="font-size:.77rem;color:var(--text-lighter);margin-top:2px">Apenas a ocorrência selecionada será excluída.</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px">
+          <input type="radio" name="fin-excl-scope" id="fin-excl-scope-future" value="future" style="margin-top:2px;accent-color:var(--gold)">
+          <div>
+            <div style="font-size:.86rem;font-weight:600">Este e os futuros da série</div>
+            <div style="font-size:.77rem;color:var(--text-lighter);margin-top:2px">Exclui esta ocorrência e todas as próximas da mesma série.</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px">
+          <input type="radio" name="fin-excl-scope" id="fin-excl-scope-all" value="all" style="margin-top:2px;accent-color:var(--gold)">
+          <div>
+            <div style="font-size:.86rem;font-weight:600">Toda a série</div>
+            <div style="font-size:.77rem;color:var(--text-lighter);margin-top:2px">Exclui todos os lançamentos da série, passados e futuros.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div id="fin-excl-destino-wrap" style="display:none">
+      <p style="font-size:.86rem;color:var(--text-light);margin-bottom:.75rem">Este lançamento veio de uma locação. O que deseja fazer?</p>
+      <div style="display:flex;flex-direction:column;gap:.625rem;margin-bottom:1.25rem">
+        <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px">
+          <input type="radio" name="fin-excl-destino" id="fin-excl-destino-excluir" value="excluir" style="margin-top:2px;accent-color:var(--gold)" checked>
+          <div>
+            <div style="font-size:.86rem;font-weight:600">Excluir</div>
+            <div style="font-size:.77rem;color:var(--text-lighter);margin-top:2px">Remove o lançamento permanentemente.</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px">
+          <input type="radio" name="fin-excl-destino" id="fin-excl-destino-devolver" value="devolver" style="margin-top:2px;accent-color:var(--gold)">
+          <div>
+            <div style="font-size:.86rem;font-weight:600">Devolver</div>
+            <div style="font-size:.77rem;color:var(--text-lighter);margin-top:2px">Mantém o lançamento em A Pagar/A Receber, apenas desvinculado da locação.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('fin-excluir-confirm')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarExclusaoLancamento()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Exclusão de Locação Recorrente -->
 <div class="modal-overlay" id="modal-orfaos-resultado" onclick="closeModalBg(event,'orfaos-resultado')">
   <div class="modal" style="max-width:640px">
@@ -7407,6 +7701,9 @@ async function verHistoricoProf(profId) {
     <div class="modal-title">Excluir locação</div>
     <input type="hidden" id="loc-excl-pending-id">
     <input type="hidden" id="loc-excl-pending-date">
+    <div id="loc-excl-encerrar-info" style="display:none;background:var(--info-bg);border:1px solid #bfdbfe;border-radius:9px;padding:.7rem .85rem;margin-bottom:1rem;font-size:.8rem;color:var(--info);line-height:1.5">
+      Esta recorrência será encerrada <strong>a partir de hoje</strong>. As datas e cobranças já passadas não serão afetadas.
+    </div>
     <div id="loc-excl-aviso-serie" style="display:none;background:var(--warning-bg);border:1px solid #fde68a;border-radius:9px;padding:.7rem .85rem;margin-bottom:1rem;font-size:.8rem;color:var(--warning);line-height:1.5">
       <strong>Atenção:</strong> esta locação já teve ocorrências excluídas individualmente antes. Se a intenção é cancelar definitivamente, escolha <strong>"Toda a série"</strong> — excluir só esta ocorrência não impede a cobrança mensal de continuar sendo gerada.
     </div>
