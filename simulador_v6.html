@@ -134,7 +134,7 @@
             <!-- SIMULADOR POR TURNOS -->
             <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-center gap-4 border border-slate-800">
                 <div class="space-y-1 w-full md:w-auto">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">Simulador por Turnos (5h/turno)</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">Simulador por Turnos</span>
                     <h3 class="text-lg font-bold">Quantos turnos alugar para recuperar o investimento?</h3>
                     <p class="text-xs text-stone-400">Baseado nos pacotes configurados e na ocupação comercial.</p>
                 </div>
@@ -304,14 +304,14 @@
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
                 <div>
                     <h2 class="text-sm font-bold text-slate-700 mb-1">⚙️ Matriz de Uso da Proprietária (Turnos Ocupados)</h2>
-                    <p class="text-xs text-slate-400">Selecione quais turnos a proprietária utilizará em cada sala. (Segunda a Sexta: Manhã, Tarde e Noite; Sábado: Somente Manhã).</p>
+                    <p class="text-xs text-slate-400">Selecione quais turnos a proprietária utilizará em cada sala (Segunda a Sexta: Manhã, Tarde, Noite; Sábado: Somente Manhã).</p>
                 </div>
 
                 <div class="overflow-x-auto">
                     <table class="w-full text-center border-collapse text-xs">
                         <thead>
                             <tr class="bg-slate-100 text-slate-600 font-bold uppercase text-[10px]">
-                                <th class="p-3 text-left">Turno / Período</th>
+                                <th class="p-3 text-left">Turno / Horário</th>
                                 <th class="p-3">Segunda</th>
                                 <th class="p-3">Terça</th>
                                 <th class="p-3">Quarta</th>
@@ -334,7 +334,7 @@
                 </div>
             </div>
 
-            <!-- 2. CONTROLE DE LOCAÇÃO POR PACOTES (CONTINUIDADE, ESSENCIAL, SINGULAR) E AVULSOS -->
+            <!-- 2. CONTROLE DE LOCAÇÃO POR PACOTES E AVULSOS -->
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
                 <div>
                     <h2 class="text-sm font-bold text-slate-700 mb-1">📋 Registro de Locações (Turnos Ocupados por Pacotes e Avulsos)</h2>
@@ -343,19 +343,19 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="locacoes-inputs-container">
                     <div class="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
-                        <label class="text-[10px] font-bold uppercase text-slate-500 block">Pacote Continuidade</label>
+                        <label class="text-[10px] font-bold uppercase text-slate-500 block">Áthos Cotinuidade</label>
                         <input type="number" id="locado-continuidade" oninput="saveLocacoesConfig()" class="h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white font-bold text-slate-800 w-full" value="0" min="0">
                         <span class="text-[10px] text-slate-400 block">Preço: R$ <span id="val-continuidade-ref">300,00</span></span>
                     </div>
 
                     <div class="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
-                        <label class="text-[10px] font-bold uppercase text-slate-500 block">Pacote Essencial</label>
+                        <label class="text-[10px] font-bold uppercase text-slate-500 block">Áthos Essencial</label>
                         <input type="number" id="locado-essencial" oninput="saveLocacoesConfig()" class="h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white font-bold text-slate-800 w-full" value="0" min="0">
                         <span class="text-[10px] text-slate-400 block">Preço: R$ <span id="val-essencial-ref">175,00</span></span>
                     </div>
 
                     <div class="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
-                        <label class="text-[10px] font-bold uppercase text-slate-500 block">Pacote Singular</label>
+                        <label class="text-[10px] font-bold uppercase text-slate-500 block">Áthos Singular</label>
                         <input type="number" id="locado-singular" oninput="saveLocacoesConfig()" class="h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white font-bold text-slate-800 w-full" value="0" min="0">
                         <span class="text-[10px] text-slate-400 block">Preço: R$ <span id="val-singular-ref">40,00</span></span>
                     </div>
@@ -374,37 +374,56 @@
                 </div>
             </div>
 
-            <!-- 3. PACOTES E PREÇOS -->
+            <!-- 3. PLANOS E PACOTES (EXATAMENTE COMO NO PRINT) -->
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-5">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h2 class="text-sm font-bold text-slate-700 mb-1">Planos e Pacotes de Horas (Áthos)</h2>
-                        <p class="text-xs text-slate-400">Gerencie os valores dos pacotes Continuidade, Essencial e Singular.</p>
+                        <h2 class="text-sm font-bold text-slate-700 mb-1">Planos e Pacotes</h2>
+                        <p class="text-xs text-slate-400">Pacotes de horas e turnos fixos da clínica Áthos.</p>
                     </div>
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="pacotes-container"></div>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
-                <h2 class="text-sm font-bold text-slate-700 mb-1">Parâmetros Operacionais & Capacidade</h2>
-                <p class="text-xs text-slate-400 mb-5">Ajuste os parâmetros de cálculo baseados nos turnos ativos.</p>
-                
-                <div class="space-y-5">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="flex flex-col gap-1">
-                            <label class="text-[10px] font-bold uppercase text-slate-500">Capacidade Total Mensal (Horas)</label>
-                            <input type="number" id="cfg-capacidade" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full font-bold text-slate-700">
-                        </div>
-                        
-                        <div class="flex flex-col gap-1">
-                            <label class="text-[10px] font-bold uppercase text-slate-500">Referência Turno (Continuidade)</label>
-                            <input type="number" step="0.01" id="cfg-preco" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full font-bold text-slate-700" readonly>
-                            <span class="text-[10px] text-slate-400">Derivado do pacote Continuidade.</span>
-                        </div>
-                    </div>
-
-                    <button onclick="saveConfig()" class="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm shadow-xs transition-all mt-2 cursor-pointer">Salvar Parâmetros Operacionais</button>
+            <!-- 4. TURNOS FIXOS (EXATAMENTE COMO NO PRINT + SÁBADO MANHÃ) -->
+            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-700 mb-1">Turnos Fixos</h2>
+                    <p class="text-xs text-slate-400">Horários oficiais dos turnos da clínica.</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 font-bold uppercase text-[10px]">
+                                <th class="p-3">Turno</th>
+                                <th class="p-3">Dias</th>
+                                <th class="p-3">Horário</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700">
+                            <tr>
+                                <td class="p-3 font-semibold">Turno Manhã</td>
+                                <td class="p-3">Seg–Sex</td>
+                                <td class="p-3">08h–12h</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold">Sábado Manhã</td>
+                                <td class="p-3">Sábado</td>
+                                <td class="p-3">08h–12h</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold">Turno Tarde</td>
+                                <td class="p-3">Seg–Sex</td>
+                                <td class="p-3">13h–17h</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold">Turno Noite</td>
+                                <td class="p-3">Seg–Sex</td>
+                                <td class="p-3">17h30–21h30</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -469,13 +488,13 @@
         let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v43')) || [];
 
         let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v43')) || [
-            { id: 0, nome: 'Continuidade', tipo: 'Pacote Mensal', horas: 10, valor: 300.00, desc: '10h/mês — R$ 30,00/h' },
-            { id: 1, nome: 'Essencial', tipo: 'Pacote Mensal', horas: 5, valor: 175.00, desc: '5h/mês — R$ 35,00/h' },
-            { id: 2, nome: 'Singular', tipo: 'Pacote Mensal', horas: 1, valor: 40.00, desc: '1h/mês — R$ 40,00/h' }
+            { id: 0, nome: 'Áthos Cotinuidade', tipo: 'Pacote Mensal', horas: 10, valor: 300.00, desc: '10h/mês — cobrança recorrente' },
+            { id: 1, nome: 'Áthos Essencial', tipo: 'Pacote Mensal', horas: 5, valor: 175.00, desc: '5h/mês — cobrança recorrente' },
+            { id: 2, nome: 'Áthos Singular', tipo: 'Pacote Mensal', horas: 1, valor: 40.00, desc: '1h/mês — cobrança recorrente' }
         ];
 
         let config = JSON.parse(localStorage.getItem('simulador_config_athos_v43')) || {
-            capacidade: 528, preco: 300.00, custoFixo: 1800, custoVariavel: 10.00,
+            capacidade: 528, custoFixo: 1800, custoVariavel: 10.00,
             locadoContinuidade: 10,
             locadoEssencial: 4,
             locadoSingular: 2,
@@ -499,8 +518,6 @@
             atualizarCustosAutomaticosSemanticamente();
             renderPacotesUI();
             renderDonaMatrix();
-            renderIdealRealMatrix();
-            sincronizarConfigTurnosUI();
             renderApp();
 
             window.addEventListener('message', (event) => {
@@ -521,9 +538,10 @@
 
         const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
         const turnosDia = [
-            { id: 'manha', label: 'Manhã' },
-            { id: 'tarde', label: 'Tarde' },
-            { id: 'noite', label: 'Noite (Até 21h)' }
+            { id: 'manha', label: 'Manhã (08h–12h)' },
+            { id: 'sab_manha', label: 'Sábado Manhã (08h–12h)', sabadoApenas: true },
+            { id: 'tarde', label: 'Tarde (13h–17h)' },
+            { id: 'noite', label: 'Noite (17h30–21h30)' }
         ];
 
         function sincronizarLocacoesUI() {
@@ -533,7 +551,7 @@
             let avVal = config.locadosAvulsoValor !== undefined ? config.locadosAvulsoValor : 350;
             document.getElementById('locado-avulso-valor').value = 'R$ ' + avVal.toFixed(2).replace('.', ',');
             
-            let pCont = pacotes.find(p => p.nome.toLowerCase().includes('continuidade')) || pacotes[0];
+            let pCont = pacotes.find(p => p.nome.toLowerCase().includes('cotinuidade') || p.nome.toLowerCase().includes('continuidade')) || pacotes[0];
             let pEss = pacotes.find(p => p.nome.toLowerCase().includes('essencial')) || pacotes[1];
             let pSing = pacotes.find(p => p.nome.toLowerCase().includes('singular')) || pacotes[2];
 
@@ -561,9 +579,14 @@
                 rowsHtml += `<tr><td class="p-3 text-left font-bold text-slate-700">${t.label}</td>`;
                 diasSemana.forEach((d, dIdx) => {
                     let key = `${dIdx}_${t.id}`;
-                    // Sábado (dIdx === 5): apenas Manhã é permitida; Tarde e Noite ficam indisponíveis (-)
-                    if (dIdx === 5 && (t.id === 'tarde' || t.id === 'noite')) {
+                    // Se o turno for exclusivo de sábado e não for sábado (dIdx !== 5), fica indisponível (-)
+                    // Se o turno for seg-sex (manha, tarde, noite) e for sábado (dIdx === 5), fica indisponível (-) exceto sab_manha
+                    if (t.sabadoApenas && dIdx !== 5) {
                         rowsHtml += `<td class="p-3 text-center text-slate-300 font-semibold italic text-[11px] bg-slate-50">-</td>`;
+                    } else if (!t.sabadoApenas && dIdx === 5 && (t.id === 'tarde' || t.id === 'noite')) {
+                        rowsHtml += `<td class="p-3 text-center text-slate-300 font-semibold italic text-[11px] bg-slate-50">-</td>`;
+                    } else if (!t.sabadoApenas && dIdx === 5 && t.id === 'manha') {
+                        rowsHtml += `<td class="p-3 text-center text-slate-300 font-semibold italic text-[11px] bg-slate-50">-</td>`; // Gerenciado pelo sab_manha
                     } else {
                         let currentVal = config.donaSlots && config.donaSlots[key] ? config.donaSlots[key] : 'nenhuma';
                         if(currentVal === 'sala1') countS1++;
@@ -600,55 +623,6 @@
             renderApp();
         }
 
-        function renderIdealRealMatrix() {
-            const tbody = document.getElementById('ideal-real-matrix-tbody');
-            if(!tbody) return;
-            let rowsHtml = '';
-            turnosDia.forEach(t => {
-                rowsHtml += `<tr><td class="p-3 text-left font-bold text-slate-700">${t.label}</td>`;
-                diasSemana.forEach((d, dIdx) => {
-                    let key = `${dIdx}_${t.id}`;
-                    if (dIdx === 5 && (t.id === 'tarde' || t.id === 'noite')) {
-                        rowsHtml += `<td class="p-3 text-center text-slate-300 font-semibold italic text-[11px] bg-slate-50">-</td>`;
-                    } else {
-                        let currentVal = config.idealRealSlots && config.idealRealSlots[key] ? config.idealRealSlots[key] : 'ideal';
-                        rowsHtml += `
-                            <td class="p-3 text-center">
-                                <select data-key="${key}" onchange="changeIdealRealSlot(this)" class="h-8 px-2 border border-slate-200 rounded-lg text-xs bg-slate-50 font-semibold text-slate-700 cursor-pointer">
-                                    <option value="ideal" ${currentVal === 'ideal' ? 'selected' : ''}>⭐ Ideal (100%)</option>
-                                    <option value="parcial" ${currentVal === 'parcial' ? 'selected' : ''}>🟡 Parcial (50%)</option>
-                                    <option value="ocioso" ${currentVal === 'ocioso' ? 'selected' : ''}>🔴 Ocioso (0%)</option>
-                                </select>
-                            </td>`;
-                    }
-                });
-                rowsHtml += `</tr>`;
-            });
-            tbody.innerHTML = rowsHtml;
-        }
-
-        function changeIdealRealSlot(select) {
-            let key = select.getAttribute('data-key');
-            let val = select.value;
-            if(!config.idealRealSlots) config.idealRealSlots = {};
-            config.idealRealSlots[key] = val;
-            localStorage.setItem('simulador_config_athos_v43', JSON.stringify(config));
-            renderApp();
-        }
-
-        function sincronizarConfigTurnosUI() {
-            const capInput = document.getElementById('cfg-capacidade');
-            if(capInput) capInput.value = config.capacidade;
-            atualizarPrecoTurno();
-        }
-
-        function saveConfig() {
-            config.capacidade = parseInt(document.getElementById('cfg-capacidade').value) || 528;
-            localStorage.setItem('simulador_config_athos_v43', JSON.stringify(config));
-            triggerToast("Parâmetros operacionais salvos!", "⚙️");
-            renderApp();
-        }
-
         function renderPacotesUI() {
             const container = document.getElementById('pacotes-container'); if(!container) return;
             let html = '';
@@ -658,14 +632,13 @@
                         <div class="space-y-1">
                             <span class="text-[10px] font-bold uppercase text-slate-400 block">${p.tipo}</span>
                             <h4 class="text-sm font-bold text-slate-800">${p.nome}</h4>
-                            <p class="text-xs text-slate-500">${p.horas}h/mês &bull; R$ ${(p.valor/p.horas).toFixed(2)}/h</p>
+                            <p class="text-xs text-slate-500">${p.desc}</p>
                             <div class="text-lg font-black text-slate-900 pt-1">${formatCurrency(p.valor)}</div>
                         </div>
                         <button type="button" onclick="abrirModalPacote(${idx})" class="mt-2 w-full h-9 bg-white border border-slate-200 hover:bg-slate-100 font-semibold text-slate-700 rounded-xl text-xs cursor-pointer shadow-2xs">Editar</button>
                     </div>`;
             });
             container.innerHTML = html;
-            atualizarPrecoTurno();
         }
 
         function abrirModalPacote(idx) {
@@ -686,16 +659,6 @@
             pacotes[editingPackageId].valor = parseCurrencyToFloat(document.getElementById('edit-pacote-valor').value);
             localStorage.setItem('simulador_pacotes_athos_v43', JSON.stringify(pacotes));
             renderPacotesUI(); fecharModalPacote(); triggerToast("Pacote atualizado!", "✏️"); renderApp();
-        }
-
-        function atualizarPrecoTurno() {
-            let pCont = pacotes.find(p => p.nome.toLowerCase().includes('continuidade')) || pacotes[0];
-            config.preco = pCont ? pCont.valor : 300.00;
-            
-            const precoInput = document.getElementById('cfg-preco');
-            if(precoInput) precoInput.value = config.preco.toFixed(2);
-            localStorage.setItem('simulador_config_athos_v43', JSON.stringify(config));
-            sincronizarLocacoesUI();
         }
 
         function atualizarCustosAutomaticosSemanticamente() {
@@ -886,13 +849,12 @@
                 }
             });
 
-            // Cálculo da receita projetada pelos pacotes "Continuidade", "Essencial", "Singular" e Avulso
             let qCont = config.locadoContinuidade !== undefined ? config.locadoContinuidade : 10;
             let qEss = config.locadoEssencial !== undefined ? config.locadoEssencial : 4;
             let qSing = config.locadoSingular !== undefined ? config.locadoSingular : 2;
             let valAv = config.locadosAvulsoValor !== undefined ? config.locadosAvulsoValor : 350;
 
-            let pContVal = (pacotes.find(p => p.nome.toLowerCase().includes('continuidade')) || pacotes[0]).valor;
+            let pContVal = (pacotes.find(p => p.nome.toLowerCase().includes('cotinuidade') || p.nome.toLowerCase().includes('continuidade')) || pacotes[0]).valor;
             let pEssVal = (pacotes.find(p => p.nome.toLowerCase().includes('essencial')) || pacotes[1]).valor;
             let pSingVal = (pacotes.find(p => p.nome.toLowerCase().includes('singular')) || pacotes[2]).valor;
 
@@ -930,7 +892,7 @@
             const kbEven = document.getElementById('kpi-break-even');
             if(kbEven) kbEven.innerText = formatCurrency(fatMin);
 
-            let totalSlots = 30; // 5 dias * 3 turnos + 1 sábado manhã = 16 por sala * 2 salas = 32, menos turnos indisponíveis sabado tarde/noite
+            let totalSlots = 32;
             let achievedScore = qCont + qEss;
             let ocuSimulada = totalSlots > 0 ? Math.min(100, (achievedScore / totalSlots) * 100) : 50;
 
@@ -1004,7 +966,7 @@
             let qSing = config.locadoSingular || 2;
             let valAv = config.locadosAvulsoValor || 350;
 
-            let pContVal = (pacotes.find(p => p.nome.toLowerCase().includes('continuidade')) || pacotes[0]).valor;
+            let pContVal = (pacotes.find(p => p.nome.toLowerCase().includes('cotinuidade') || p.nome.toLowerCase().includes('continuidade')) || pacotes[0]).valor;
             let pEssVal = (pacotes.find(p => p.nome.toLowerCase().includes('essencial')) || pacotes[1]).valor;
             let pSingVal = (pacotes.find(p => p.nome.toLowerCase().includes('singular')) || pacotes[2]).valor;
 
@@ -1046,7 +1008,7 @@
         }
 
         function switchTab(id) {
-            if(id === 'config') { renderPacotesUI(); renderDonaMatrix(); renderIdealRealMatrix(); sincronizarConfigTurnosUI(); sincronizarLocacoesUI(); }
+            if(id === 'config') { renderPacotesUI(); renderDonaMatrix(); sincronizarLocacoesUI(); }
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(el => el.className = "tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-slate-400 hover:text-white cursor-pointer");
             document.getElementById(`tab-${id}`).classList.remove('hidden');
