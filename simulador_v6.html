@@ -50,7 +50,7 @@
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
             <div class="text-center lg:text-left w-full lg:w-auto">
                 <h1 class="text-lg lg:text-xl font-bold tracking-tight">Simulador Financeiro</h1>
-                <p class="text-[11px] text-stone-400 mt-0.5">Gestão Estratégica &bull; Clínica Áthos (Potencial Total Fixo: R$ 10.400,00)</p>
+                <p class="text-[11px] text-stone-400 mt-0.5">Gestão Estratégica &bull; Clínica Áthos (Baseado no Preço dos Pacotes & Máximo de Turnos)</p>
             </div>
             <nav class="flex gap-1 bg-slate-950 p-1 rounded-xl w-full lg:w-auto overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap snap-x border border-slate-800">
                 <button onclick="switchTab('dash')" id="btn-dash" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg bg-slate-800 text-white shadow-xs cursor-pointer">Dashboard</button>
@@ -136,7 +136,7 @@
                 <div class="space-y-1 w-full md:w-auto">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">Simulador por Turnos (5h/turno)</span>
                     <h3 class="text-lg font-bold">Quantos turnos alugar para recuperar o investimento?</h3>
-                    <p class="text-xs text-stone-400">Baseado no teto máximo de R$ 10.400,00/mês distribuído conforme a alocação.</p>
+                    <p class="text-xs text-stone-400">Baseado no preço dos pacotes e na quantidade máxima de turnos livres.</p>
                 </div>
                 
                 <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
@@ -173,11 +173,11 @@
                         <h3 class="text-sm font-bold text-slate-700">Desempenho por sala (Receita)</h3>
                         <div class="grid grid-cols-2 lg:grid-cols-1 gap-3">
                             <div class="p-3 bg-slate-50 rounded-xl">
-                                <span class="text-[10px] font-bold text-slate-400 block uppercase" id="lbl-max-sala1">Sala 01 (Max dinâmico)</span>
+                                <span class="text-[10px] font-bold text-slate-400 block uppercase" id="lbl-max-sala1">Sala 01 (Max)</span>
                                 <span id="faturamento-sala1" class="text-lg font-bold text-slate-900 mt-0.5 block">R$ 0,00</span>
                             </div>
                             <div class="p-3 bg-slate-50 rounded-xl">
-                                <span class="text-[10px] font-bold text-slate-400 block uppercase" id="lbl-max-sala2">Sala 02 (Max dinâmico)</span>
+                                <span class="text-[10px] font-bold text-slate-400 block uppercase" id="lbl-max-sala2">Sala 02 (Max)</span>
                                 <span id="faturamento-sala2" class="text-lg font-bold text-slate-700 mt-0.5 block">R$ 0,00</span>
                             </div>
                         </div>
@@ -303,7 +303,7 @@
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
                 <div>
                     <h2 class="text-sm font-bold text-slate-700 mb-1">⚙️ Matriz de Uso Próprio da Proprietária (Sala 01 ou Sala 02)</h2>
-                    <p class="text-xs text-slate-400">O potencial total máximo da clínica é fixo em **R$ 10.400,00/mês**. O teto de cada sala se ajusta dinamicamente conforme a alocação da dona.</p>
+                    <p class="text-xs text-slate-400">O potencial de cada sala é calculado pelo número de turnos livres $\times$ valor do pacote de 5h/turno.</p>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -323,10 +323,10 @@
                     </table>
                 </div>
 
-                <!-- PAINEL DINÂMICO POR ESPAÇO (SALA 1 vs SALA 2) -->
+                <!-- PAINEL DE DISPONIBILIDADE POR ESPAÇO -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                     <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60 flex flex-col justify-between">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sala 01 (Max Dinâmico)</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sala 01 (Max Calculado)</span>
                         <div class="my-2 space-y-0.5">
                             <span id="cfg-pot-sala1" class="text-base font-black text-slate-900 block">R$ 0,00</span>
                             <span id="cfg-resumo-sala1" class="text-[11px] text-slate-500 block">0 turnos livres</span>
@@ -335,7 +335,7 @@
                     </div>
 
                     <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60 flex flex-col justify-between">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sala 02 (Max Dinâmico)</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sala 02 (Max Calculado)</span>
                         <div class="my-2 space-y-0.5">
                             <span id="cfg-pot-sala2" class="text-base font-black text-slate-900 block">R$ 0,00</span>
                             <span id="cfg-resumo-sala2" class="text-[11px] text-slate-500 block">0 turnos livres</span>
@@ -344,9 +344,9 @@
                     </div>
 
                     <div class="p-4 bg-slate-900 text-white rounded-xl shadow-xs flex flex-col justify-between">
-                        <span class="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Potencial Total Fixo</span>
+                        <span class="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Potencial Combinado Total</span>
                         <div class="my-2">
-                            <span class="text-xl font-black text-emerald-400 block">R$ 10.400,00</span>
+                            <span id="cfg-pot-total" class="text-xl font-black text-emerald-400 block">R$ 0,00</span>
                         </div>
                         <span id="cfg-total-turnos-badge" class="text-[10px] text-stone-400">0 turnos livres/mês</span>
                     </div>
@@ -381,7 +381,7 @@
                 <div class="flex justify-between items-center">
                     <div>
                         <h2 class="text-sm font-bold text-slate-700 mb-1">Planos e Pacotes de Horas (Áthos)</h2>
-                        <p class="text-xs text-slate-400">O Pacote Principal (10h) define a âncora de preço e capacidade.</p>
+                        <p class="text-xs text-slate-400">O Pacote de 5h/turno (ou o pacote principal) define a âncora de preço por turno.</p>
                     </div>
                 </div>
                 
@@ -400,9 +400,9 @@
                         </div>
                         
                         <div class="flex flex-col gap-1">
-                            <label class="text-[10px] font-bold uppercase text-slate-500">Preço Base do Maior Turno (10h)</label>
+                            <label class="text-[10px] font-bold uppercase text-slate-500">Preço do Turno (5h)</label>
                             <input type="number" step="0.01" id="cfg-preco" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full font-bold text-slate-700" readonly>
-                            <span class="text-[10px] text-slate-400">Derivado do pacote de 10h (&times; 5h por turno).</span>
+                            <span class="text-[10px] text-slate-400">Derivado diretamente do pacote de 5h/turno.</span>
                         </div>
                     </div>
 
@@ -471,13 +471,13 @@
         let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v43')) || [];
 
         let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v43')) || [
-            { id: 0, nome: 'Áthos Continuidade (Maior Turno)', tipo: 'Pacote Mensal', horas: 10, valor: 300.00, desc: '10h/mês — R$ 30,00/h' },
-            { id: 1, nome: 'Áthos Essencial', tipo: 'Pacote Mensal', horas: 5, valor: 175.00, desc: '5h/mês — R$ 35,00/h' },
-            { id: 2, nome: 'Áthos Singular', tipo: 'Pacote Mensal', horas: 1, valor: 40.00, desc: '1h/mês — R$ 40,00/h' }
+            { id: 0, nome: 'Áthos Turno (5h)', tipo: 'Pacote Mensal', horas: 5, valor: 350.00, desc: '5h/mês — R$ 70,00/h' },
+            { id: 1, nome: 'Áthos Essencial', tipo: 'Pacote Mensal', horas: 10, valor: 650.00, desc: '10h/mês — R$ 65,00/h' },
+            { id: 2, nome: 'Áthos Singular', tipo: 'Pacote Mensal', horas: 1, valor: 80.00, desc: '1h/mês — R$ 80,00/h' }
         ];
 
         let config = JSON.parse(localStorage.getItem('simulador_config_athos_v43')) || {
-            capacidade: 528, preco: 30.00, custoFixo: 1800, custoVariavel: 2.00,
+            capacidade: 528, preco: 350.00, custoFixo: 1800, custoVariavel: 10.00,
             donaSlots: {
                 '1_manha': 'sala1', '1_tarde': 'sala1',
                 '2_manha': 'sala1', '2_tarde': 'sala1'
@@ -599,7 +599,7 @@
         }
 
         function calcularTurnosComerciaisDisponiveis() {
-            let totalSlotsSala1 = 0, totalSlotsSala2 = 0;
+            let slotsSemanaSala1 = 0, slotsSemanaSala2 = 0;
             let donaCountSala1 = 0, donaCountSala2 = 0;
 
             turnosDia.forEach(t => {
@@ -610,50 +610,55 @@
                         if (donaSala === 'sala1') donaCountSala1++;
                         if (donaSala === 'sala2') donaCountSala2++;
                         
-                        if (donaSala !== 'sala1') totalSlotsSala1++;
-                        if (donaSala !== 'sala2') totalSlotsSala2++;
+                        if (donaSala !== 'sala1') slotsSemanaSala1++;
+                        if (donaSala !== 'sala2') slotsSemanaSala2++;
                     }
                 });
             });
 
-            let totalComercial = totalSlotsSala1 + totalSlotsSala2;
+            // Converter turnos semanais para mensais usando o fator exato (52 / 12 = 4.3333 semanas/mês)
+            let fatorMes = 52 / 12;
+            let turnosMesSala1 = slotsSemanaSala1 * fatorMes;
+            let turnosMesSala2 = slotsSemanaSala2 * fatorMes;
+            let totalTurnosMesComercial = turnosMesSala1 + turnosMesSala2;
 
-            // Motor Dinâmico: O teto total é fixo em R$ 10.400,00.
-            // Distribuímos o potencial proporcionalmente aos turnos livres de cada sala.
-            let potSala1 = totalComercial > 0 ? (totalSlotsSala1 / totalComercial) * 10400 : 5200;
-            let potSala2 = totalComercial > 0 ? (totalSlotsSala2 / totalComercial) * 10400 : 5200;
+            // Preço do turno baseado no pacote de 5h cadastrado
+            let precoTurno = config.preco || 350.00;
 
-            let precoTurno1 = totalSlotsSala1 > 0 ? potSala1 / totalSlotsSala1 : 0;
-            let precoTurno2 = totalSlotsSala2 > 0 ? potSala2 / totalSlotsSala2 : 0;
+            // Potencial máximo de cada sala = Turnos mensais livres * Preço do Turno (5h)
+            let potSala1 = turnosMesSala1 * precoTurno;
+            let potSala2 = turnosMesSala2 * precoTurno;
+            let potTotal = potSala1 + potSala2;
 
-            // Atualizar UI de resumo dinâmico nas configurações e dashboard
+            // Atualizar UI de resumo nas configurações
             const resSala1 = document.getElementById('cfg-resumo-sala1');
             const resSala2 = document.getElementById('cfg-resumo-sala2');
             const potS1El = document.getElementById('cfg-pot-sala1');
             const potS2El = document.getElementById('cfg-pot-sala2');
+            const potTotEl = document.getElementById('cfg-pot-total');
             const pSala1 = document.getElementById('cfg-preco-sala1');
             const pSala2 = document.getElementById('cfg-preco-sala2');
             const badge = document.getElementById('cfg-total-turnos-badge');
 
-            if(resSala1) resSala1.innerText = `${totalSlotsSala1} turnos livres`;
-            if(resSala2) resSala2.innerText = `${totalSlotsSala2} turnos livres`;
-            if(potS1El) potS1El.innerText = formatCurrency(potS1El); // armazenamos ou atualizamos
+            if(resSala1) resSala1.innerText = `${turnosMesSala1.toFixed(1)} turnos/mês livres`;
+            if(resSala2) resSala2.innerText = `${turnosMesSala2.toFixed(1)} turnos/mês livres`;
             if(potS1El) potS1El.innerText = formatCurrency(potSala1);
             if(potS2El) potS2El.innerText = formatCurrency(potSala2);
-            if(pSala1) pSala1.innerText = `${formatCurrency(precoTurno1)} por turno`;
-            if(pSala2) pSala2.innerText = `${formatCurrency(precoTurno2)} por turno`;
-            if(badge) badge.innerText = `${totalComercial} turnos livres/mês`;
+            if(potTotEl) potTotEl.innerText = formatCurrency(potTotal);
+            if(pSala1) pSala1.innerText = `${formatCurrency(precoTurno)} / turno (5h)`;
+            if(pSala2) pSala2.innerText = `${formatCurrency(precoTurno)} / turno (5h)`;
+            if(badge) badge.innerText = `${totalTurnosMesComercial.toFixed(1)} turnos livres/mês`;
 
             document.getElementById('lbl-max-sala1').innerText = `Sala 01 (Max: ${formatCurrency(potSala1)})`;
             document.getElementById('lbl-max-sala2').innerText = `Sala 02 (Max: ${formatCurrency(potSala2)})`;
 
-            return { totalSlotsSala1, totalSlotsSala2, totalComercial, potSala1, potSala2 };
+            return { turnosMesSala1, turnosMesSala2, totalTurnosMesComercial, potSala1, potSala2, potTotal };
         }
 
         function sincronizarConfigTurnosUI() {
             const capInput = document.getElementById('cfg-capacidade');
             if(capInput) capInput.value = config.capacidade;
-            atualizarPrecoMaiorTurno();
+            atualizarPrecoTurno();
         }
 
         function saveConfig() {
@@ -679,7 +684,7 @@
                     </div>`;
             });
             container.innerHTML = html;
-            atualizarPrecoMaiorTurno();
+            atualizarPrecoTurno();
         }
 
         function abrirModalPacote(idx) {
@@ -702,10 +707,9 @@
             renderPacotesUI(); fecharModalPacote(); triggerToast("Pacote atualizado!", "✏️"); renderApp();
         }
 
-        function atualizarPrecoMaiorTurno() {
-            let pacote10h = pacotes.find(p => p.horas === 10) || pacotes.reduce((prev, curr) => (prev.horas > curr.horas) ? prev : curr, pacotes[0]);
-            let taxaHora = pacote10h.horas > 0 ? (pacote10h.valor / pacote10h.horas) : 30.00;
-            config.preco = Math.round(taxaHora * 100) / 100;
+        function atualizarPrecoTurno() {
+            let pacote5h = pacotes.find(p => p.horas === 5) || pacotes[0];
+            config.preco = pacote5h ? pacote5h.valor : 350.00;
             
             const precoInput = document.getElementById('cfg-preco');
             if(precoInput) precoInput.value = config.preco.toFixed(2);
@@ -918,8 +922,10 @@
             let qtdMeses = mesesAtivos.length || 1;
             atualizarCustosAutomaticosSemanticamente();
             let baseFixo = Math.max(config.custoFixo * qtdMeses, totalDespesas);
-            let margemU = config.preco - config.custoVariavel;
-            let fatMin = (baseFixo / (margemU > 0 ? margemU : 1)) * config.preco;
+            let precoTurno = config.preco || 350.00;
+            let custoVarTurno = 10.00;
+            let margemU = precoTurno - custoVarTurno;
+            let fatMin = (baseFixo / (margemU > 0 ? margemU : 1)) * precoTurno;
 
             const kbEven = document.getElementById('kpi-break-even');
             if(kbEven) kbEven.innerText = formatCurrency(fatMin);
@@ -951,8 +957,8 @@
             let capex = lancamentos.reduce((acc, i) => i.tipo === 'investimento' ? acc + i.valor : acc, 0) || 45000;
             const metaPayEl = document.getElementById('meta-meses-payback');
             let mesesPayback = metaPayEl ? parseInt(metaPayEl.value) || 12 : 12;
-            let fatMeta = ((capex / mesesPayback) + (baseFixo / qtdMeses)) / ((config.preco - config.custoVariavel)/config.preco);
-            let turnosMeta = Math.ceil(fatMeta / (config.preco * 5));
+            let fatMeta = ((capex / mesesPayback) + (baseFixo / qtdMeses)) / ((precoTurno - custoVarTurno)/precoTurno);
+            let turnosMeta = Math.ceil(fatMeta / precoTurno);
 
             const fatMetaEl = document.getElementById('kpi-fat-meta');
             const turnosMetaEl = document.getElementById('kpi-turnos-meta');
