@@ -105,9 +105,9 @@
             <!-- KPIS -->
             <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
                 <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 col-span-1">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ocupação Simulada (Real)</span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ocupação Comercial</span>
                     <span id="kpi-ponto-eq" class="text-xl lg:text-2xl font-bold text-slate-800 block mt-1.5">0.0%</span>
-                    <span id="lbl-metrica-eq" class="text-[10px] text-slate-400 block mt-0.5">Eficiência Real s/ Ideal</span>
+                    <span id="lbl-metrica-eq" class="text-[10px] text-slate-400 block mt-0.5">Vendidos / Potencial Líquido</span>
                 </div>
                 <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 col-span-1">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Faturamento Mínimo</span>
@@ -135,8 +135,8 @@
             <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-center gap-4 border border-slate-800">
                 <div class="space-y-1 w-full md:w-auto">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">Simulador por Turnos</span>
-                    <h3 class="text-lg font-bold">Quantos turnos alugar para recuperar o investimento?</h3>
-                    <p class="text-xs text-stone-400">Baseado nos pacotes configurados e na ocupação comercial.</p>
+                    <h3 class="text-lg font-bold">Quantos turnos vender para recuperar o investimento?</h3>
+                    <p class="text-xs text-stone-400">Baseado nos pacotes configurados e na capacidade líquida.</p>
                 </div>
                 
                 <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
@@ -152,9 +152,9 @@
                     </div>
                     
                     <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex flex-col justify-center min-w-[220px] w-full sm:w-auto">
-                        <span class="text-[10px] font-bold uppercase text-stone-400">Faturamento Alvo por Turnos</span>
+                        <span class="text-[10px] font-bold uppercase text-stone-400">Faturamento Alvo por Mix</span>
                         <span id="kpi-fat-meta" class="text-xl font-black text-emerald-400">R$ 0,00</span>
-                        <span id="kpi-turnos-meta" class="text-[10px] text-stone-400">Meta: 0 turnos/mês</span>
+                        <span id="kpi-turnos-meta" class="text-[10px] text-stone-400">Meta: 0 pacotes/mês</span>
                     </div>
                 </div>
             </div>
@@ -300,50 +300,28 @@
         <!-- CONFIGURAÇÕES -->
         <div id="tab-config" class="tab-content hidden max-w-4xl mx-auto space-y-6">
             
-            <!-- 1. MATRIZ DUAL DE COEXISTÊNCIA DAS SALAS -->
+            <!-- 1. CAPACIDADE E USO PRÓPRIO (SIMPLIFICADO) -->
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
                 <div>
-                    <h2 class="text-sm font-bold text-slate-700 mb-1">📋 1. Matriz de Coexistência (Sala 01 &amp; Sala 02)</h2>
-                    <p class="text-xs text-slate-400">Cada turno possui as duas salas operando simultaneamente. Configure o destino de cada sala independentemente.</p>
+                    <h2 class="text-sm font-bold text-slate-700 mb-1">📋 1. Capacidade e Uso Próprio da Clínica</h2>
+                    <p class="text-xs text-slate-400">A clínica possui 32 turnos físicos totais (16 em cada uma das 2 salas). Informe quantos turnos a própria clínica utiliza para descontar do potencial comercial.</p>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-center border-collapse text-xs">
-                        <thead>
-                            <tr class="bg-slate-100 text-slate-600 font-bold uppercase text-[10px]">
-                                <th class="p-3 text-left">Turno / Horário</th>
-                                <th class="p-3">Segunda</th>
-                                <th class="p-3">Terça</th>
-                                <th class="p-3">Quarta</th>
-                                <th class="p-3">Quinta</th>
-                                <th class="p-3">Sexta</th>
-                                <th class="p-3">Sábado</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dona-matrix-tbody" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-1">
+                        <span class="text-[10px] font-bold uppercase text-slate-400 block">Capacidade Física Total</span>
+                        <span class="text-lg font-bold text-slate-800">32 turnos / semana</span>
+                    </div>
 
-                <!-- RESUMO DA MATRIZ -->
-                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60 space-y-3">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Resumo Físico e Comercial da Agenda (Total: 32 Turnos/Sem)</span>
-                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
-                        <div class="p-3 bg-white rounded-lg border border-slate-200/60">
-                            <span class="text-[10px] text-slate-400 uppercase block font-bold">Sala 01 (Proprietária)</span>
-                            <span id="summary-dona-sala1" class="text-base font-bold text-slate-800">0 turnos</span>
-                        </div>
-                        <div class="p-3 bg-white rounded-lg border border-slate-200/60">
-                            <span class="text-[10px] text-slate-400 uppercase block font-bold">Sala 02 (Proprietária)</span>
-                            <span id="summary-dona-sala2" class="text-base font-bold text-slate-800">0 turnos</span>
-                        </div>
-                        <div class="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                            <span class="text-[10px] text-emerald-700 uppercase block font-bold">Vendidos na Matriz</span>
-                            <span id="summary-vendidos" class="text-base font-bold text-emerald-800">0 turnos</span>
-                        </div>
-                        <div class="p-3 bg-white rounded-lg border border-slate-200/60">
-                            <span class="text-[10px] text-slate-400 uppercase block font-bold">Livres / Ociosos</span>
-                            <span id="summary-livres" class="text-base font-bold text-slate-800">32 turnos</span>
-                        </div>
+                    <div class="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
+                        <label for="uso-proprio-turnos" class="text-[10px] font-bold uppercase text-slate-500 block">Turnos de Uso Próprio</label>
+                        <input type="number" id="uso-proprio-turnos" oninput="saveLocacoesConfig()" class="h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white font-bold text-slate-800 w-full" value="0" min="0" max="32">
+                        <span class="text-[10px] text-slate-400 block">Descontado do total físico</span>
+                    </div>
+
+                    <div class="p-4 bg-slate-900 text-white rounded-xl flex flex-col justify-center">
+                        <span class="text-[10px] font-bold uppercase text-stone-400 block">Potencial Comercial Líquido</span>
+                        <span id="cfg-potencial-liquido" class="text-lg font-black text-emerald-400 mt-0.5">32 turnos</span>
                     </div>
                 </div>
             </div>
@@ -352,7 +330,7 @@
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
                 <div>
                     <h2 class="text-sm font-bold text-slate-700 mb-1">💰 2. Parâmetros de Faturamento por Pacotes Comercializados</h2>
-                    <p class="text-xs text-slate-400">Informe a quantidade exata de cada pacote comercializado para compor a receita de forma precisa e transparente.</p>
+                    <p class="text-xs text-slate-400">Informe a quantidade exata de cada pacote comercializado por mês para compor a receita de forma precisa.</p>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -391,12 +369,12 @@
                 <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
                     <label class="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" id="chk-integrar-projek" onchange="saveLocacoesConfig()" class="h-5 w-5 rounded-md text-amber-600 accent-amber-600">
-                        <span class="text-xs font-bold text-amber-900">Incluir Projeção de Turnos Comercializados no Fluxo de Caixa do Dash</span>
+                        <span class="text-xs font-bold text-amber-900">Incluir Projeção de Mix de Pacotes no Fluxo de Caixa do Dash</span>
                     </label>
                     <p class="text-[11px] text-amber-700 pl-8">Por segurança gerencial, desmarque esta opção se quiser analisar estritamente o realizado de extratos e lançamentos sem duplicar receitas estimadas.</p>
                 </div>
 
-                <button type="button" onclick="salvarConfiguracaoTurnos()" class="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm shadow-xs transition-all cursor-pointer mt-2">💾 Salvar Configurações de Faturamento</button>
+                <button type="button" onclick="salvarConfiguracaoTurnos()" class="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm shadow-xs transition-all cursor-pointer mt-2">💾 Salvar Configurações</button>
             </div>
 
             <!-- 3. PLANOS E PACOTES (REFERÊNCIA DE PREÇO) -->
@@ -510,27 +488,24 @@
         const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const nomesCurtos = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v49')) || [];
+        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v50')) || [];
 
-        let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v49')) || [
+        let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v50')) || [
             { id: 0, nome: 'Áthos Cotinuidade', tipo: 'Pacote Mensal', horas: 10, valor: 300.00, desc: '10h/mês — cobrança recorrente' },
             { id: 1, nome: 'Áthos Essencial', tipo: 'Pacote Mensal', horas: 5, valor: 175.00, desc: '5h/mês — cobrança recorrente' },
             { id: 2, nome: 'Áthos Singular', tipo: 'Pacote Mensal', horas: 1, valor: 40.00, desc: '1h/mês — cobrança recorrente' }
         ];
 
-        let config = JSON.parse(localStorage.getItem('simulador_config_athos_v49')) || {
-            capacidade: 32, custoFixo: 1800, custoVariavel: 10.00,
+        let config = JSON.parse(localStorage.getItem('simulador_config_athos_v50')) || {
+            capacidadeFisica: 32,
+            usoProprioTurnos: 0,
+            custoFixo: 1800, 
+            custoVariavel: 10.00,
             locadoContinuidade: 0,
             locadoEssencial: 0,
             locadoSingular: 0,
             locadosAvulsoValor: 0,
-            integrarProjecaoTurnos: false,
-            donaSlots: {
-                '1_manha_s1': 'proprietaria', '1_manha_s2': 'livre',
-                '1_tarde_s1': 'proprietaria', '1_tarde_s2': 'livre',
-                '2_manha_s1': 'proprietaria', '2_manha_s2': 'livre',
-                '2_tarde_s1': 'proprietaria', '2_tarde_s2': 'livre'
-            }
+            integrarProjecaoTurnos: false
         };
 
         let editingPackageId = null;
@@ -544,14 +519,13 @@
             renderDropdownCheckboxes();
             atualizarCustosAutomaticosSemanticamente();
             renderPacotesUI();
-            renderDonaMatrix();
             renderApp();
 
             window.addEventListener('message', (event) => {
                 if (event.data && event.data.tipo === 'SINCRONIZAR_DADOS') {
                     if (Array.isArray(event.data.dados)) {
                         lancamentos = event.data.dados;
-                        localStorage.setItem('simulador_lancamentos_athos_v49', JSON.stringify(lancamentos));
+                        localStorage.setItem('simulador_lancamentos_athos_v50', JSON.stringify(lancamentos));
                         renderApp();
                     }
                 }
@@ -562,14 +536,6 @@
                 if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) menu.classList.add('hidden');
             });
         });
-
-        const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-        const turnosDia = [
-            { id: 'manha', label: 'Manhã (08h–12h)' },
-            { id: 'sab_manha', label: 'Sábado Manhã (08h–12h)', sabadoApenas: true },
-            { id: 'tarde', label: 'Tarde (13h–17h)' },
-            { id: 'noite', label: 'Noite (17h30–21h30)' }
-        ];
 
         function calcularReceitaPorMixPacotes() {
             let qCont = config.locadoContinuidade !== undefined ? config.locadoContinuidade : 0;
@@ -584,24 +550,10 @@
             return (qCont * pContVal) + (qEss * pEssVal) + (qSing * pSingVal) + avVal;
         }
 
-        function calcularTurnosVendidosNaMatriz() {
-            let countVendidos = 0;
-            turnosDia.forEach(t => {
-                diasSemana.forEach((d, dIdx) => {
-                    if (!(t.sabadoApenas && dIdx !== 5) && !(!t.sabadoApenas && dIdx === 5 && (t.id === 'tarde' || t.id === 'noite' || t.id === 'manha'))) {
-                        let k1 = `${dIdx}_${t.id}_s1`;
-                        let k2 = `${dIdx}_${t.id}_s2`;
-                        let v1 = config.donaSlots && config.donaSlots[k1] ? config.donaSlots[k1] : 'livre';
-                        let v2 = config.donaSlots && config.donaSlots[k2] ? config.donaSlots[k2] : 'livre';
-                        if (v1 === 'vendido') countVendidos++;
-                        if (v2 === 'vendido') countVendidos++;
-                    }
-                });
-            });
-            return countVendidos;
-        }
-
         function sincronizarLocacoesUI() {
+            let usoProp = config.usoProprioTurnos !== undefined ? config.usoProprioTurnos : 0;
+            document.getElementById('uso-proprio-turnos').value = usoProp;
+
             let qCont = config.locadoContinuidade !== undefined ? config.locadoContinuidade : 0;
             let qEss = config.locadoEssencial !== undefined ? config.locadoEssencial : 0;
             let qSing = config.locadoSingular !== undefined ? config.locadoSingular : 0;
@@ -624,12 +576,16 @@
             document.getElementById('val-essencial-ref').innerText = pEss.valor.toFixed(2).replace('.', ',');
             document.getElementById('val-singular-ref').innerText = pSing.valor.toFixed(2).replace('.', ',');
 
+            let potencialLiquido = Math.max(0, (config.capacidadeFisica || 32) - usoProp);
+            document.getElementById('cfg-potencial-liquido').innerText = `${potencialLiquido} turnos`;
+
             let receitaMix = calcularReceitaPorMixPacotes();
             const recProjEl = document.getElementById('cfg-receita-projetada');
             if(recProjEl) recProjEl.innerText = formatCurrency(receitaMix);
         }
 
         function saveLocacoesConfig() {
+            config.usoProprioTurnos = parseInt(document.getElementById('uso-proprio-turnos').value) || 0;
             config.locadoContinuidade = parseInt(document.getElementById('locado-continuidade').value) || 0;
             config.locadoEssencial = parseInt(document.getElementById('locado-essencial').value) || 0;
             config.locadoSingular = parseInt(document.getElementById('locado-singular').value) || 0;
@@ -637,91 +593,16 @@
             const chkPro = document.getElementById('chk-integrar-projek');
             config.integrarProjecaoTurnos = chkPro ? chkPro.checked : false;
 
-            localStorage.setItem('simulador_config_athos_v49', JSON.stringify(config));
+            localStorage.setItem('simulador_config_athos_v50', JSON.stringify(config));
             sincronizarLocacoesUI();
             renderApp();
         }
 
         function salvarConfiguracaoTurnos() {
             saveLocacoesConfig();
-            triggerToast("Parâmetros de faturamento salvos com sucesso!", "💾");
+            triggerToast("Configurações salvas com sucesso!", "💾");
             renderApp();
             switchTab('dash');
-        }
-
-        function renderDonaMatrix() {
-            const tbody = document.getElementById('dona-matrix-tbody');
-            if(!tbody) return;
-            let rowsHtml = '';
-            let countS1 = 0, countS2 = 0, countVendidos = 0, countLivres = 0;
-            let totalSlotsValidos = 32;
-
-            turnosDia.forEach(t => {
-                diasSemana.forEach((d, dIdx) => {
-                    if (!(t.sabadoApenas && dIdx !== 5) && !(!t.sabadoApenas && dIdx === 5 && (t.id === 'tarde' || t.id === 'noite' || t.id === 'manha'))) {
-                        let k1 = `${dIdx}_${t.id}_s1`;
-                        let k2 = `${dIdx}_${t.id}_s2`;
-                        let v1 = config.donaSlots && config.donaSlots[k1] ? config.donaSlots[k1] : 'livre';
-                        let v2 = config.donaSlots && config.donaSlots[k2] ? config.donaSlots[k2] : 'livre';
-
-                        if(v1 === 'proprietaria') countS1++;
-                        else if(v1 === 'vendido') countVendidos++;
-                        else countLivres++;
-
-                        if(v2 === 'proprietaria') countS2++;
-                        else if(v2 === 'vendido') countVendidos++;
-                        else countLivres++;
-
-                        rowsHtml += `
-                            <tr>
-                                <td class="p-3 text-left font-bold text-slate-700">${t.label} (${d})</td>
-                                <td colspan="6" class="p-2">
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
-                                            <span class="text-[10px] font-bold text-slate-500 w-14 text-left">Sala 01:</span>
-                                            <select data-key="${k1}" onchange="changeDonaSlot(this)" class="h-8 px-2 border border-slate-200 rounded-lg text-xs font-bold cursor-pointer w-full ${v1==='vendido'?'bg-emerald-50 text-emerald-800 border-emerald-300':(v1==='proprietaria'?'bg-slate-900 text-white':'bg-white text-slate-700')}">
-                                                <option value="livre" ${v1 === 'livre' ? 'selected' : ''}>Livre / Ocioso</option>
-                                                <option value="proprietaria" ${v1 === 'proprietaria' ? 'selected' : ''}>Uso da Proprietária</option>
-                                                <option value="vendido" ${v1 === 'vendido' ? 'selected' : ''}>🟢 Vendido Comercial</option>
-                                            </select>
-                                        </div>
-                                        <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
-                                            <span class="text-[10px] font-bold text-slate-500 w-14 text-left">Sala 02:</span>
-                                            <select data-key="${k2}" onchange="changeDonaSlot(this)" class="h-8 px-2 border border-slate-200 rounded-lg text-xs font-bold cursor-pointer w-full ${v2==='vendido'?'bg-emerald-50 text-emerald-800 border-emerald-300':(v2==='proprietaria'?'bg-slate-900 text-white':'bg-white text-slate-700')}">
-                                                <option value="livre" ${v2 === 'livre' ? 'selected' : ''}>Livre / Ocioso</option>
-                                                <option value="proprietaria" ${v2 === 'proprietaria' ? 'selected' : ''}>Uso da Proprietária</option>
-                                                <option value="vendido" ${v2 === 'vendido' ? 'selected' : ''}>🟢 Vendido Comercial</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>`;
-                    }
-                });
-            });
-            tbody.innerHTML = rowsHtml;
-
-            const sumS1 = document.getElementById('summary-dona-sala1');
-            const sumS2 = document.getElementById('summary-dona-sala2');
-            const sumVend = document.getElementById('summary-vendidos');
-            const sumLiv = document.getElementById('summary-livres');
-
-            if(sumS1) sumS1.innerText = `${countS1} turnos`;
-            if(sumS2) sumS2.innerText = `${countS2} turnos`;
-            if(sumVend) sumVend.innerText = `${countVendidos} turnos`;
-            if(sumLiv) sumLiv.innerText = `${countLivres} turnos (de ${totalSlotsValidos})`;
-            
-            sincronizarLocacoesUI();
-        }
-
-        function changeDonaSlot(select) {
-            let key = select.getAttribute('data-key');
-            let val = select.value;
-            if(!config.donaSlots) config.donaSlots = {};
-            config.donaSlots[key] = val;
-            localStorage.setItem('simulador_config_athos_v49', JSON.stringify(config));
-            renderDonaMatrix();
-            renderApp();
         }
 
         function renderPacotesUI() {
@@ -758,7 +639,7 @@
             pacotes[editingPackageId].nome = document.getElementById('edit-pacote-nome').value;
             pacotes[editingPackageId].horas = parseInt(document.getElementById('edit-pacote-horas').value) || 1;
             pacotes[editingPackageId].valor = parseCurrencyToFloat(document.getElementById('edit-pacote-valor').value);
-            localStorage.setItem('simulador_pacotes_athos_v49', JSON.stringify(pacotes));
+            localStorage.setItem('simulador_pacotes_athos_v50', JSON.stringify(pacotes));
             renderPacotesUI(); fecharModalPacote(); triggerToast("Pacote atualizado!", "✏️"); renderApp();
         }
 
@@ -771,7 +652,7 @@
                 }
             });
             config.custoFixo = count.size > 0 ? Math.round(totalFixas / count.size) : 1800;
-            localStorage.setItem('simulador_config_athos_v49', JSON.stringify(config));
+            localStorage.setItem('simulador_config_athos_v50', JSON.stringify(config));
         }
 
         function parseRawValue(val) {
@@ -870,7 +751,7 @@
                         } catch(err) { console.error(err); }
                     });
 
-                    localStorage.setItem('simulador_lancamentos_athos_v49', JSON.stringify(lancamentos));
+                    localStorage.setItem('simulador_lancamentos_athos_v50', JSON.stringify(lancamentos));
                     atualizarCustosAutomaticosSemanticamente();
                     triggerToast(`Planilha integrada e categorizada com sucesso! (${count} registros)`, "📥");
                     renderApp(); switchTab('dash');
@@ -993,9 +874,9 @@
             const kbEven = document.getElementById('kpi-break-even');
             if(kbEven) kbEven.innerText = formatCurrency(fatMin);
 
-            let totalSlots = 32;
-            let totalVendidosMatriz = calcularTurnosVendidosNaMatriz();
-            let ocuSimulada = totalSlots > 0 ? Math.min(100, (totalVendidosMatriz / totalSlots) * 100) : 0;
+            let potencialLiquido = Math.max(1, (config.capacidadeFisica || 32) - (config.usoProprioTurnos || 0));
+            let totalVendidosMix = (config.locadoContinuidade || 0) + (config.locadoEssencial || 0) + (config.locadoSingular || 0);
+            let ocuSimulada = Math.min(100, (totalVendidosMix / potencialLiquido) * 100);
 
             const kpEq = document.getElementById('kpi-ponto-eq');
             if(kpEq) kpEq.innerText = ocuSimulada.toFixed(1) + '%';
@@ -1004,12 +885,12 @@
             const metaPayEl = document.getElementById('meta-meses-payback');
             let mesesPayback = metaPayEl ? parseInt(metaPayEl.value) || 12 : 12;
             let fatMeta = ((capex / mesesPayback) + (baseFixo / qtdMeses)) / ((pContVal - custoVarTurno)/pContVal);
-            let turnosMeta = Math.ceil(fatMeta / (pContVal > 0 ? pContVal : 300));
+            let pacotesMeta = Math.ceil(fatMeta / (pContVal > 0 ? pContVal : 300));
 
             const fatMetaEl = document.getElementById('kpi-fat-meta');
             const turnosMetaEl = document.getElementById('kpi-turnos-meta');
             if(fatMetaEl) fatMetaEl.innerText = formatCurrency(fatMeta);
-            if(turnosMetaEl) turnosMetaEl.innerText = `Meta: ${turnosMeta} turnos/mês`;
+            if(turnosMetaEl) turnosMetaEl.innerText = `Meta: ~${pacotesMeta} pacotes/mês`;
 
             let receitaTotalPeriodo = sala1Tot + sala2Tot;
             let op = receitaTotalPeriodo - totalDespesas;
@@ -1034,7 +915,6 @@
                 vetorFluxo.push((r - ds) - inv);
             });
 
-            // Trava analítica de segurança para Payback e TIR em janelas isoladas
             let pbEl = document.getElementById('kpi-payback');
             let tirEl = document.getElementById('kpi-tir');
 
@@ -1116,7 +996,7 @@
         }
 
         function switchTab(id) {
-            if(id === 'config') { renderPacotesUI(); renderDonaMatrix(); sincronizarLocacoesUI(); }
+            if(id === 'config') { renderPacotesUI(); sincronizarLocacoesUI(); }
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(el => el.className = "tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-slate-400 hover:text-white cursor-pointer");
             document.getElementById(`tab-${id}`).classList.remove('hidden');
@@ -1174,7 +1054,7 @@
             if(val <= 0) return;
 
             lancamentos.push({ id: 'man-' + Date.now(), data: d, tipo: selectedType, sala, desc, valor: val });
-            localStorage.setItem('simulador_lancamentos_athos_v49', JSON.stringify(lancamentos));
+            localStorage.setItem('simulador_lancamentos_athos_v50', JSON.stringify(lancamentos));
             document.getElementById('lanc-desc').value = '';
             document.getElementById('lanc-valor').value = '';
             renderApp(); switchTab('dash'); triggerToast("Lançamento salvo com sucesso!", "🟢");
@@ -1182,14 +1062,14 @@
 
         function deleteLancamento(id) {
             lancamentos = lancamentos.filter(i => i.id !== id);
-            localStorage.setItem('simulador_lancamentos_athos_v49', JSON.stringify(lancamentos));
+            localStorage.setItem('simulador_lancamentos_athos_v50', JSON.stringify(lancamentos));
             renderApp(); triggerToast("Registro removido.", "🔴");
         }
 
         function clearData() {
             if(confirm("Deseja apagar todos os dados locais?")) {
                 lancamentos = []; 
-                localStorage.removeItem('simulador_lancamentos_athos_v49');
+                localStorage.removeItem('simulador_lancamentos_athos_v50');
                 renderApp(); triggerToast("Banco limpo.", "🧹");
             }
         }
