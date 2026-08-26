@@ -371,7 +371,7 @@
                     </div>
 
                     <div class="p-4 bg-slate-900 text-white rounded-xl flex flex-col justify-center">
-                        <span class="text-[10px] font-bold uppercase text-stone-400 block">Receita Mensal Projetada por Ocupação</span>
+                        <span class="text-[10px] font-bold uppercase text-stone-400 block">Receita Mensal Projetada (Base Conservadora)</span>
                         <span id="cfg-receita-projetada" class="text-xl font-black text-emerald-400 mt-1">R$ 0,00</span>
                     </div>
                 </div>
@@ -525,15 +525,15 @@
         const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const nomesCurtos = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v45')) || [];
+        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v46')) || [];
 
-        let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v45')) || [
+        let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v46')) || [
             { id: 0, nome: 'Áthos Cotinuidade', tipo: 'Pacote Mensal', horas: 10, valor: 300.00, desc: '10h/mês — cobrança recorrente' },
             { id: 1, nome: 'Áthos Essencial', tipo: 'Pacote Mensal', horas: 5, valor: 175.00, desc: '5h/mês — cobrança recorrente' },
             { id: 2, nome: 'Áthos Singular', tipo: 'Pacote Mensal', horas: 1, valor: 40.00, desc: '1h/mês — cobrança recorrente' }
         ];
 
-        let config = JSON.parse(localStorage.getItem('simulador_config_athos_v45')) || {
+        let config = JSON.parse(localStorage.getItem('simulador_config_athos_v46')) || {
             capacidade: 32, custoFixo: 1800, custoVariavel: 10.00,
             locadoContinuidade: 0,
             locadoEssencial: 0,
@@ -565,7 +565,7 @@
                 if (event.data && event.data.tipo === 'SINCRONIZAR_DADOS') {
                     if (Array.isArray(event.data.dados)) {
                         lancamentos = event.data.dados;
-                        localStorage.setItem('simulador_lancamentos_athos_v45', JSON.stringify(lancamentos));
+                        localStorage.setItem('simulador_lancamentos_athos_v46', JSON.stringify(lancamentos));
                         renderApp();
                     }
                 }
@@ -584,6 +584,16 @@
             { id: 'tarde', label: 'Tarde (13h–17h)' },
             { id: 'noite', label: 'Noite (17h30–21h30)' }
         ];
+
+        // Função para obter o menor valor unitário por hora/turno entre os pacotes ativos (Base Conservadora)
+        function getMenorValorUnitarioTurno() {
+            if (!pacotes || pacotes.length === 0) return 40.00;
+            let menoresValores = pacotes.map(p => {
+                let h = p.horas > 0 ? p.horas : 1;
+                return p.valor / h;
+            });
+            return Math.min(...menoresValores);
+        }
 
         function sincronizarLocacoesUI() {
             let qCont = config.locadoContinuidade !== undefined ? config.locadoContinuidade : 0;
@@ -608,11 +618,18 @@
             document.getElementById('val-essencial-ref').innerText = pEss.valor.toFixed(2).replace('.', ',');
             document.getElementById('val-singular-ref').innerText = pSing.valor.toFixed(2).replace('.', ',');
 
+            // Cálculo Conservador da Receita Projetada (utilizando o menor custo/valor unitário de hora)
+            let menorValorUnitario = getMenorValorUnitarioTurno();
+            let totalTurnosLocados = qCont + qEss + qSing;
+            let receitaOcupacaoConservadora = (totalTurnosLocados * menorValorUnitario) + avVal;
+
+            const recProjEl = document.getElementById('cfg-receita-projetada');
+            if(recProjEl) recProjEl.innerText = formatCurrency(receitaOcupacaoConservadora);
+
             // Atualizar Termômetro de Capacidade
-            let maxTurnos = 32; // 2 salas * 16 turnos semanais por sala
-            let totalLocados = qCont + qEss + qSing;
-            let livres = Math.max(0, maxTurnos - totalLocados);
-            let pctOcu = Math.min(100, (totalLocados / maxTurnos) * 100);
+            let maxTurnos = 32; 
+            let livres = Math.max(0, maxTurnos - totalTurnosLocados);
+            let pctOcu = Math.min(100, (totalTurnosLocados / maxTurnos) * 100);
 
             const maxEl = document.getElementById('cfg-max-turnos');
             const locEl = document.getElementById('cfg-total-locados');
@@ -620,7 +637,7 @@
             const badgeEl = document.getElementById('badge-ocupacao-geral');
 
             if(maxEl) maxEl.innerText = `${maxTurnos} turnos/sem`;
-            if(locEl) locEl.innerText = `${totalLocados} turnos`;
+            if(locEl) locEl.innerText = `${totalTurnosLocados} turnos`;
             if(livEl) livEl.innerText = `${livres} turnos`;
             if(badgeEl) badgeEl.innerText = `${pctOcu.toFixed(1)}% Ocupado`;
         }
@@ -633,7 +650,7 @@
             const chkPro = document.getElementById('chk-integrar-projek');
             config.integrarProjecaoTurnos = chkPro ? chkPro.checked : false;
 
-            localStorage.setItem('simulador_config_athos_v45', JSON.stringify(config));
+            localStorage.setItem('simulador_config_athos_v46', JSON.stringify(config));
             sincronizarLocacoesUI();
             renderApp();
         }
@@ -690,7 +707,7 @@
             if(!config.donaSlots) config.donaSlots = {};
             if(val === 'nenhuma') delete config.donaSlots[key];
             else config.donaSlots[key] = val;
-            localStorage.setItem('simulador_config_athos_v45', JSON.stringify(config));
+            localStorage.setItem('simulador_config_athos_v46', JSON.stringify(config));
             renderDonaMatrix();
             renderApp();
         }
@@ -729,7 +746,7 @@
             pacotes[editingPackageId].nome = document.getElementById('edit-pacote-nome').value;
             pacotes[editingPackageId].horas = parseInt(document.getElementById('edit-pacote-horas').value) || 1;
             pacotes[editingPackageId].valor = parseCurrencyToFloat(document.getElementById('edit-pacote-valor').value);
-            localStorage.setItem('simulador_pacotes_athos_v45', JSON.stringify(pacotes));
+            localStorage.setItem('simulador_pacotes_athos_v46', JSON.stringify(pacotes));
             renderPacotesUI(); fecharModalPacote(); triggerToast("Pacote atualizado!", "✏️"); renderApp();
         }
 
@@ -742,7 +759,7 @@
                 }
             });
             config.custoFixo = count.size > 0 ? Math.round(totalFixas / count.size) : 1800;
-            localStorage.setItem('simulador_config_athos_v45', JSON.stringify(config));
+            localStorage.setItem('simulador_config_athos_v46', JSON.stringify(config));
         }
 
         function parseRawValue(val) {
@@ -841,7 +858,7 @@
                         } catch(err) { console.error(err); }
                     });
 
-                    localStorage.setItem('simulador_lancamentos_athos_v45', JSON.stringify(lancamentos));
+                    localStorage.setItem('simulador_lancamentos_athos_v46', JSON.stringify(lancamentos));
                     atualizarCustosAutomaticosSemanticamente();
                     triggerToast(`Planilha integrada e categorizada com sucesso! (${count} registros)`, "📥");
                     renderApp(); switchTab('dash');
@@ -926,26 +943,25 @@
             let qSing = config.locadoSingular !== undefined ? config.locadoSingular : 0;
             let valAv = config.locadosAvulsoValor !== undefined ? config.locadosAvulsoValor : 0;
 
-            let pContVal = (pacotes.find(p => p.nome.toLowerCase().includes('cotinuidade') || p.nome.toLowerCase().includes('continuidade')) || pacotes[0]).valor;
-            let pEssVal = (pacotes.find(p => p.nome.toLowerCase().includes('essencial')) || pacotes[1]).valor;
-            let pSingVal = (pacotes.find(p => p.nome.toLowerCase().includes('singular')) || pacotes[2]).valor;
+            let menorValorUnitario = getMenorValorUnitarioTurno();
+            let totalTurnosLocados = qCont + qEss + qSing;
+            let receitaOcupacaoConservadora = (totalTurnosLocados * menorValorUnitario) + valAv;
 
-            let receitaOcupacaoCalculada = (qCont * pContVal) + (qEss * pEssVal) + (qSing * pSingVal) + valAv;
             const recProjEl = document.getElementById('cfg-receita-projetada');
-            if(recProjEl) recProjEl.innerText = formatCurrency(receitaOcupacaoCalculada);
+            if(recProjEl) recProjEl.innerText = formatCurrency(receitaOcupacaoConservadora);
 
             // Somar receita projetada nas salas APENAS se a governança de integração estiver ativa
             let receitaProjetadaTotalPeriodo = 0;
-            if (config.integrarProjecaoTurnos && receitaOcupacaoCalculada > 0) {
-                receitaProjetadaTotalPeriodo = receitaOcupacaoCalculada * mesesAtivos.length;
+            if (config.integrarProjecaoTurnos && receitaOcupacaoConservadora > 0) {
+                receitaProjetadaTotalPeriodo = receitaOcupacaoConservadora * mesesAtivos.length;
                 sala1Tot += receitaProjetadaTotalPeriodo * 0.6;
                 sala2Tot += receitaProjetadaTotalPeriodo * 0.4;
             }
 
             const chartTitleLabel = document.getElementById('chart-title-label');
             if(chartTitleLabel) {
-                chartTitleLabel.innerText = config.integrarProjecaoTurnos && receitaOcupacaoCalculada > 0 
-                    ? "Evolução de Fluxo (Realizado + Projeção de Turnos vs. Despesas)" 
+                chartTitleLabel.innerText = config.integrarProjecaoTurnos && receitaOcupacaoConservadora > 0 
+                    ? "Evolução de Fluxo (Realizado + Projeção Conservadora vs. Despesas)" 
                     : "Evolução de Fluxo (Estritamente Realizado: Extratos e Lançamentos)";
             }
 
@@ -968,15 +984,15 @@
             atualizarCustosAutomaticosSemanticamente();
             let baseFixo = Math.max(config.custoFixo * qtdMeses, totalDespesas);
             let custoVarTurno = 10.00;
-            let margemU = pContVal - custoVarTurno;
-            let fatMin = (baseFixo / (margemU > 0 ? margemU : 1)) * pContVal;
+            let pContVal = (pacotes.find(p => p.nome.toLowerCase().includes('cotinuidade') || p.nome.toLowerCase().includes('continuidade')) || pacotes[0]).valor;
+            let margemU = menorValorUnitario - custoVarTurno;
+            let fatMin = (baseFixo / (margemU > 0 ? margemU : 1)) * menorValorUnitario;
 
             const kbEven = document.getElementById('kpi-break-even');
             if(kbEven) kbEven.innerText = formatCurrency(fatMin);
 
             let totalSlots = 32;
-            let achievedScore = qCont + qEss + qSing;
-            let ocuSimulada = totalSlots > 0 ? Math.min(100, (achievedScore / totalSlots) * 100) : 0;
+            let ocuSimulada = totalSlots > 0 ? Math.min(100, (totalTurnosLocados / totalSlots) * 100) : 0;
 
             const kpEq = document.getElementById('kpi-ponto-eq');
             if(kpEq) kpEq.innerText = ocuSimulada.toFixed(1) + '%';
@@ -984,8 +1000,8 @@
             let capex = lancamentos.reduce((acc, i) => i.tipo === 'investimento' ? acc + i.valor : acc, 0) || 45000;
             const metaPayEl = document.getElementById('meta-meses-payback');
             let mesesPayback = metaPayEl ? parseInt(metaPayEl.value) || 12 : 12;
-            let fatMeta = ((capex / mesesPayback) + (baseFixo / qtdMeses)) / ((pContVal - custoVarTurno)/pContVal);
-            let turnosMeta = Math.ceil(fatMeta / pContVal);
+            let fatMeta = ((capex / mesesPayback) + (baseFixo / qtdMeses)) / ((menorValorUnitario - custoVarTurno)/menorValorUnitario);
+            let turnosMeta = Math.ceil(fatMeta / (menorValorUnitario > 0 ? menorValorUnitario : 40));
 
             const fatMetaEl = document.getElementById('kpi-fat-meta');
             const turnosMetaEl = document.getElementById('kpi-turnos-meta');
@@ -1003,7 +1019,7 @@
 
             let vetorFluxo = [];
             mesesAtivos.forEach(idx => {
-                let r = config.integrarProjecaoTurnos ? receitaOcupacaoCalculada : 0, ds = 0, inv = 0;
+                let r = config.integrarProjecaoTurnos ? receitaOcupacaoConservadora : 0, ds = 0, inv = 0;
                 lancamentos.forEach(i => {
                     let dt = new Date(i.data + 'T00:00:00');
                     if(dt.getFullYear().toString() === filtroAno && dt.getMonth() === idx) {
@@ -1063,11 +1079,9 @@
             let qSing = config.locadoSingular || 0;
             let valAv = config.locadosAvulsoValor || 0;
 
-            let pContVal = (pacotes.find(p => p.nome.toLowerCase().includes('cotinuidade') || p.nome.toLowerCase().includes('continuidade')) || pacotes[0]).valor;
-            let pEssVal = (pacotes.find(p => p.nome.toLowerCase().includes('essencial')) || pacotes[1]).valor;
-            let pSingVal = (pacotes.find(p => p.nome.toLowerCase().includes('singular')) || pacotes[2]).valor;
-
-            let recBaseConfig = config.integrarProjecaoTurnos ? ((qCont * pContVal) + (qEss * pEssVal) + (qSing * pSingVal) + valAv) : 0;
+            let menorValorUnitario = getMenorValorUnitarioTurno();
+            let totalTurnosLocados = qCont + qEss + qSing;
+            let recBaseConfig = config.integrarProjecaoTurnos ? ((totalTurnosLocados * menorValorUnitario) + valAv) : 0;
 
             nomesCurtos.forEach((m, idx) => {
                 if (mesesAtivos.includes(idx)) {
@@ -1163,7 +1177,7 @@
             if(val <= 0) return;
 
             lancamentos.push({ id: 'man-' + Date.now(), data: d, tipo: selectedType, sala, desc, valor: val });
-            localStorage.setItem('simulador_lancamentos_athos_v45', JSON.stringify(lancamentos));
+            localStorage.setItem('simulador_lancamentos_athos_v46', JSON.stringify(lancamentos));
             document.getElementById('lanc-desc').value = '';
             document.getElementById('lanc-valor').value = '';
             renderApp(); switchTab('dash'); triggerToast("Lançamento salvo com sucesso!", "🟢");
@@ -1171,14 +1185,14 @@
 
         function deleteLancamento(id) {
             lancamentos = lancamentos.filter(i => i.id !== id);
-            localStorage.setItem('simulador_lancamentos_athos_v45', JSON.stringify(lancamentos));
+            localStorage.setItem('simulador_lancamentos_athos_v46', JSON.stringify(lancamentos));
             renderApp(); triggerToast("Registro removido.", "🔴");
         }
 
         function clearData() {
             if(confirm("Deseja apagar todos os dados locais?")) {
                 lancamentos = []; 
-                localStorage.removeItem('simulador_lancamentos_athos_v45');
+                localStorage.removeItem('simulador_lancamentos_athos_v46');
                 renderApp(); triggerToast("Banco limpo.", "🧹");
             }
         }
