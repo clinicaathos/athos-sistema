@@ -162,7 +162,7 @@
             <!-- GRÁFICO E SALAS -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 lg:col-span-2">
-                    <h3 class="text-sm font-bold text-slate-700 mb-3">Evolução de Fluxo Misto (Receitas vs. Despesas + Linha de Resultado)</h3>
+                    <h3 class="text-sm font-bold text-slate-700 mb-3">Evolução de Fluxo Misto (Receitas Reais vs. Despesas + Linha de Resultado)</h3>
                     <div class="h-60 sm:h-64 relative" id="chart-wrapper">
                         <canvas id="mainChart"></canvas>
                     </div>
@@ -304,7 +304,7 @@
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
                 <div>
                     <h2 class="text-sm font-bold text-slate-700 mb-1">⚙️ Matriz de Uso da Proprietária (Turnos Ocupados)</h2>
-                    <p class="text-xs text-slate-400">Selecione quais turnos a proprietária utilizará em cada sala (Segunda a Sexta: Manhã, Tarde, Noite; Sábado: Somente Manhã).</p>
+                    <p class="text-xs text-slate-400">Selecione quais turnos a proprietária utilizará em cada sala (Segunda a Sexta: Manhã, Tarde, Noite; Sábado: Manhã).</p>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -372,9 +372,12 @@
                         <span id="cfg-receita-projetada" class="text-xl font-black text-emerald-400 mt-1">R$ 0,00</span>
                     </div>
                 </div>
+
+                <!-- BOTÃO EXPLÍCITO DE SALVAR CONFIGURAÇÃO DE TURNOS -->
+                <button type="button" onclick="salvarConfiguracaoTurnos()" class="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm shadow-xs transition-all cursor-pointer mt-2">💾 Salvar Configurações de Turnos e Ocupação</button>
             </div>
 
-            <!-- 3. PLANOS E PACOTES (EXATAMENTE COMO NO PRINT) -->
+            <!-- 3. PLANOS E PACOTES -->
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-5">
                 <div class="flex justify-between items-center">
                     <div>
@@ -386,7 +389,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="pacotes-container"></div>
             </div>
 
-            <!-- 4. TURNOS FIXOS (EXATAMENTE COMO NO PRINT + SÁBADO MANHÃ) -->
+            <!-- 4. TURNOS FIXOS -->
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
                 <div>
                     <h2 class="text-sm font-bold text-slate-700 mb-1">Turnos Fixos</h2>
@@ -569,6 +572,13 @@
             renderApp();
         }
 
+        function salvarConfiguracaoTurnos() {
+            saveLocacoesConfig();
+            triggerToast("Configurações de turnos e pacotes salvas com sucesso!", "💾");
+            renderApp();
+            switchTab('dash');
+        }
+
         function renderDonaMatrix() {
             const tbody = document.getElementById('dona-matrix-tbody');
             if(!tbody) return;
@@ -579,14 +589,10 @@
                 rowsHtml += `<tr><td class="p-3 text-left font-bold text-slate-700">${t.label}</td>`;
                 diasSemana.forEach((d, dIdx) => {
                     let key = `${dIdx}_${t.id}`;
-                    // Se o turno for exclusivo de sábado e não for sábado (dIdx !== 5), fica indisponível (-)
-                    // Se o turno for seg-sex (manha, tarde, noite) e for sábado (dIdx === 5), fica indisponível (-) exceto sab_manha
                     if (t.sabadoApenas && dIdx !== 5) {
                         rowsHtml += `<td class="p-3 text-center text-slate-300 font-semibold italic text-[11px] bg-slate-50">-</td>`;
-                    } else if (!t.sabadoApenas && dIdx === 5 && (t.id === 'tarde' || t.id === 'noite')) {
+                    } else if (!t.sabadoApenas && dIdx === 5 && (t.id === 'tarde' || t.id === 'noite' || t.id === 'manha')) {
                         rowsHtml += `<td class="p-3 text-center text-slate-300 font-semibold italic text-[11px] bg-slate-50">-</td>`;
-                    } else if (!t.sabadoApenas && dIdx === 5 && t.id === 'manha') {
-                        rowsHtml += `<td class="p-3 text-center text-slate-300 font-semibold italic text-[11px] bg-slate-50">-</td>`; // Gerenciado pelo sab_manha
                     } else {
                         let currentVal = config.donaSlots && config.donaSlots[key] ? config.donaSlots[key] : 'nenhuma';
                         if(currentVal === 'sala1') countS1++;
@@ -855,17 +861,10 @@
             let valAv = config.locadosAvulsoValor !== undefined ? config.locadosAvulsoValor : 350;
 
             let pContVal = (pacotes.find(p => p.nome.toLowerCase().includes('cotinuidade') || p.nome.toLowerCase().includes('continuidade')) || pacotes[0]).valor;
-            let pEssVal = (pacotes.find(p => p.nome.toLowerCase().includes('essencial')) || pacotes[1]).valor;
-            let pSingVal = (pacotes.find(p => p.nome.toLowerCase().includes('singular')) || pacotes[2]).valor;
 
-            let receitaOcupacaoCalculada = (qCont * pContVal) + (qEss * pEssVal) + (qSing * pSingVal) + valAv;
+            let receitaOcupacaoCalculada = (qCont * pContVal) + (qEss * ((pacotes.find(p => p.nome.toLowerCase().includes('essencial')) || pacotes[1]).valor)) + (qSing * ((pacotes.find(p => p.nome.toLowerCase().includes('singular')) || pacotes[2]).valor)) + valAv;
             const recProjEl = document.getElementById('cfg-receita-projetada');
             if(recProjEl) recProjEl.innerText = formatCurrency(receitaOcupacaoCalculada);
-
-            if (sala1Tot === 0 && sala2Tot === 0 && receitaOcupacaoCalculada > 0) {
-                sala1Tot = receitaOcupacaoCalculada * 0.6;
-                sala2Tot = receitaOcupacaoCalculada * 0.4;
-            }
 
             const emptyState = document.getElementById('empty-state');
             const deskTable = document.getElementById('desktop-table-container');
@@ -920,7 +919,7 @@
 
             let vetorFluxo = [];
             mesesAtivos.forEach(idx => {
-                let r = receitaOcupacaoCalculada, ds = 0, inv = 0;
+                let r = 0, ds = 0, inv = 0;
                 lancamentos.forEach(i => {
                     let dt = new Date(i.data + 'T00:00:00');
                     if(dt.getFullYear().toString() === filtroAno && dt.getMonth() === idx) {
@@ -961,20 +960,10 @@
             if(!filtroAnoEl) return;
             const filtroAno = filtroAnoEl.value;
             let lbs = [], recs = [], desps = [], lucros = [];
-            let qCont = config.locadoContinuidade || 10;
-            let qEss = config.locadoEssencial || 4;
-            let qSing = config.locadoSingular || 2;
-            let valAv = config.locadosAvulsoValor || 350;
-
-            let pContVal = (pacotes.find(p => p.nome.toLowerCase().includes('cotinuidade') || p.nome.toLowerCase().includes('continuidade')) || pacotes[0]).valor;
-            let pEssVal = (pacotes.find(p => p.nome.toLowerCase().includes('essencial')) || pacotes[1]).valor;
-            let pSingVal = (pacotes.find(p => p.nome.toLowerCase().includes('singular')) || pacotes[2]).valor;
-
-            let recBase = (qCont * pContVal) + (qEss * pEssVal) + (qSing * pSingVal) + valAv;
 
             nomesCurtos.forEach((m, idx) => {
                 if (mesesAtivos.includes(idx)) {
-                    lbs.push(m); let r = recBase, d = 0;
+                    lbs.push(m); let r = 0, d = 0;
                     lancamentos.forEach(i => {
                         let dt = new Date(i.data + 'T00:00:00');
                         if(dt.getFullYear().toString() === filtroAno && dt.getMonth() === idx) {
@@ -998,7 +987,7 @@
                         labels: lbs,
                         datasets: [
                             { type: 'line', label: 'Resultado Líquido', data: lucros, borderColor: '#10b981', backgroundColor: '#10b981', borderWidth: 2.5, pointRadius: 3, tension: 0.15 },
-                            { type: 'bar', label: 'Receitas', data: recs, backgroundColor: '#0f172a', borderRadius: 4 },
+                            { type: 'bar', label: 'Receitas Reais', data: recs, backgroundColor: '#0f172a', borderRadius: 4 },
                             { type: 'bar', label: 'Despesas', data: desps, backgroundColor: '#ef4444', borderRadius: 4 }
                         ]
                     },
