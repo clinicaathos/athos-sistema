@@ -300,11 +300,11 @@
         <!-- CONFIGURAÇÕES -->
         <div id="tab-config" class="tab-content hidden max-w-4xl mx-auto space-y-6">
             
-            <!-- 1. MATRIZ UNIFICADA DE OCUPAÇÃO E VENDAS -->
+            <!-- 1. MATRIZ DUAL DE COEXISTÊNCIA DAS SALAS -->
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
                 <div>
-                    <h2 class="text-sm font-bold text-slate-700 mb-1">📋 Matriz Unificada de Ocupação da Clínica</h2>
-                    <p class="text-xs text-slate-400">Classifique cada turno da semana: defina o que está livre, o uso da proprietária ou se o turno foi vendido comercialmente.</p>
+                    <h2 class="text-sm font-bold text-slate-700 mb-1">📋 1. Matriz de Coexistência (Sala 01 &amp; Sala 02)</h2>
+                    <p class="text-xs text-slate-400">Cada turno possui as duas salas operando simultaneamente. Configure o destino de cada sala independentemente.</p>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -326,7 +326,7 @@
 
                 <!-- RESUMO DA MATRIZ -->
                 <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60 space-y-3">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Resumo Físico e Comercial da Agenda</span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Resumo Físico e Comercial da Agenda (Total: 32 Turnos/Sem)</span>
                     <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
                         <div class="p-3 bg-white rounded-lg border border-slate-200/60">
                             <span class="text-[10px] text-slate-400 uppercase block font-bold">Sala 01 (Proprietária)</span>
@@ -337,7 +337,7 @@
                             <span id="summary-dona-sala2" class="text-base font-bold text-slate-800">0 turnos</span>
                         </div>
                         <div class="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                            <span class="text-[10px] text-emerald-700 uppercase block font-bold">Vendidos (Comercial)</span>
+                            <span class="text-[10px] text-emerald-700 uppercase block font-bold">Vendidos na Matriz</span>
                             <span id="summary-vendidos" class="text-base font-bold text-emerald-800">0 turnos</span>
                         </div>
                         <div class="p-3 bg-white rounded-lg border border-slate-200/60">
@@ -348,21 +348,41 @@
                 </div>
             </div>
 
-            <!-- 2. VALORES E CONTRATOS AVULSOS -->
+            <!-- 2. PARÂMETROS DE FATURAMENTO POR PACOTES COMERCIALIZADOS -->
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
                 <div>
-                    <h2 class="text-sm font-bold text-slate-700 mb-1">💰 Parâmetros de Faturamento (Base Conservadora)</h2>
-                    <p class="text-xs text-slate-400">O sistema utiliza o menor valor unitário de hora entre os pacotes ativos para projetar o faturamento dos turnos vendidos, evitando superestimar.</p>
+                    <h2 class="text-sm font-bold text-slate-700 mb-1">💰 2. Parâmetros de Faturamento por Pacotes Comercializados</h2>
+                    <p class="text-xs text-slate-400">Informe a quantidade exata de cada pacote comercializado para compor a receita de forma precisa e transparente.</p>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
+                        <label class="text-[10px] font-bold uppercase text-slate-500 block">Áthos Cotinuidade</label>
+                        <input type="number" id="locado-continuidade" oninput="saveLocacoesConfig()" class="h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white font-bold text-slate-800 w-full" value="0" min="0">
+                        <span class="text-[10px] text-slate-400 block">Valor Ref: R$ <span id="val-continuidade-ref">300,00</span></span>
+                    </div>
+
+                    <div class="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
+                        <label class="text-[10px] font-bold uppercase text-slate-500 block">Áthos Essencial</label>
+                        <input type="number" id="locado-essencial" oninput="saveLocacoesConfig()" class="h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white font-bold text-slate-800 w-full" value="0" min="0">
+                        <span class="text-[10px] text-slate-400 block">Valor Ref: R$ <span id="val-essencial-ref">175,00</span></span>
+                    </div>
+
+                    <div class="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
+                        <label class="text-[10px] font-bold uppercase text-slate-500 block">Áthos Singular</label>
+                        <input type="number" id="locado-singular" oninput="saveLocacoesConfig()" class="h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white font-bold text-slate-800 w-full" value="0" min="0">
+                        <span class="text-[10px] text-slate-400 block">Valor Ref: R$ <span id="val-singular-ref">40,00</span></span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                     <div class="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
                         <label class="text-[10px] font-bold uppercase text-slate-500 block">Contratos Avulsos / Extras (Valor Mensal R$)</label>
                         <input type="text" id="locado-avulso-valor" oninput="handleCurrencyInput(this); saveLocacoesConfig()" class="h-10 px-3 border border-slate-200 rounded-lg text-sm bg-white font-bold text-slate-800 w-full" value="R$ 0,00" placeholder="R$ 0,00">
                     </div>
 
                     <div class="p-4 bg-slate-900 text-white rounded-xl flex flex-col justify-center">
-                        <span class="text-[10px] font-bold uppercase text-stone-400 block">Receita Mensal Projetada por Turnos</span>
+                        <span class="text-[10px] font-bold uppercase text-stone-400 block">Receita Mensal Projetada por Mix de Pacotes</span>
                         <span id="cfg-receita-projetada" class="text-xl font-black text-emerald-400 mt-1">R$ 0,00</span>
                     </div>
                 </div>
@@ -371,12 +391,12 @@
                 <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
                     <label class="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox" id="chk-integrar-projek" onchange="saveLocacoesConfig()" class="h-5 w-5 rounded-md text-amber-600 accent-amber-600">
-                        <span class="text-xs font-bold text-amber-900">Incluir Projeção de Turnos Vendidos na Matriz no Fluxo de Caixa do Dash</span>
+                        <span class="text-xs font-bold text-amber-900">Incluir Projeção de Turnos Comercializados no Fluxo de Caixa do Dash</span>
                     </label>
                     <p class="text-[11px] text-amber-700 pl-8">Por segurança gerencial, desmarque esta opção se quiser analisar estritamente o realizado de extratos e lançamentos sem duplicar receitas estimadas.</p>
                 </div>
 
-                <button type="button" onclick="salvarConfiguracaoTurnos()" class="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm shadow-xs transition-all cursor-pointer mt-2">💾 Salvar Configurações da Matriz</button>
+                <button type="button" onclick="salvarConfiguracaoTurnos()" class="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm shadow-xs transition-all cursor-pointer mt-2">💾 Salvar Configurações de Faturamento</button>
             </div>
 
             <!-- 3. PLANOS E PACOTES (REFERÊNCIA DE PREÇO) -->
@@ -490,21 +510,26 @@
         const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const nomesCurtos = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v47')) || [];
+        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v49')) || [];
 
-        let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v47')) || [
+        let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v49')) || [
             { id: 0, nome: 'Áthos Cotinuidade', tipo: 'Pacote Mensal', horas: 10, valor: 300.00, desc: '10h/mês — cobrança recorrente' },
             { id: 1, nome: 'Áthos Essencial', tipo: 'Pacote Mensal', horas: 5, valor: 175.00, desc: '5h/mês — cobrança recorrente' },
             { id: 2, nome: 'Áthos Singular', tipo: 'Pacote Mensal', horas: 1, valor: 40.00, desc: '1h/mês — cobrança recorrente' }
         ];
 
-        let config = JSON.parse(localStorage.getItem('simulador_config_athos_v47')) || {
+        let config = JSON.parse(localStorage.getItem('simulador_config_athos_v49')) || {
             capacidade: 32, custoFixo: 1800, custoVariavel: 10.00,
+            locadoContinuidade: 0,
+            locadoEssencial: 0,
+            locadoSingular: 0,
             locadosAvulsoValor: 0,
             integrarProjecaoTurnos: false,
             donaSlots: {
-                '1_manha': 'sala1', '1_tarde': 'sala1',
-                '2_manha': 'sala1', '2_tarde': 'sala1'
+                '1_manha_s1': 'proprietaria', '1_manha_s2': 'livre',
+                '1_tarde_s1': 'proprietaria', '1_tarde_s2': 'livre',
+                '2_manha_s1': 'proprietaria', '2_manha_s2': 'livre',
+                '2_tarde_s1': 'proprietaria', '2_tarde_s2': 'livre'
             }
         };
 
@@ -526,7 +551,7 @@
                 if (event.data && event.data.tipo === 'SINCRONIZAR_DADOS') {
                     if (Array.isArray(event.data.dados)) {
                         lancamentos = event.data.dados;
-                        localStorage.setItem('simulador_lancamentos_athos_v47', JSON.stringify(lancamentos));
+                        localStorage.setItem('simulador_lancamentos_athos_v49', JSON.stringify(lancamentos));
                         renderApp();
                     }
                 }
@@ -546,23 +571,30 @@
             { id: 'noite', label: 'Noite (17h30–21h30)' }
         ];
 
-        function getMenorValorUnitarioTurno() {
-            if (!pacotes || pacotes.length === 0) return 40.00;
-            let menoresValores = pacotes.map(p => {
-                let h = p.horas > 0 ? p.horas : 1;
-                return p.valor / h;
-            });
-            return Math.min(...menoresValores);
+        function calcularReceitaPorMixPacotes() {
+            let qCont = config.locadoContinuidade !== undefined ? config.locadoContinuidade : 0;
+            let qEss = config.locadoEssencial !== undefined ? config.locadoEssencial : 0;
+            let qSing = config.locadoSingular !== undefined ? config.locadoSingular : 0;
+            let avVal = config.locadosAvulsoValor !== undefined ? config.locadosAvulsoValor : 0;
+
+            let pContVal = (pacotes.find(p => p.nome.toLowerCase().includes('cotinuidade') || p.nome.toLowerCase().includes('continuidade')) || pacotes[0]).valor;
+            let pEssVal = (pacotes.find(p => p.nome.toLowerCase().includes('essencial')) || pacotes[1]).valor;
+            let pSingVal = (pacotes.find(p => p.nome.toLowerCase().includes('singular')) || pacotes[2]).valor;
+
+            return (qCont * pContVal) + (qEss * pEssVal) + (qSing * pSingVal) + avVal;
         }
 
         function calcularTurnosVendidosNaMatriz() {
             let countVendidos = 0;
             turnosDia.forEach(t => {
                 diasSemana.forEach((d, dIdx) => {
-                    let key = `${dIdx}_${t.id}`;
                     if (!(t.sabadoApenas && dIdx !== 5) && !(!t.sabadoApenas && dIdx === 5 && (t.id === 'tarde' || t.id === 'noite' || t.id === 'manha'))) {
-                        let val = config.donaSlots && config.donaSlots[key] ? config.donaSlots[key] : 'livre';
-                        if (val === 'vendido') countVendidos++;
+                        let k1 = `${dIdx}_${t.id}_s1`;
+                        let k2 = `${dIdx}_${t.id}_s2`;
+                        let v1 = config.donaSlots && config.donaSlots[k1] ? config.donaSlots[k1] : 'livre';
+                        let v2 = config.donaSlots && config.donaSlots[k2] ? config.donaSlots[k2] : 'livre';
+                        if (v1 === 'vendido') countVendidos++;
+                        if (v2 === 'vendido') countVendidos++;
                     }
                 });
             });
@@ -570,33 +602,49 @@
         }
 
         function sincronizarLocacoesUI() {
+            let qCont = config.locadoContinuidade !== undefined ? config.locadoContinuidade : 0;
+            let qEss = config.locadoEssencial !== undefined ? config.locadoEssencial : 0;
+            let qSing = config.locadoSingular !== undefined ? config.locadoSingular : 0;
+
+            document.getElementById('locado-continuidade').value = qCont;
+            document.getElementById('locado-essencial').value = qEss;
+            document.getElementById('locado-singular').value = qSing;
+
             let avVal = config.locadosAvulsoValor !== undefined ? config.locadosAvulsoValor : 0;
             document.getElementById('locado-avulso-valor').value = 'R$ ' + avVal.toFixed(2).replace('.', ',');
             
             const chkPro = document.getElementById('chk-integrar-projek');
             if(chkPro) chkPro.checked = !!config.integrarProjecaoTurnos;
 
-            let menorValorUnitario = getMenorValorUnitarioTurno();
-            let totalVendidos = calcularTurnosVendidosNaMatriz();
-            let receitaOcupacaoConservadora = (totalVendidos * menorValorUnitario) + avVal;
+            let pCont = pacotes.find(p => p.nome.toLowerCase().includes('cotinuidade') || p.nome.toLowerCase().includes('continuidade')) || pacotes[0];
+            let pEss = pacotes.find(p => p.nome.toLowerCase().includes('essencial')) || pacotes[1];
+            let pSing = pacotes.find(p => p.nome.toLowerCase().includes('singular')) || pacotes[2];
 
+            document.getElementById('val-continuidade-ref').innerText = pCont.valor.toFixed(2).replace('.', ',');
+            document.getElementById('val-essencial-ref').innerText = pEss.valor.toFixed(2).replace('.', ',');
+            document.getElementById('val-singular-ref').innerText = pSing.valor.toFixed(2).replace('.', ',');
+
+            let receitaMix = calcularReceitaPorMixPacotes();
             const recProjEl = document.getElementById('cfg-receita-projetada');
-            if(recProjEl) recProjEl.innerText = formatCurrency(receitaOcupacaoConservadora);
+            if(recProjEl) recProjEl.innerText = formatCurrency(receitaMix);
         }
 
         function saveLocacoesConfig() {
+            config.locadoContinuidade = parseInt(document.getElementById('locado-continuidade').value) || 0;
+            config.locadoEssencial = parseInt(document.getElementById('locado-essencial').value) || 0;
+            config.locadoSingular = parseInt(document.getElementById('locado-singular').value) || 0;
             config.locadosAvulsoValor = parseCurrencyToFloat(document.getElementById('locado-avulso-valor').value);
             const chkPro = document.getElementById('chk-integrar-projek');
             config.integrarProjecaoTurnos = chkPro ? chkPro.checked : false;
 
-            localStorage.setItem('simulador_config_athos_v47', JSON.stringify(config));
+            localStorage.setItem('simulador_config_athos_v49', JSON.stringify(config));
             sincronizarLocacoesUI();
             renderApp();
         }
 
         function salvarConfiguracaoTurnos() {
             saveLocacoesConfig();
-            triggerToast("Configurações da matriz salvas com sucesso!", "💾");
+            triggerToast("Parâmetros de faturamento salvos com sucesso!", "💾");
             renderApp();
             switchTab('dash');
         }
@@ -606,36 +654,50 @@
             if(!tbody) return;
             let rowsHtml = '';
             let countS1 = 0, countS2 = 0, countVendidos = 0, countLivres = 0;
-            let totalSlotsValidos = 0;
+            let totalSlotsValidos = 32;
 
             turnosDia.forEach(t => {
-                rowsHtml += `<tr><td class="p-3 text-left font-bold text-slate-700">${t.label}</td>`;
                 diasSemana.forEach((d, dIdx) => {
-                    let key = `${dIdx}_${t.id}`;
-                    if (t.sabadoApenas && dIdx !== 5) {
-                        rowsHtml += `<td class="p-3 text-center text-slate-300 font-semibold italic text-[11px] bg-slate-50">-</td>`;
-                    } else if (!t.sabadoApenas && dIdx === 5 && (t.id === 'tarde' || t.id === 'noite' || t.id === 'manha')) {
-                        rowsHtml += `<td class="p-3 text-center text-slate-300 font-semibold italic text-[11px] bg-slate-50">-</td>`;
-                    } else {
-                        totalSlotsValidos++;
-                        let currentVal = config.donaSlots && config.donaSlots[key] ? config.donaSlots[key] : 'livre';
-                        if(currentVal === 'sala1') countS1++;
-                        else if(currentVal === 'sala2') countS2++;
-                        else if(currentVal === 'vendido') countVendidos++;
+                    if (!(t.sabadoApenas && dIdx !== 5) && !(!t.sabadoApenas && dIdx === 5 && (t.id === 'tarde' || t.id === 'noite' || t.id === 'manha'))) {
+                        let k1 = `${dIdx}_${t.id}_s1`;
+                        let k2 = `${dIdx}_${t.id}_s2`;
+                        let v1 = config.donaSlots && config.donaSlots[k1] ? config.donaSlots[k1] : 'livre';
+                        let v2 = config.donaSlots && config.donaSlots[k2] ? config.donaSlots[k2] : 'livre';
+
+                        if(v1 === 'proprietaria') countS1++;
+                        else if(v1 === 'vendido') countVendidos++;
+                        else countLivres++;
+
+                        if(v2 === 'proprietaria') countS2++;
+                        else if(v2 === 'vendido') countVendidos++;
                         else countLivres++;
 
                         rowsHtml += `
-                            <td class="p-3 text-center">
-                                <select data-key="${key}" onchange="changeDonaSlot(this)" class="h-9 px-2 border border-slate-200 rounded-lg text-xs font-bold cursor-pointer ${currentVal==='vendido'?'bg-emerald-50 text-emerald-800 border-emerald-300':(currentVal==='sala1'||currentVal==='sala2'?'bg-slate-900 text-white':'bg-slate-50 text-slate-700')}">
-                                    <option value="livre" ${currentVal === 'livre' ? 'selected' : ''}>Livre</option>
-                                    <option value="sala1" ${currentVal === 'sala1' ? 'selected' : ''}>Sala 01 (Proprietária)</option>
-                                    <option value="sala2" ${currentVal === 'sala2' ? 'selected' : ''}>Sala 02 (Proprietária)</option>
-                                    <option value="vendido" ${currentVal === 'vendido' ? 'selected' : ''}>🟢 Vendido Comercial</option>
-                                </select>
-                            </td>`;
+                            <tr>
+                                <td class="p-3 text-left font-bold text-slate-700">${t.label} (${d})</td>
+                                <td colspan="6" class="p-2">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                                            <span class="text-[10px] font-bold text-slate-500 w-14 text-left">Sala 01:</span>
+                                            <select data-key="${k1}" onchange="changeDonaSlot(this)" class="h-8 px-2 border border-slate-200 rounded-lg text-xs font-bold cursor-pointer w-full ${v1==='vendido'?'bg-emerald-50 text-emerald-800 border-emerald-300':(v1==='proprietaria'?'bg-slate-900 text-white':'bg-white text-slate-700')}">
+                                                <option value="livre" ${v1 === 'livre' ? 'selected' : ''}>Livre / Ocioso</option>
+                                                <option value="proprietaria" ${v1 === 'proprietaria' ? 'selected' : ''}>Uso da Proprietária</option>
+                                                <option value="vendido" ${v1 === 'vendido' ? 'selected' : ''}>🟢 Vendido Comercial</option>
+                                            </select>
+                                        </div>
+                                        <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                                            <span class="text-[10px] font-bold text-slate-500 w-14 text-left">Sala 02:</span>
+                                            <select data-key="${k2}" onchange="changeDonaSlot(this)" class="h-8 px-2 border border-slate-200 rounded-lg text-xs font-bold cursor-pointer w-full ${v2==='vendido'?'bg-emerald-50 text-emerald-800 border-emerald-300':(v2==='proprietaria'?'bg-slate-900 text-white':'bg-white text-slate-700')}">
+                                                <option value="livre" ${v2 === 'livre' ? 'selected' : ''}>Livre / Ocioso</option>
+                                                <option value="proprietaria" ${v2 === 'proprietaria' ? 'selected' : ''}>Uso da Proprietária</option>
+                                                <option value="vendido" ${v2 === 'vendido' ? 'selected' : ''}>🟢 Vendido Comercial</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>`;
                     }
                 });
-                rowsHtml += `</tr>`;
             });
             tbody.innerHTML = rowsHtml;
 
@@ -657,7 +719,7 @@
             let val = select.value;
             if(!config.donaSlots) config.donaSlots = {};
             config.donaSlots[key] = val;
-            localStorage.setItem('simulador_config_athos_v47', JSON.stringify(config));
+            localStorage.setItem('simulador_config_athos_v49', JSON.stringify(config));
             renderDonaMatrix();
             renderApp();
         }
@@ -696,7 +758,7 @@
             pacotes[editingPackageId].nome = document.getElementById('edit-pacote-nome').value;
             pacotes[editingPackageId].horas = parseInt(document.getElementById('edit-pacote-horas').value) || 1;
             pacotes[editingPackageId].valor = parseCurrencyToFloat(document.getElementById('edit-pacote-valor').value);
-            localStorage.setItem('simulador_pacotes_athos_v47', JSON.stringify(pacotes));
+            localStorage.setItem('simulador_pacotes_athos_v49', JSON.stringify(pacotes));
             renderPacotesUI(); fecharModalPacote(); triggerToast("Pacote atualizado!", "✏️"); renderApp();
         }
 
@@ -709,7 +771,7 @@
                 }
             });
             config.custoFixo = count.size > 0 ? Math.round(totalFixas / count.size) : 1800;
-            localStorage.setItem('simulador_config_athos_v47', JSON.stringify(config));
+            localStorage.setItem('simulador_config_athos_v49', JSON.stringify(config));
         }
 
         function parseRawValue(val) {
@@ -808,7 +870,7 @@
                         } catch(err) { console.error(err); }
                     });
 
-                    localStorage.setItem('simulador_lancamentos_athos_v47', JSON.stringify(lancamentos));
+                    localStorage.setItem('simulador_lancamentos_athos_v49', JSON.stringify(lancamentos));
                     atualizarCustosAutomaticosSemanticamente();
                     triggerToast(`Planilha integrada e categorizada com sucesso! (${count} registros)`, "📥");
                     renderApp(); switchTab('dash');
@@ -888,23 +950,20 @@
                 }
             });
 
-            let valAv = config.locadosAvulsoValor !== undefined ? config.locadosAvulsoValor : 0;
-            let menorValorUnitario = getMenorValorUnitarioTurno();
-            let totalVendidos = calcularTurnosVendidosNaMatriz();
-            let receitaOcupacaoConservadora = (totalVendidos * menorValorUnitario) + valAv;
+            let receitaMix = calcularReceitaPorMixPacotes();
 
             // Somar receita projetada nas salas APENAS se a governança de integração estiver ativa
             let receitaProjetadaTotalPeriodo = 0;
-            if (config.integrarProjecaoTurnos && receitaOcupacaoConservadora > 0) {
-                receitaProjetadaTotalPeriodo = receitaOcupacaoConservadora * mesesAtivos.length;
-                sala1Tot += receitaProjetadaTotalPeriodo * 0.6;
-                sala2Tot += receitaProjetadaTotalPeriodo * 0.4;
+            if (config.integrarProjecaoTurnos && receitaMix > 0) {
+                receitaProjetadaTotalPeriodo = receitaMix * mesesAtivos.length;
+                sala1Tot += receitaProjetadaTotalPeriodo * 0.5;
+                sala2Tot += receitaProjetadaTotalPeriodo * 0.5;
             }
 
             const chartTitleLabel = document.getElementById('chart-title-label');
             if(chartTitleLabel) {
-                chartTitleLabel.innerText = config.integrarProjecaoTurnos && receitaOcupacaoConservadora > 0 
-                    ? "Evolução de Fluxo (Realizado + Projeção Conservadora vs. Despesas)" 
+                chartTitleLabel.innerText = config.integrarProjecaoTurnos && receitaMix > 0 
+                    ? "Evolução de Fluxo (Realizado + Projeção por Mix de Pacotes vs. Despesas)" 
                     : "Evolução de Fluxo (Estritamente Realizado: Extratos e Lançamentos)";
             }
 
@@ -927,14 +986,16 @@
             atualizarCustosAutomaticosSemanticamente();
             let baseFixo = Math.max(config.custoFixo * qtdMeses, totalDespesas);
             let custoVarTurno = 10.00;
-            let margemU = menorValorUnitario - custoVarTurno;
-            let fatMin = (baseFixo / (margemU > 0 ? margemU : 1)) * menorValorUnitario;
+            let pContVal = (pacotes.find(p => p.nome.toLowerCase().includes('cotinuidade') || p.nome.toLowerCase().includes('continuidade')) || pacotes[0]).valor;
+            let margemU = pContVal - custoVarTurno;
+            let fatMin = (baseFixo / (margemU > 0 ? margemU : 1)) * pContVal;
 
             const kbEven = document.getElementById('kpi-break-even');
             if(kbEven) kbEven.innerText = formatCurrency(fatMin);
 
             let totalSlots = 32;
-            let ocuSimulada = totalSlots > 0 ? Math.min(100, (totalVendidos / totalSlots) * 100) : 0;
+            let totalVendidosMatriz = calcularTurnosVendidosNaMatriz();
+            let ocuSimulada = totalSlots > 0 ? Math.min(100, (totalVendidosMatriz / totalSlots) * 100) : 0;
 
             const kpEq = document.getElementById('kpi-ponto-eq');
             if(kpEq) kpEq.innerText = ocuSimulada.toFixed(1) + '%';
@@ -942,8 +1003,8 @@
             let capex = lancamentos.reduce((acc, i) => i.tipo === 'investimento' ? acc + i.valor : acc, 0) || 45000;
             const metaPayEl = document.getElementById('meta-meses-payback');
             let mesesPayback = metaPayEl ? parseInt(metaPayEl.value) || 12 : 12;
-            let fatMeta = ((capex / mesesPayback) + (baseFixo / qtdMeses)) / ((menorValorUnitario - custoVarTurno)/menorValorUnitario);
-            let turnosMeta = Math.ceil(fatMeta / (menorValorUnitario > 0 ? menorValorUnitario : 40));
+            let fatMeta = ((capex / mesesPayback) + (baseFixo / qtdMeses)) / ((pContVal - custoVarTurno)/pContVal);
+            let turnosMeta = Math.ceil(fatMeta / (pContVal > 0 ? pContVal : 300));
 
             const fatMetaEl = document.getElementById('kpi-fat-meta');
             const turnosMetaEl = document.getElementById('kpi-turnos-meta');
@@ -961,7 +1022,7 @@
 
             let vetorFluxo = [];
             mesesAtivos.forEach(idx => {
-                let r = config.integrarProjecaoTurnos ? receitaOcupacaoConservadora : 0, ds = 0, inv = 0;
+                let r = config.integrarProjecaoTurnos ? receitaMix : 0, ds = 0, inv = 0;
                 lancamentos.forEach(i => {
                     let dt = new Date(i.data + 'T00:00:00');
                     if(dt.getFullYear().toString() === filtroAno && dt.getMonth() === idx) {
@@ -1016,10 +1077,8 @@
             const filtroAno = filtroAnoEl.value;
             let lbs = [], recs = [], desps = [], lucros = [];
             
-            let valAv = config.locadosAvulsoValor || 0;
-            let menorValorUnitario = getMenorValorUnitarioTurno();
-            let totalVendidos = calcularTurnosVendidosNaMatriz();
-            let recBaseConfig = config.integrarProjecaoTurnos ? ((totalVendidos * menorValorUnitario) + valAv) : 0;
+            let receitaMix = calcularReceitaPorMixPacotes();
+            let recBaseConfig = config.integrarProjecaoTurnos ? receitaMix : 0;
 
             nomesCurtos.forEach((m, idx) => {
                 if (mesesAtivos.includes(idx)) {
@@ -1047,7 +1106,7 @@
                         labels: lbs,
                         datasets: [
                             { type: 'line', label: 'Resultado Líquido', data: lucros, borderColor: '#10b981', backgroundColor: '#10b981', borderWidth: 2.5, pointRadius: 3, tension: 0.15 },
-                            { type: 'bar', label: 'Receitas (Realizadas + Turnos)', data: recs, backgroundColor: '#0f172a', borderRadius: 4 },
+                            { type: 'bar', label: 'Receitas (Realizadas + Mix)', data: recs, backgroundColor: '#0f172a', borderRadius: 4 },
                             { type: 'bar', label: 'Despesas', data: desps, backgroundColor: '#ef4444', borderRadius: 4 }
                         ]
                     },
@@ -1090,7 +1149,7 @@
             if(btnSala) btnSala.className = "sala-btn h-11 border rounded-xl font-semibold text-sm transition-all bg-slate-900 border-slate-900 text-white cursor-pointer text-center w-full";
         }
 
-        function toggleDropdown(e) { e.stopPropagation(); document.getElementById('dropdown-menu').classList.toggle('hidden'); }
+        function toggleDropdown(e) { e.stopPropagation(); document.getElementById('dropdown-menu').classList.add('hidden'); }
         function renderDropdownCheckboxes() {
             const c = document.getElementById('dropdown-checkboxes-container'); if(!c) return;
             let html = `<div class="flex items-center justify-between border-b border-slate-100 pb-2 pt-1 mb-1 px-2"><button onclick="selecionarTodosMeses(true)" class="text-xs font-bold text-slate-900 hover:underline cursor-pointer">Marcar todos</button><button onclick="selecionarTodosMeses(false)" class="text-xs font-bold text-slate-400 hover:underline cursor-pointer">Limpar</button></div>`;
@@ -1115,7 +1174,7 @@
             if(val <= 0) return;
 
             lancamentos.push({ id: 'man-' + Date.now(), data: d, tipo: selectedType, sala, desc, valor: val });
-            localStorage.setItem('simulador_lancamentos_athos_v47', JSON.stringify(lancamentos));
+            localStorage.setItem('simulador_lancamentos_athos_v49', JSON.stringify(lancamentos));
             document.getElementById('lanc-desc').value = '';
             document.getElementById('lanc-valor').value = '';
             renderApp(); switchTab('dash'); triggerToast("Lançamento salvo com sucesso!", "🟢");
@@ -1123,14 +1182,14 @@
 
         function deleteLancamento(id) {
             lancamentos = lancamentos.filter(i => i.id !== id);
-            localStorage.setItem('simulador_lancamentos_athos_v47', JSON.stringify(lancamentos));
+            localStorage.setItem('simulador_lancamentos_athos_v49', JSON.stringify(lancamentos));
             renderApp(); triggerToast("Registro removido.", "🔴");
         }
 
         function clearData() {
             if(confirm("Deseja apagar todos os dados locais?")) {
                 lancamentos = []; 
-                localStorage.removeItem('simulador_lancamentos_athos_v47');
+                localStorage.removeItem('simulador_lancamentos_athos_v49');
                 renderApp(); triggerToast("Banco limpo.", "🧹");
             }
         }
