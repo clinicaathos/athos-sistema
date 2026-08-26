@@ -162,7 +162,7 @@
             <!-- GRÁFICO E SALAS -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 lg:col-span-2">
-                    <h3 class="text-sm font-bold text-slate-700 mb-3">Evolução de Fluxo Misto (Receitas Reais vs. Despesas + Linha de Resultado)</h3>
+                    <h3 id="chart-title-label" class="text-sm font-bold text-slate-700 mb-3">Evolução de Fluxo (Realizado vs. Despesas + Linha de Resultado)</h3>
                     <div class="h-60 sm:h-64 relative" id="chart-wrapper">
                         <canvas id="mainChart"></canvas>
                     </div>
@@ -341,6 +341,15 @@
                     <p class="text-xs text-slate-400">Informe quantos turnos estão locados para cada um dos pacotes da clínica e contratos avulsos.</p>
                 </div>
 
+                <!-- GOVERNANÇAS E TRAVAS DE VALUATION -->
+                <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="chk-integrar-projek" onchange="saveLocacoesConfig()" class="h-5 w-5 rounded-md text-amber-600 accent-amber-600">
+                        <span class="text-xs font-bold text-amber-900">Incluir Projeção de Turnos Ociosos/Novos no Fluxo de Caixa do Dash</span>
+                    </label>
+                    <p class="text-[11px] text-amber-700 pl-8">Por segurança gerencial, desmarque esta opção se quiser analisar estritamente o realizado de extratos e lançamentos sem duplicar receitas estimadas.</p>
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="locacoes-inputs-container">
                     <div class="p-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
                         <label class="text-[10px] font-bold uppercase text-slate-500 block">Áthos Cotinuidade</label>
@@ -488,20 +497,21 @@
         const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const nomesCurtos = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v43')) || [];
+        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v44')) || [];
 
-        let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v43')) || [
+        let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v44')) || [
             { id: 0, nome: 'Áthos Cotinuidade', tipo: 'Pacote Mensal', horas: 10, valor: 300.00, desc: '10h/mês — cobrança recorrente' },
             { id: 1, nome: 'Áthos Essencial', tipo: 'Pacote Mensal', horas: 5, valor: 175.00, desc: '5h/mês — cobrança recorrente' },
             { id: 2, nome: 'Áthos Singular', tipo: 'Pacote Mensal', horas: 1, valor: 40.00, desc: '1h/mês — cobrança recorrente' }
         ];
 
-        let config = JSON.parse(localStorage.getItem('simulador_config_athos_v43')) || {
+        let config = JSON.parse(localStorage.getItem('simulador_config_athos_v44')) || {
             capacidade: 528, custoFixo: 1800, custoVariavel: 10.00,
-            locadoContinuidade: 10,
-            locadoEssencial: 4,
-            locadoSingular: 2,
-            locadosAvulsoValor: 350.00,
+            locadoContinuidade: 0,
+            locadoEssencial: 0,
+            locadoSingular: 0,
+            locadosAvulsoValor: 0,
+            integrarProjecaoTurnos: false,
             donaSlots: {
                 '1_manha': 'sala1', '1_tarde': 'sala1',
                 '2_manha': 'sala1', '2_tarde': 'sala1'
@@ -527,7 +537,7 @@
                 if (event.data && event.data.tipo === 'SINCRONIZAR_DADOS') {
                     if (Array.isArray(event.data.dados)) {
                         lancamentos = event.data.dados;
-                        localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
+                        localStorage.setItem('simulador_lancamentos_athos_v44', JSON.stringify(lancamentos));
                         renderApp();
                     }
                 }
@@ -548,12 +558,15 @@
         ];
 
         function sincronizarLocacoesUI() {
-            document.getElementById('locado-continuidade').value = config.locadoContinuidade !== undefined ? config.locadoContinuidade : 10;
-            document.getElementById('locado-essencial').value = config.locadoEssencial !== undefined ? config.locadoEssencial : 4;
-            document.getElementById('locado-singular').value = config.locadoSingular !== undefined ? config.locadoSingular : 2;
-            let avVal = config.locadosAvulsoValor !== undefined ? config.locadosAvulsoValor : 350;
+            document.getElementById('locado-continuidade').value = config.locadoContinuidade !== undefined ? config.locadoContinuidade : 0;
+            document.getElementById('locado-essencial').value = config.locadoEssencial !== undefined ? config.locadoEssencial : 0;
+            document.getElementById('locado-singular').value = config.locadoSingular !== undefined ? config.locadoSingular : 0;
+            let avVal = config.locadosAvulsoValor !== undefined ? config.locadosAvulsoValor : 0;
             document.getElementById('locado-avulso-valor').value = 'R$ ' + avVal.toFixed(2).replace('.', ',');
             
+            const chkPro = document.getElementById('chk-integrar-projek');
+            if(chkPro) chkPro.checked = !!config.integrarProjecaoTurnos;
+
             let pCont = pacotes.find(p => p.nome.toLowerCase().includes('cotinuidade') || p.nome.toLowerCase().includes('continuidade')) || pacotes[0];
             let pEss = pacotes.find(p => p.nome.toLowerCase().includes('essencial')) || pacotes[1];
             let pSing = pacotes.find(p => p.nome.toLowerCase().includes('singular')) || pacotes[2];
@@ -568,7 +581,10 @@
             config.locadoEssencial = parseInt(document.getElementById('locado-essencial').value) || 0;
             config.locadoSingular = parseInt(document.getElementById('locado-singular').value) || 0;
             config.locadosAvulsoValor = parseCurrencyToFloat(document.getElementById('locado-avulso-valor').value);
-            localStorage.setItem('simulador_config_athos_v43', JSON.stringify(config));
+            const chkPro = document.getElementById('chk-integrar-projek');
+            config.integrarProjecaoTurnos = chkPro ? chkPro.checked : false;
+
+            localStorage.setItem('simulador_config_athos_v44', JSON.stringify(config));
             renderApp();
         }
 
@@ -624,7 +640,7 @@
             if(!config.donaSlots) config.donaSlots = {};
             if(val === 'nenhuma') delete config.donaSlots[key];
             else config.donaSlots[key] = val;
-            localStorage.setItem('simulador_config_athos_v43', JSON.stringify(config));
+            localStorage.setItem('simulador_config_athos_v44', JSON.stringify(config));
             renderDonaMatrix();
             renderApp();
         }
@@ -663,7 +679,7 @@
             pacotes[editingPackageId].nome = document.getElementById('edit-pacote-nome').value;
             pacotes[editingPackageId].horas = parseInt(document.getElementById('edit-pacote-horas').value) || 1;
             pacotes[editingPackageId].valor = parseCurrencyToFloat(document.getElementById('edit-pacote-valor').value);
-            localStorage.setItem('simulador_pacotes_athos_v43', JSON.stringify(pacotes));
+            localStorage.setItem('simulador_pacotes_athos_v44', JSON.stringify(pacotes));
             renderPacotesUI(); fecharModalPacote(); triggerToast("Pacote atualizado!", "✏️"); renderApp();
         }
 
@@ -676,7 +692,7 @@
                 }
             });
             config.custoFixo = count.size > 0 ? Math.round(totalFixas / count.size) : 1800;
-            localStorage.setItem('simulador_config_athos_v43', JSON.stringify(config));
+            localStorage.setItem('simulador_config_athos_v44', JSON.stringify(config));
         }
 
         function parseRawValue(val) {
@@ -775,7 +791,7 @@
                         } catch(err) { console.error(err); }
                     });
 
-                    localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
+                    localStorage.setItem('simulador_lancamentos_athos_v44', JSON.stringify(lancamentos));
                     atualizarCustosAutomaticosSemanticamente();
                     triggerToast(`Planilha integrada e categorizada com sucesso! (${count} registros)`, "📥");
                     renderApp(); switchTab('dash');
@@ -855,16 +871,33 @@
                 }
             });
 
-            let qCont = config.locadoContinuidade !== undefined ? config.locadoContinuidade : 10;
-            let qEss = config.locadoEssencial !== undefined ? config.locadoEssencial : 4;
-            let qSing = config.locadoSingular !== undefined ? config.locadoSingular : 2;
-            let valAv = config.locadosAvulsoValor !== undefined ? config.locadosAvulsoValor : 350;
+            let qCont = config.locadoContinuidade !== undefined ? config.locadoContinuidade : 0;
+            let qEss = config.locadoEssencial !== undefined ? config.locadoEssencial : 0;
+            let qSing = config.locadoSingular !== undefined ? config.locadoSingular : 0;
+            let valAv = config.locadosAvulsoValor !== undefined ? config.locadosAvulsoValor : 0;
 
             let pContVal = (pacotes.find(p => p.nome.toLowerCase().includes('cotinuidade') || p.nome.toLowerCase().includes('continuidade')) || pacotes[0]).valor;
+            let pEssVal = (pacotes.find(p => p.nome.toLowerCase().includes('essencial')) || pacotes[1]).valor;
+            let pSingVal = (pacotes.find(p => p.nome.toLowerCase().includes('singular')) || pacotes[2]).valor;
 
-            let receitaOcupacaoCalculada = (qCont * pContVal) + (qEss * ((pacotes.find(p => p.nome.toLowerCase().includes('essencial')) || pacotes[1]).valor)) + (qSing * ((pacotes.find(p => p.nome.toLowerCase().includes('singular')) || pacotes[2]).valor)) + valAv;
+            let receitaOcupacaoCalculada = (qCont * pContVal) + (qEss * pEssVal) + (qSing * pSingVal) + valAv;
             const recProjEl = document.getElementById('cfg-receita-projetada');
             if(recProjEl) recProjEl.innerText = formatCurrency(receitaOcupacaoCalculada);
+
+            // Somar receita projetada nas salas APENAS se a governança de integração estiver ativa
+            let receitaProjetadaTotalPeriodo = 0;
+            if (config.integrarProjecaoTurnos && receitaOcupacaoCalculada > 0) {
+                receitaProjetadaTotalPeriodo = receitaOcupacaoCalculada * mesesAtivos.length;
+                sala1Tot += receitaProjetadaTotalPeriodo * 0.6;
+                sala2Tot += receitaProjetadaTotalPeriodo * 0.4;
+            }
+
+            const chartTitleLabel = document.getElementById('chart-title-label');
+            if(chartTitleLabel) {
+                chartTitleLabel.innerText = config.integrarProjecaoTurnos && receitaOcupacaoCalculada > 0 
+                    ? "Evolução de Fluxo (Realizado + Projeção de Turnos vs. Despesas)" 
+                    : "Evolução de Fluxo (Estritamente Realizado: Extratos e Lançamentos)";
+            }
 
             const emptyState = document.getElementById('empty-state');
             const deskTable = document.getElementById('desktop-table-container');
@@ -893,7 +926,7 @@
 
             let totalSlots = 32;
             let achievedScore = qCont + qEss;
-            let ocuSimulada = totalSlots > 0 ? Math.min(100, (achievedScore / totalSlots) * 100) : 50;
+            let ocuSimulada = totalSlots > 0 ? Math.min(100, (achievedScore / totalSlots) * 100) : 0;
 
             const kpEq = document.getElementById('kpi-ponto-eq');
             if(kpEq) kpEq.innerText = ocuSimulada.toFixed(1) + '%';
@@ -909,7 +942,8 @@
             if(fatMetaEl) fatMetaEl.innerText = formatCurrency(fatMeta);
             if(turnosMetaEl) turnosMetaEl.innerText = `Meta: ${turnosMeta} turnos/mês`;
 
-            let op = (sala1Tot + sala2Tot) - totalDespesas;
+            let receitaTotalPeriodo = sala1Tot + sala2Tot;
+            let op = receitaTotalPeriodo - totalDespesas;
             let liquido = op - totalInvestido;
 
             const sumOp = document.getElementById('sum-operacional');
@@ -919,7 +953,7 @@
 
             let vetorFluxo = [];
             mesesAtivos.forEach(idx => {
-                let r = 0, ds = 0, inv = 0;
+                let r = config.integrarProjecaoTurnos ? receitaOcupacaoCalculada : 0, ds = 0, inv = 0;
                 lancamentos.forEach(i => {
                     let dt = new Date(i.data + 'T00:00:00');
                     if(dt.getFullYear().toString() === filtroAno && dt.getMonth() === idx) {
@@ -931,22 +965,35 @@
                 vetorFluxo.push((r - ds) - inv);
             });
 
-            let paybackRes = calcularPaybackAcumulado(vetorFluxo);
+            // Trava analítica de segurança para Payback e TIR em janelas isoladas
             let pbEl = document.getElementById('kpi-payback');
-            if(pbEl) {
-                pbEl.innerText = paybackRes.atingiuRetorno ? paybackRes.mesesAteRetorno.toFixed(1) + ' meses' : 'Déficit Ativo';
-                pbEl.className = `text-xl lg:text-2xl font-bold ${paybackRes.atingiuRetorno?'text-emerald-600':'text-rose-600'} block mt-1.5`;
-            }
-
-            let roi = (totalInvestido > 0) ? (((op / qtdMeses) * 12) / totalInvestido) * 100 : 0;
-            const roiEl = document.getElementById('kpi-roi');
-            if(roiEl) roiEl.innerText = roi.toFixed(1) + '%';
-
-            let tir = calcularTIRCronologica(vetorFluxo);
             let tirEl = document.getElementById('kpi-tir');
-            if(tirEl) {
-                tirEl.innerText = tir.toFixed(1) + '%';
-                tirEl.className = `text-xl lg:text-2xl font-bold ${tir < 0 ? 'text-rose-600' : 'text-emerald-600'} block mt-1.5`;
+
+            if (mesesAtivos.length < 3) {
+                if(pbEl) {
+                    pbEl.innerText = "Janela curta";
+                    pbEl.className = "text-sm font-bold text-amber-600 block mt-1.5";
+                }
+                if(tirEl) {
+                    tirEl.innerText = "Indisponível";
+                    tirEl.className = "text-sm font-bold text-amber-600 block mt-1.5";
+                }
+            } else {
+                let paybackRes = calcularPaybackAcumulado(vetorFluxo);
+                if(pbEl) {
+                    pbEl.innerText = paybackRes.atingiuRetorno ? paybackRes.mesesAteRetorno.toFixed(1) + ' meses' : 'Déficit Ativo';
+                    pbEl.className = `text-xl lg:text-2xl font-bold ${paybackRes.atingiuRetorno?'text-emerald-600':'text-rose-600'} block mt-1.5`;
+                }
+
+                let roi = (totalInvestido > 0) ? (((op / qtdMeses) * 12) / totalInvestido) * 100 : 0;
+                const roiEl = document.getElementById('kpi-roi');
+                if(roiEl) roiEl.innerText = roi.toFixed(1) + '%';
+
+                let tir = calcularTIRCronologica(vetorFluxo);
+                if(tirEl) {
+                    tirEl.innerText = tir.toFixed(1) + '%';
+                    tirEl.className = `text-xl lg:text-2xl font-bold ${tir < 0 ? 'text-rose-600' : 'text-emerald-600'} block mt-1.5`;
+                }
             }
 
             renderCharts();
@@ -960,10 +1007,21 @@
             if(!filtroAnoEl) return;
             const filtroAno = filtroAnoEl.value;
             let lbs = [], recs = [], desps = [], lucros = [];
+            
+            let qCont = config.locadoContinuidade || 0;
+            let qEss = config.locadoEssencial || 0;
+            let qSing = config.locadoSingular || 0;
+            let valAv = config.locadosAvulsoValor || 0;
+
+            let pContVal = (pacotes.find(p => p.nome.toLowerCase().includes('cotinuidade') || p.nome.toLowerCase().includes('continuidade')) || pacotes[0]).valor;
+            let pEssVal = (pacotes.find(p => p.nome.toLowerCase().includes('essencial')) || pacotes[1]).valor;
+            let pSingVal = (pacotes.find(p => p.nome.toLowerCase().includes('singular')) || pacotes[2]).valor;
+
+            let recBaseConfig = config.integrarProjecaoTurnos ? ((qCont * pContVal) + (qEss * pEssVal) + (qSing * pSingVal) + valAv) : 0;
 
             nomesCurtos.forEach((m, idx) => {
                 if (mesesAtivos.includes(idx)) {
-                    lbs.push(m); let r = 0, d = 0;
+                    lbs.push(m); let r = recBaseConfig, d = 0;
                     lancamentos.forEach(i => {
                         let dt = new Date(i.data + 'T00:00:00');
                         if(dt.getFullYear().toString() === filtroAno && dt.getMonth() === idx) {
@@ -987,7 +1045,7 @@
                         labels: lbs,
                         datasets: [
                             { type: 'line', label: 'Resultado Líquido', data: lucros, borderColor: '#10b981', backgroundColor: '#10b981', borderWidth: 2.5, pointRadius: 3, tension: 0.15 },
-                            { type: 'bar', label: 'Receitas Reais', data: recs, backgroundColor: '#0f172a', borderRadius: 4 },
+                            { type: 'bar', label: 'Receitas (Realizadas + Turnos)', data: recs, backgroundColor: '#0f172a', borderRadius: 4 },
                             { type: 'bar', label: 'Despesas', data: desps, backgroundColor: '#ef4444', borderRadius: 4 }
                         ]
                     },
@@ -1055,7 +1113,7 @@
             if(val <= 0) return;
 
             lancamentos.push({ id: 'man-' + Date.now(), data: d, tipo: selectedType, sala, desc, valor: val });
-            localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
+            localStorage.setItem('simulador_lancamentos_athos_v44', JSON.stringify(lancamentos));
             document.getElementById('lanc-desc').value = '';
             document.getElementById('lanc-valor').value = '';
             renderApp(); switchTab('dash'); triggerToast("Lançamento salvo com sucesso!", "🟢");
@@ -1063,14 +1121,14 @@
 
         function deleteLancamento(id) {
             lancamentos = lancamentos.filter(i => i.id !== id);
-            localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
+            localStorage.setItem('simulador_lancamentos_athos_v44', JSON.stringify(lancamentos));
             renderApp(); triggerToast("Registro removido.", "🔴");
         }
 
         function clearData() {
             if(confirm("Deseja apagar todos os dados locais?")) {
                 lancamentos = []; 
-                localStorage.removeItem('simulador_lancamentos_athos_v43');
+                localStorage.removeItem('simulador_lancamentos_athos_v44');
                 renderApp(); triggerToast("Banco limpo.", "🧹");
             }
         }
