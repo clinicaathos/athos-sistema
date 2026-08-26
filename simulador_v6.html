@@ -105,9 +105,9 @@
             <!-- KPIS -->
             <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
                 <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 col-span-1">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ocupação Mínima</span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ocupação Simulada (Real)</span>
                     <span id="kpi-ponto-eq" class="text-xl lg:text-2xl font-bold text-slate-800 block mt-1.5">0.0%</span>
-                    <span id="lbl-metrica-eq" class="text-[10px] text-slate-400 block mt-0.5">Ponto de Equilíbrio</span>
+                    <span id="lbl-metrica-eq" class="text-[10px] text-slate-400 block mt-0.5">Eficiência Real s/ Ideal</span>
                 </div>
                 <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 col-span-1">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Faturamento Mínimo</span>
@@ -201,7 +201,7 @@
         <div id="tab-lanc" class="tab-content hidden max-w-3xl mx-auto space-y-6">
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
                 <h2 class="text-sm font-bold text-slate-700 mb-1">📥 Importar Planilha do Excel (.xlsx / .xls)</h2>
-                <p class="text-xs text-slate-400 mb-4">Arraste ou selecione o arquivo consolidado da clínica para importação inteligente.</p>
+                <p class="text-xs text-slate-400 mb-4">Arraste ou selecione o arquivo consolidado da clínica para importação inteligente (já categorizado).</p>
                 <div class="w-full">
                     <label for="file-uploader" class="flex flex-col items-center justify-center w-full h-28 border-2 border-slate-200 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all p-4 text-center">
                         <svg class="w-6 h-6 mb-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
@@ -302,8 +302,8 @@
             
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
                 <div>
-                    <h2 class="text-sm font-bold text-slate-700 mb-1">⚙️ Matriz de Uso Próprio da Proprietária (Sala 01)</h2>
-                    <p class="text-xs text-slate-400">Marque ou desmarque livremente os dias e turnos para a proprietária na Sala 01. A quantidade total de turnos comerciais ajusta-se automaticamente.</p>
+                    <h2 class="text-sm font-bold text-slate-700 mb-1">⚙️ Matriz de Uso Próprio da Proprietária (Sala 01 ou Sala 02)</h2>
+                    <p class="text-xs text-slate-400">Selecione em qual sala a proprietária utilizará os turnos de <b>Manhã e Tarde nas Terças e Quartas-feiras</b>.</p>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -326,6 +326,31 @@
                 <div class="flex flex-col sm:flex-row justify-between items-center bg-slate-100 p-4 rounded-xl gap-3">
                     <span class="text-xs font-bold text-slate-700">Total de Turnos Comerciais Disponíveis (2 Salas):</span>
                     <span id="cfg-total-turnos-badge" class="text-lg font-black text-slate-900">84 turnos/mês</span>
+                </div>
+            </div>
+
+            <!-- NOVO PAINEL DE SIMULAÇÃO IDEAL VS REAL POR TURNO -->
+            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-700 mb-1">🎯 Simulação Ideal vs. Real (Ocupação por Turno)</h2>
+                    <p class="text-xs text-slate-400">Defina o status pretendido (Ideal) e o realizado (Real) para cada dia e turno comercial para alimentar o índice de eficiência no Dashboard.</p>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-center border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 font-bold uppercase text-[10px]">
+                                <th class="p-3 text-left">Turno / Dia</th>
+                                <th class="p-3">Segunda</th>
+                                <th class="p-3">Terça</th>
+                                <th class="p-3">Quarta</th>
+                                <th class="p-3">Quinta</th>
+                                <th class="p-3">Sexta</th>
+                                <th class="p-3">Sábado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ideal-real-matrix-tbody" class="divide-y divide-slate-100"></tbody>
+                    </table>
                 </div>
             </div>
 
@@ -371,31 +396,56 @@
     </footer>
 
     <script>
+        const categorizacaoMap = {
+            "itens copa": "investimento", "enel": "despesa", "compras - santiago": "investimento",
+            "paraiso das essencias": "despesa", "carrinho aparador": "investimento", "estofados obra": "investimento",
+            "temu - decoração - nub": "investimento", "deocração": "investimento", "adesivo hall": "investimento",
+            "americanas - decoração": "investimento", "copa": "investimento", "algar": "despesa",
+            "estofados - obra": "investimento", "decoração sh": "investimento", "cadeira": "investimento",
+            "rodapé 1": "investimento", "iptu": "despesa", "aluguel": "despesa", "tapetes (materiais)": "investimento",
+            "decoração": "investimento", "decoração - sh": "investimento", "amazonas": "investimento",
+            "compras nubank": "investimento", "santiago - mão de obra": "investimento", "rodapé 2": "investimento",
+            "freitas": "investimento", "cafeteira": "investimento", "cadeira 3": "investimento",
+            "cortina 50% 2º": "investimento", "frete madeiras": "investimento", "temu": "investimento",
+            "luminaria": "investimento", "livros decoração": "investimento", "amazon": "investimento",
+            "cortina 1 50%": "investimento", "suporte alexa": "investimento", "leroy": "investimento",
+            "vidro mesa + espelho grande": "investimento", "cortina 2 50%": "investimento", "varetas/vidros": "investimento",
+            "lona cobertura móveis": "investimento", "frete marcenaria": "investimento", "compras": "investimento",
+            "pintura pé mesa": "investimento", "uber estofados": "investimento", "relogio (1 e 2)": "investimento",
+            "santiago - mão de obra ": "investimento", "8 pés poltrona": "investimento", "itens decoração": "investimento",
+            "camera": "investimento", "50% blocos brindes": "investimento", "nubank - shein": "investimento",
+            "foti": "investimento", "itens variados - amazon": "investimento", "marcenaria": "investimento",
+            "cadeira 2": "investimento", "ar cond (2 salas)": "investimento", "materialo marcenaria": "investimento",
+            "mão de obra - adesivo externo": "investimento", "estofados - mão de obra": "investimento",
+            "material marcenaria": "investimento", "ducha": "investimento", "mesa aparador - extra": "investimento",
+            "mao de obra - estofados": "investimento", "numeros": "investimento", "obra - parafusos": "investimento",
+            "mudança sala 2": "investimento", "ar condicionado recepção": "investimento", "envelopamento móveis": "investimento",
+            "tomadas": "investimento", "frete estofados": "investimento", "compras itau a vista": "investimento",
+            "mesas/centro suporte": "investimento", "tit capitalização": "investimento", "cartão de memoria": "investimento",
+            "uber tio": "investimento", "ralo banheiro": "investimento", "santiago - obra": "investimento",
+            "telefonia": "investimento", "alexas": "investimento", "diferença placa 50% faltante": "investimento",
+            "lixeira": "investimento", "decoração - varetas/vidros": "investimento", "decoração (pratos)": "investimento",
+            "placas": "investimento", "limpeza": "despesa", "gelagua": "despesa", "energia": "despesa",
+            "50% caixas brindes": "despesa", "nubank - presente": "despesa", "agua": "despesa",
+            "mamore gelagua": "despesa", "posts iniciais": "despesa", "id visual + posts": "despesa",
+            "compras a vista itau - até 22/6": "despesa", "seguro incendio": "despesa", "agüa": "despesa",
+            "mármore gelagua": "despesa", "claro": "despesa", "mimo": "despesa", "condomínio": "despesa"
+        };
+
+        function classificarDespesaOuInvestimento(desc) {
+            let chave = (desc || '').toLowerCase().trim();
+            if (categorizacaoMap[chave]) return categorizacaoMap[chave];
+            let palavrasInvestimento = ['obra', 'reforma', 'santiago', 'pedreiro', 'moveis', 'decoracao', 'cadeira', 'ar cond', 'marcenaria', 'cortina', 'tapete', 'mesa', 'espelho', 'luminaria', 'alexa', 'leroy', 'frete', 'material', 'copa', 'aparador', 'estofado', 'rodapé', 'rodape', 'adesivo', 'camera', 'ducha', 'lixeira', 'placa'];
+            if (palavrasInvestimento.some(k => chave.includes(k))) return 'investimento';
+            return 'despesa';
+        }
+
         let selectedType = 'receita', selectedSala = 'sala1';
         let mesesAtivos = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; 
         const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const nomesCurtos = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-        // Sincronização automática via localStorage unificado do sistema principal ou fallback limpo
-        let lancamentos = [];
-        function carregarDadosAutomaticosDoSistema() {
-            try {
-                // Tenta buscar de chaves comuns que o sistema principal possa salvar
-                let chavesPossiveis = ['simulador_lancamentos_athos_v43', 'athos_lancamentos', 'dados_financeiros', 'financeiro_clinica'];
-                for (let k of chavesPossiveis) {
-                    let dadosSalvos = localStorage.getItem(k);
-                    if (dadosSalvos) {
-                        let parsed = JSON.parse(dadosSalvos);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                            lancamentos = parsed;
-                            return;
-                        }
-                    }
-                }
-            } catch(e) { console.error(e); }
-        }
-
-        carregarDadosAutomaticosDoSistema();
+        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v43')) || [];
 
         let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v43')) || [
             { id: 0, nome: 'Áthos Continuidade (Maior Turno)', tipo: 'Pacote Mensal', horas: 10, valor: 300.00, desc: '10h/mês — R$ 30,00/h' },
@@ -406,10 +456,10 @@
         let config = JSON.parse(localStorage.getItem('simulador_config_athos_v43')) || {
             capacidade: 528, preco: 30.00, custoFixo: 1800, custoVariavel: 2.00,
             donaSlots: {
-                '1_tarde': true, '1_noite': true,
-                '2_tarde': true, '2_noite': true,
-                '5_manha': true
-            }
+                '1_manha': 'sala1', '1_tarde': 'sala1',
+                '2_manha': 'sala1', '2_tarde': 'sala1'
+            },
+            idealRealSlots: {} // Armazena { 'dIdx_turno': 'ideal' ou 'real_parcial' ou 'ocioso' }
         };
 
         let editingPackageId = null;
@@ -423,17 +473,16 @@
             atualizarCustosAutomaticosSemanticamente();
             renderPacotesUI();
             renderDonaMatrix();
+            renderIdealRealMatrix();
             sincronizarConfigTurnosUI();
             renderApp();
 
-            // Ouve atualizações em tempo real enviadas por outras abas ou pelo sistema pai via postMessage
             window.addEventListener('message', (event) => {
                 if (event.data && event.data.tipo === 'SINCRONIZAR_DADOS') {
                     if (Array.isArray(event.data.dados)) {
                         lancamentos = event.data.dados;
                         localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
                         renderApp();
-                        triggerToast("Dados atualizados pelo sistema!", "🔄");
                     }
                 }
             });
@@ -443,76 +492,6 @@
                 if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) menu.classList.add('hidden');
             });
         });
-
-        function importFile(input) {
-            const file = input.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                    let count = 0;
-
-                    workbook.SheetNames.forEach(sheetName => {
-                        try {
-                            const nameLower = sheetName.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                            if (nameLower.includes('locac') || nameLower.includes('prof')) return;
-
-                            const sheet = workbook.Sheets[sheetName];
-                            const rows = XLSX.utils.sheet_to_json(sheet, { raw: true });
-                            if (!rows || rows.length === 0) return;
-
-                            const normalizedRows = rows.map(r => {
-                                let nr = {};
-                                for (let k in r) nr[normalizeKey(k)] = r[k];
-                                return nr;
-                            });
-
-                            const keys = Object.keys(normalizedRows[0] || {});
-                            let isRec = nameLower.includes('receita') || (keys.includes('profissional') && keys.includes('valor'));
-                            let isDesp = nameLower.includes('despesa') || (keys.includes('descricao') && keys.includes('valor'));
-
-                            if (isRec) {
-                                normalizedRows.forEach(r => {
-                                    let rawId = (r['id'] || '').toString().trim() || ('rec-' + Date.now() + '-' + Math.random());
-                                    let dt = normalizeDate(r['vencimento'] || r['data']);
-                                    let prof = r['profissional'] || 'Receita Avulsa';
-                                    let obs = r['observacao'] || r['obs'] || '';
-                                    let val = parseRawValue(r['valorfinal'] !== undefined && r['valorfinal'] !== "" ? r['valorfinal'] : r['valor']);
-                                    if(val === 0) return;
-                                    let sala = ((obs || '').toString().toUpperCase().includes('ÁTHOS II') || (obs || '').toString().toUpperCase().includes('SALA 2')) ? 'sala2' : 'sala1';
-                                    if (!lancamentos.some(l => l.id === rawId)) {
-                                        lancamentos.push({ id: rawId, data: dt, tipo: 'receita', sala: sala, desc: prof + (obs ? ' - ' + obs : ''), valor: val });
-                                        count++;
-                                    }
-                                });
-                            } else if (isDesp) {
-                                normalizedRows.forEach(r => {
-                                    let rawId = (r['id'] || '').toString().trim() || ('desp-' + Date.now() + '-' + Math.random());
-                                    let dt = normalizeDate(r['vencimento'] || r['data']);
-                                    let desc = r['descricao'] || r['desc'] || 'Despesa';
-                                    let val = parseRawValue(r['valor']);
-                                    if(val === 0) return;
-                                    let descLow = desc.toLowerCase();
-                                    let tipo = ['obra', 'reforma', 'santiago', 'pedreiro', 'moveis'].some(k => descLow.includes(k)) ? 'investimento' : 'despesa';
-                                    let isFix = ['aluguel', 'condominio', 'enel', 'energia', 'internet', 'agua'].some(k => descLow.includes(k));
-                                    if (!lancamentos.some(l => l.id === rawId)) {
-                                        lancamentos.push({ id: rawId, data: dt, tipo: tipo, sala: '-', desc: desc, valor: val, isFixo: isFix });
-                                        count++;
-                                    }
-                                });
-                            }
-                        } catch(err) { console.error(err); }
-                    });
-
-                    localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
-                    atualizarCustosAutomaticosSemanticamente();
-                    triggerToast(`Planilha integrada com sucesso! (${count} registros)`, "📥");
-                    renderApp(); switchTab('dash');
-                } catch(err) { alert("Erro ao processar arquivo Excel."); }
-            };
-            reader.readAsArrayBuffer(file);
-        }
 
         const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
         const turnosDia = [
@@ -529,8 +508,15 @@
                 rowsHtml += `<tr><td class="p-3 text-left font-bold text-slate-700">${t.label}</td>`;
                 diasSemana.forEach((d, dIdx) => {
                     let key = `${dIdx}_${t.id}`;
-                    let checked = config.donaSlots && config.donaSlots[key] ? 'checked' : '';
-                    rowsHtml += `<td class="p-3 text-center"><input type="checkbox" data-key="${key}" ${checked} onchange="toggleDonaSlot(this)" class="h-4 w-4 rounded-sm text-slate-900 cursor-pointer"></td>`;
+                    let currentVal = config.donaSlots && config.donaSlots[key] ? config.donaSlots[key] : 'nenhuma';
+                    rowsHtml += `
+                        <td class="p-3 text-center">
+                            <select data-key="${key}" onchange="changeDonaSlot(this)" class="h-8 px-2 border border-slate-200 rounded-lg text-xs bg-slate-50 font-semibold text-slate-700 cursor-pointer">
+                                <option value="nenhuma" ${currentVal === 'nenhuma' ? 'selected' : ''}>Comercial</option>
+                                <option value="sala1" ${currentVal === 'sala1' ? 'selected' : ''}>Sala 01</option>
+                                <option value="sala2" ${currentVal === 'sala2' ? 'selected' : ''}>Sala 02</option>
+                            </select>
+                        </td>`;
                 });
                 rowsHtml += `</tr>`;
             });
@@ -538,23 +524,62 @@
             calcularTurnosComerciaisDisponiveis();
         }
 
-        function toggleDonaSlot(checkbox) {
-            let key = checkbox.getAttribute('data-key');
+        function changeDonaSlot(select) {
+            let key = select.getAttribute('data-key');
+            let val = select.value;
             if(!config.donaSlots) config.donaSlots = {};
-            config.donaSlots[key] = checkbox.checked;
+            if(val === 'nenhuma') delete config.donaSlots[key];
+            else config.donaSlots[key] = val;
+            localStorage.setItem('simulador_config_athos_v43', JSON.stringify(config));
+            renderApp();
+        }
+
+        function renderIdealRealMatrix() {
+            const tbody = document.getElementById('ideal-real-matrix-tbody');
+            if(!tbody) return;
+            let rowsHtml = '';
+            turnosDia.forEach(t => {
+                rowsHtml += `<tr><td class="p-3 text-left font-bold text-slate-700">${t.label}</td>`;
+                diasSemana.forEach((d, dIdx) => {
+                    let key = `${dIdx}_${t.id}`;
+                    let currentVal = config.idealRealSlots && config.idealRealSlots[key] ? config.idealRealSlots[key] : 'ideal';
+                    rowsHtml += `
+                        <td class="p-3 text-center">
+                            <select data-key="${key}" onchange="changeIdealRealSlot(this)" class="h-8 px-2 border border-slate-200 rounded-lg text-xs bg-slate-50 font-semibold text-slate-700 cursor-pointer">
+                                <option value="ideal" ${currentVal === 'ideal' ? 'selected' : ''}>⭐ Ideal (100%)</option>
+                                <option value="parcial" ${currentVal === 'parcial' ? 'selected' : ''}>🟡 Parcial (50%)</option>
+                                <option value="ocioso" ${currentVal === 'ocioso' ? 'selected' : ''}>🔴 Ocioso (0%)</option>
+                            </select>
+                        </td>`;
+                });
+                rowsHtml += `</tr>`;
+            });
+            tbody.innerHTML = rowsHtml;
+        }
+
+        function changeIdealRealSlot(select) {
+            let key = select.getAttribute('data-key');
+            let val = select.value;
+            if(!config.idealRealSlots) config.idealRealSlots = {};
+            config.idealRealSlots[key] = val;
             localStorage.setItem('simulador_config_athos_v43', JSON.stringify(config));
             renderApp();
         }
 
         function calcularTurnosComerciaisDisponiveis() {
             let turnosTotaisSala1 = 52, turnosTotaisSala2 = 52;
-            let countDonaSlots = 0;
+            let countSala1 = 0, countSala2 = 0;
             if(config.donaSlots) {
-                Object.values(config.donaSlots).forEach(val => { if(val) countDonaSlots++; });
+                Object.entries(config.donaSlots).forEach(([k, sala]) => {
+                    if(sala === 'sala1') countSala1++;
+                    if(sala === 'sala2') countSala2++;
+                });
             }
-            let turnosDonaMes = countDonaSlots * 4;
-            let sala1Comercial = Math.max(turnosTotaisSala1 - turnosDonaMes, 0);
-            let totalComercial = sala1Comercial + turnosTotaisSala2;
+            let turnosDonaSala1 = countSala1 * 4;
+            let turnosDonaSala2 = countSala2 * 4;
+            let sala1Comercial = Math.max(turnosTotaisSala1 - turnosDonaSala1, 0);
+            let sala2Comercial = Math.max(turnosTotaisSala2 - turnosDonaSala2, 0);
+            let totalComercial = sala1Comercial + sala2Comercial;
 
             const badge = document.getElementById('cfg-total-turnos-badge');
             if(badge) badge.innerText = `${totalComercial} turnos/mês`;
@@ -668,6 +693,78 @@
             return str;
         }
 
+        function importFile(input) {
+            const file = input.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    let count = 0;
+
+                    workbook.SheetNames.forEach(sheetName => {
+                        try {
+                            const nameLower = sheetName.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                            if (nameLower.includes('locac') || nameLower.includes('prof')) return;
+
+                            const sheet = workbook.Sheets[sheetName];
+                            const rows = XLSX.utils.sheet_to_json(sheet, { raw: true });
+                            if (!rows || rows.length === 0) return;
+
+                            const normalizedRows = rows.map(r => {
+                                let nr = {};
+                                for (let k in r) nr[normalizeKey(k)] = r[k];
+                                return nr;
+                            });
+
+                            const keys = Object.keys(normalizedRows[0] || {});
+                            let isRec = nameLower.includes('receita') || (keys.includes('profissional') && keys.includes('valor'));
+                            let isDesp = nameLower.includes('despesa') || (keys.includes('descricao') && keys.includes('valor'));
+
+                            if (isRec) {
+                                normalizedRows.forEach(r => {
+                                    let rawId = (r['id'] || '').toString().trim() || ('rec-' + Date.now() + '-' + Math.random());
+                                    let dt = normalizeDate(r['vencimento'] || r['data']);
+                                    let prof = r['profissional'] || 'Receita Avulsa';
+                                    let obs = r['observacao'] || r['obs'] || '';
+                                    let val = parseRawValue(r['valorfinal'] !== undefined && r['valorfinal'] !== "" ? r['valorfinal'] : r['valor']);
+                                    if(val === 0) return;
+                                    let sala = ((obs || '').toString().toUpperCase().includes('ÁTHOS II') || (obs || '').toString().toUpperCase().includes('SALA 2')) ? 'sala2' : 'sala1';
+                                    if (!lancamentos.some(l => l.id === rawId)) {
+                                        lancamentos.push({ id: rawId, data: dt, tipo: 'receita', sala: sala, desc: prof + (obs ? ' - ' + obs : ''), valor: val });
+                                        count++;
+                                    }
+                                });
+                            } else if (isDesp) {
+                                normalizedRows.forEach(r => {
+                                    let rawId = (r['id'] || '').toString().trim() || ('desp-' + Date.now() + '-' + Math.random());
+                                    let dt = normalizeDate(r['vencimento'] || r['data']);
+                                    let desc = r['descricao'] || r['desc'] || 'Despesa';
+                                    let val = parseRawValue(r['valor']);
+                                    if(val === 0) return;
+                                    
+                                    let tipo = classificarDespesaOuInvestimento(desc);
+                                    let descLow = desc.toLowerCase();
+                                    let isFix = ['aluguel', 'condominio', 'enel', 'energia', 'internet', 'agua'].some(k => descLow.includes(k));
+                                    
+                                    if (!lancamentos.some(l => l.id === rawId)) {
+                                        lancamentos.push({ id: rawId, data: dt, tipo: tipo, sala: '-', desc: desc, valor: val, isFixo: isFix });
+                                        count++;
+                                    }
+                                });
+                            }
+                        } catch(err) { console.error(err); }
+                    });
+
+                    localStorage.setItem('simulador_lancamentos_athos_v43', JSON.stringify(lancamentos));
+                    atualizarCustosAutomaticosSemanticamente();
+                    triggerToast(`Planilha integrada e categorizada com sucesso! (${count} registros)`, "📥");
+                    renderApp(); switchTab('dash');
+                } catch(err) { alert("Erro ao processar arquivo Excel."); }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
         function calcularTIRCronologica(cashFlows) {
             if (!cashFlows || cashFlows.length === 0) return 0;
             let hasNegative = cashFlows.some(cf => cf < 0), hasPositive = cashFlows.some(cf => cf > 0);
@@ -762,10 +859,30 @@
 
             const kbEven = document.getElementById('kpi-break-even');
             if(kbEven) kbEven.innerText = formatCurrency(fatMin);
-            let ocuMin = (config.capacidade * qtdMeses) > 0 ? ((fatMin / config.preco) / (config.capacidade * qtdMeses)) * 100 : 0;
-            if(ocuMin > 100) ocuMin = 100;
+
+            // Cálculo da Ocupação Simulada Real baseada na matriz Ideal vs Real configurada
+            let totalSlots = 0, achievedScore = 0;
+            turnosDia.forEach(t => {
+                diasSemana.forEach((d, dIdx) => {
+                    let key = `${dIdx}_${t.id}`;
+                    // Verifica se o slot está tomado pela dona; se sim, não conta na métrica comercial
+                    let isDona = false;
+                    if(config.donaSlots && config.donaSlots[key] && config.donaSlots[key] !== 'nenhuma') {
+                        isDona = true; 
+                    }
+                    if(!isDona) {
+                        totalSlots++;
+                        let status = config.idealRealSlots && config.idealRealSlots[key] ? config.idealRealSlots[key] : 'ideal';
+                        if(status === 'ideal') achievedScore += 1.0;
+                        else if(status === 'parcial') achievedScore += 0.5;
+                        else if(status === 'ocioso') achievedScore += 0.0;
+                    }
+                });
+            });
+            let ocuSimulada = totalSlots > 0 ? (achievedScore / totalSlots) * 100 : 33.6;
+
             const kpEq = document.getElementById('kpi-ponto-eq');
-            if(kpEq) kpEq.innerText = ocuMin.toFixed(1) + '%';
+            if(kpEq) kpEq.innerText = ocuSimulada.toFixed(1) + '%';
 
             let capex = lancamentos.reduce((acc, i) => i.tipo === 'investimento' ? acc + i.valor : acc, 0) || 45000;
             const metaPayEl = document.getElementById('meta-meses-payback');
@@ -865,7 +982,7 @@
         }
 
         function switchTab(id) {
-            if(id === 'config') { renderPacotesUI(); renderDonaMatrix(); sincronizarConfigTurnosUI(); }
+            if(id === 'config') { renderPacotesUI(); renderDonaMatrix(); renderIdealRealMatrix(); sincronizarConfigTurnosUI(); }
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(el => el.className = "tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg text-slate-400 hover:text-white cursor-pointer");
             document.getElementById(`tab-${id}`).classList.remove('hidden');
