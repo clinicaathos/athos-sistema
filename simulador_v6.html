@@ -274,7 +274,7 @@
                 <div id="empty-state" class="hidden p-12 text-center space-y-3">
                     <span class="text-3xl block">📁</span>
                     <h3 class="text-sm font-bold text-slate-700">Nenhum registro encontrado</h3>
-                    <p class="text-xs text-slate-400 max-w-xs mx-auto">Não existem movimentações salvas para los meses ou ano ativos selecionados.</p>
+                    <p class="text-xs text-slate-400 max-w-xs mx-auto">Não existem movimentações salvas para os meses ou ano ativos selecionados.</p>
                 </div>
 
                 <div id="desktop-table-container" class="hidden md:block overflow-x-auto w-full">
@@ -300,7 +300,7 @@
         <!-- CONFIGURAÇÕES -->
         <div id="tab-config" class="tab-content hidden max-w-5xl mx-auto space-y-6">
             
-            <!-- 1. MATRIZ SUPER COMPACTA (DIAS NAS COLUNAS, TURNOS NAS LINHAS) -->
+            <!-- 1. MATRIZ DE DISPONIBILIDADE -->
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
                 <div>
                     <h2 class="text-sm font-bold text-slate-700 mb-1">1. Matriz de Disponibilidade</h2>
@@ -804,6 +804,10 @@
 
                             if (isRec) {
                                 normalizedRows.forEach(r => {
+                                    // IGNORAR SE O STATUS FOR "PENDENTE" OU "ABERTO"
+                                    let status = (r['status'] || '').toString().trim().toLowerCase();
+                                    if (status.includes('pendente') || status.includes('aberto') || status.includes('aguardando')) return;
+
                                     let rawId = (r['id'] || '').toString().trim() || ('rec-' + Date.now() + '-' + Math.random());
                                     let dt = normalizeDate(r['vencimento'] || r['data']);
                                     let prof = r['profissional'] || 'Receita Avulsa';
@@ -1115,21 +1119,49 @@
             if(btnSala) btnSala.className = "sala-btn h-11 border rounded-xl font-semibold text-sm transition-all bg-slate-900 border-slate-900 text-white cursor-pointer text-center w-full";
         }
 
-        function toggleDropdown(e) { e.stopPropagation(); document.getElementById('dropdown-menu').classList.add('hidden'); }
+        function toggleDropdown(e) { 
+            e.stopPropagation(); 
+            const menu = document.getElementById('dropdown-menu');
+            if(menu) menu.classList.toggle('hidden'); 
+        }
+
         function renderDropdownCheckboxes() {
             const c = document.getElementById('dropdown-checkboxes-container'); if(!c) return;
-            let html = `<div class="flex items-center justify-between border-b border-slate-100 pb-2 pt-1 mb-1 px-2"><button onclick="selecionarTodosMeses(true)" class="text-xs font-bold text-slate-900 hover:underline cursor-pointer">Marcar todos</button><button onclick="selecionarTodosMeses(false)" class="text-xs font-bold text-slate-400 hover:underline cursor-pointer">Limpar</button></div>`;
+            let html = '';
             nomesMeses.forEach((m, idx) => {
-                html += `<label class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 text-sm font-semibold text-slate-700 cursor-pointer w-full"><input type="checkbox" id="chk-mes-${idx}" ${mesesAtivos.includes(idx)?'checked':''} onchange="onCheckboxChange(${idx})" class="h-5 w-5 rounded-md text-slate-900"><span>${m}</span></label>`;
+                html += `<label class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 text-sm font-semibold text-slate-700 cursor-pointer w-full"><input type="checkbox" id="chk-mes-${idx}" ${mesesAtivos.includes(idx)?'checked':''} onchange="onCheckboxChange(${idx})" class="h-5 w-5 rounded-md text-slate-900 accent-slate-900"><span>${m}</span></label>`;
             });
             c.innerHTML = html;
+            atualizarLabelDropdown();
         }
+
+        function atualizarLabelDropdown() {
+            const lbl = document.getElementById('dropdown-label');
+            if(!lbl) return;
+            if(mesesAtivos.length === 12) {
+                lbl.innerText = "Todos os meses";
+            } else if(mesesAtivos.length === 0) {
+                lbl.innerText = "Nenhum mês selecionado";
+            } else if(mesesAtivos.length <= 3) {
+                lbl.innerText = mesesAtivos.map(idx => nomesCurtos[idx]).join(', ');
+            } else {
+                lbl.innerText = `${mesesAtivos.length} meses selecionados`;
+            }
+        }
+
         function onCheckboxChange(idx) {
             let chk = document.getElementById(`chk-mes-${idx}`);
             if(chk && chk.checked) { if(!mesesAtivos.includes(idx)) mesesAtivos.push(idx); } else { mesesAtivos = mesesAtivos.filter(m => m !== idx); }
-            mesesAtivos.sort((a,b)=>a-b); renderApp();
+            mesesAtivos.sort((a,b)=>a-b); 
+            atualizarLabelDropdown();
+            renderApp();
         }
-        function selecionarTodosMeses(s) { mesesAtivos = s ? [0,1,2,3,4,5,6,7,8,9,10,11] : []; renderDropdownCheckboxes(); renderApp(); }
+
+        function selecionarTodosMeses(s) { 
+            mesesAtivos = s ? [0,1,2,3,4,5,6,7,8,9,10,11] : []; 
+            renderDropdownCheckboxes(); 
+            renderApp(); 
+        }
 
         function saveLancamento(e) {
             e.preventDefault();
