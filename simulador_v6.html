@@ -298,20 +298,20 @@
         </div>
 
         <!-- CONFIGURAÇÕES -->
-        <div id="tab-config" class="tab-content hidden max-w-4xl mx-auto space-y-6">
+        <div id="tab-config" class="tab-content hidden max-w-5xl mx-auto space-y-6">
             
-            <!-- 1. MATRIZ EM GRADE (TURNOS NAS LINHAS E DIAS NO CABEÇALHO) -->
+            <!-- 1. MATRIZ SUPER COMPACTA (DIAS NAS COLUNAS, TURNOS NAS LINHAS) -->
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
                 <div>
-                    <h2 class="text-sm font-bold text-slate-700 mb-1">📋 1. Matriz de Coexistência (Grade de Uso Próprio)</h2>
-                    <p class="text-xs text-slate-400">Selecione o status de cada turno/dia. O que não for uso próprio fica livre para locação comercial.</p>
+                    <h2 class="text-sm font-bold text-slate-700 mb-1">📋 1. Matriz de Coexistência (Grade Compacta)</h2>
+                    <p class="text-xs text-slate-400">Linhas = Turnos | Colunas = Dias da Semana. Selecione diretamente o status de cada slot.</p>
                 </div>
 
                 <div class="overflow-x-auto border border-slate-200 rounded-xl">
                     <table class="w-full text-center border-collapse text-xs">
                         <thead>
                             <tr class="bg-slate-100 text-slate-600 font-bold uppercase text-[10px]">
-                                <th class="p-3 text-left">Turno</th>
+                                <th class="p-3 text-left w-32">Turno</th>
                                 <th class="p-3">Segunda</th>
                                 <th class="p-3">Terça</th>
                                 <th class="p-3">Quarta</th>
@@ -499,15 +499,15 @@
         const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const nomesCurtos = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v52')) || [];
+        let lancamentos = JSON.parse(localStorage.getItem('simulador_lancamentos_athos_v53')) || [];
 
-        let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v52')) || [
+        let pacotes = JSON.parse(localStorage.getItem('simulador_pacotes_athos_v53')) || [
             { id: 0, nome: 'Áthos Cotinuidade', tipo: 'Pacote Mensal', horas: 10, valor: 300.00, desc: '10h/mês — cobrança recorrente' },
             { id: 1, nome: 'Áthos Essencial', tipo: 'Pacote Mensal', horas: 5, valor: 175.00, desc: '5h/mês — cobrança recorrente' },
             { id: 2, nome: 'Áthos Singular', tipo: 'Pacote Mensal', horas: 1, valor: 40.00, desc: '1h/mês — cobrança recorrente' }
         ];
 
-        let config = JSON.parse(localStorage.getItem('simulador_config_athos_v52')) || {
+        let config = JSON.parse(localStorage.getItem('simulador_config_athos_v53')) || {
             capacidadeFisica: 32,
             custoFixo: 1800, 
             custoVariavel: 10.00,
@@ -516,7 +516,7 @@
             locadoSingular: 0,
             locadosAvulsoValor: 0,
             integrarProjecaoTurnos: false,
-            slotsGrid: {} // Ex: {'manha_0': 'livre', 'manha_1': 'sala1', 'tarde_2': 'sala2'}
+            slotsGrid: {} 
         };
 
         let editingPackageId = null;
@@ -545,7 +545,7 @@
                 if (event.data && event.data.tipo === 'SINCRONIZAR_DADOS') {
                     if (Array.isArray(event.data.dados)) {
                         lancamentos = event.data.dados;
-                        localStorage.setItem('simulador_lancamentos_athos_v52', JSON.stringify(lancamentos));
+                        localStorage.setItem('simulador_lancamentos_athos_v53', JSON.stringify(lancamentos));
                         renderApp();
                     }
                 }
@@ -562,7 +562,6 @@
             if(!config.slotsGrid) return 0;
             turnosGridDef.forEach(t => {
                 diasSemanaDef.forEach((_, dIdx) => {
-                    // Sábado noite e tarde não existem no padrão físico oficial (apenas manhã)
                     if (dIdx === 5 && (t.id === 'tarde' || t.id === 'noite')) return;
                     let key = `${t.id}_${dIdx}`;
                     let val = config.slotsGrid[key] || 'livre';
@@ -588,18 +587,18 @@
                         let key = `${t.id}_${dIdx}`;
                         let val = config.slotsGrid && config.slotsGrid[key] ? config.slotsGrid[key] : 'livre';
                         
-                        let selectClass = 'bg-white text-slate-700';
+                        let selectClass = 'bg-slate-50 text-slate-600';
                         if(val === 'sala1') selectClass = 'bg-slate-900 text-white font-bold';
                         else if(val === 'sala2') selectClass = 'bg-slate-700 text-white font-bold';
                         else if(val === 'ambas') selectClass = 'bg-indigo-900 text-white font-bold';
 
                         html += `
-                            <td class="p-2 text-center">
-                                <select data-key="${key}" onchange="changeGridSlot(this)" class="h-9 px-2 border border-slate-200 rounded-lg text-xs font-semibold cursor-pointer w-full ${selectClass}">
+                            <td class="p-1.5 text-center">
+                                <select data-key="${key}" onchange="changeGridSlot(this)" class="h-9 px-1.5 border border-slate-200 rounded-lg text-xs font-semibold cursor-pointer w-full ${selectClass}">
                                     <option value="livre" ${val === 'livre' ? 'selected' : ''}>Livre</option>
-                                    <option value="sala1" ${val === 'sala1' ? 'selected' : ''}>Uso: Sala 01</option>
-                                    <option value="sala2" ${val === 'sala2' ? 'selected' : ''}>Uso: Sala 02</option>
-                                    <option value="ambas" ${val === 'ambas' ? 'selected' : ''}>Uso: Ambas</option>
+                                    <option value="sala1" ${val === 'sala1' ? 'selected' : ''}>Sala 01</option>
+                                    <option value="sala2" ${val === 'sala2' ? 'selected' : ''}>Sala 02</option>
+                                    <option value="ambas" ${val === 'ambas' ? 'selected' : ''}>Ambas</option>
                                 </select>
                             </td>`;
                     }
@@ -615,7 +614,7 @@
             let val = select.value;
             if(!config.slotsGrid) config.slotsGrid = {};
             config.slotsGrid[key] = val;
-            localStorage.setItem('simulador_config_athos_v52', JSON.stringify(config));
+            localStorage.setItem('simulador_config_athos_v53', JSON.stringify(config));
             renderGridMatrix();
             renderApp();
         }
@@ -680,7 +679,7 @@
             const chkPro = document.getElementById('chk-integrar-projek');
             config.integrarProjecaoTurnos = chkPro ? chkPro.checked : false;
 
-            localStorage.setItem('simulador_config_athos_v52', JSON.stringify(config));
+            localStorage.setItem('simulador_config_athos_v53', JSON.stringify(config));
             sincronizarLocacoesUI();
             renderApp();
         }
@@ -726,7 +725,7 @@
             pacotes[editingPackageId].nome = document.getElementById('edit-pacote-nome').value;
             pacotes[editingPackageId].horas = parseInt(document.getElementById('edit-pacote-horas').value) || 1;
             pacotes[editingPackageId].valor = parseCurrencyToFloat(document.getElementById('edit-pacote-valor').value);
-            localStorage.setItem('simulador_pacotes_athos_v52', JSON.stringify(pacotes));
+            localStorage.setItem('simulador_pacotes_athos_v53', JSON.stringify(pacotes));
             renderPacotesUI(); fecharModalPacote(); triggerToast("Pacote atualizado!", "✏️"); renderApp();
         }
 
@@ -739,7 +738,7 @@
                 }
             });
             config.custoFixo = count.size > 0 ? Math.round(totalFixas / count.size) : 1800;
-            localStorage.setItem('simulador_config_athos_v52', JSON.stringify(config));
+            localStorage.setItem('simulador_config_athos_v53', JSON.stringify(config));
         }
 
         function parseRawValue(val) {
@@ -838,7 +837,7 @@
                         } catch(err) { console.error(err); }
                     });
 
-                    localStorage.setItem('simulador_lancamentos_athos_v52', JSON.stringify(lancamentos));
+                    localStorage.setItem('simulador_lancamentos_athos_v53', JSON.stringify(lancamentos));
                     atualizarCustosAutomaticosSemanticamente();
                     triggerToast(`Planilha integrada e categorizada com sucesso! (${count} registros)`, "📥");
                     renderApp(); switchTab('dash');
@@ -1141,7 +1140,7 @@
             if(val <= 0) return;
 
             lancamentos.push({ id: 'man-' + Date.now(), data: d, tipo: selectedType, sala, desc, valor: val });
-            localStorage.setItem('simulador_lancamentos_athos_v52', JSON.stringify(lancamentos));
+            localStorage.setItem('simulador_lancamentos_athos_v53', JSON.stringify(lancamentos));
             document.getElementById('lanc-desc').value = '';
             document.getElementById('lanc-valor').value = '';
             renderApp(); switchTab('dash'); triggerToast("Lançamento salvo com sucesso!", "🟢");
@@ -1149,14 +1148,14 @@
 
         function deleteLancamento(id) {
             lancamentos = lancamentos.filter(i => i.id !== id);
-            localStorage.setItem('simulador_lancamentos_athos_v52', JSON.stringify(lancamentos));
+            localStorage.setItem('simulador_lancamentos_athos_v53', JSON.stringify(lancamentos));
             renderApp(); triggerToast("Registro removido.", "🔴");
         }
 
         function clearData() {
             if(confirm("Deseja apagar todos os dados locais?")) {
                 lancamentos = []; 
-                localStorage.removeItem('simulador_lancamentos_athos_v52');
+                localStorage.removeItem('simulador_lancamentos_athos_v53');
                 renderApp(); triggerToast("Banco limpo.", "🧹");
             }
         }
