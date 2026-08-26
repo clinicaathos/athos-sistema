@@ -50,7 +50,7 @@
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
             <div class="text-center lg:text-left w-full lg:w-auto">
                 <h1 class="text-lg lg:text-xl font-bold tracking-tight">Simulador Financeiro</h1>
-                <p class="text-[11px] text-stone-400 mt-0.5">Gestão Estratégica &bull; Clínica Áthos</p>
+                <p class="text-[11px] text-stone-400 mt-0.5">Gestão Estratégica &bull; Clínica Áthos (Funcionamento até 21h)</p>
             </div>
             <nav class="flex gap-1 bg-slate-950 p-1 rounded-xl w-full lg:w-auto overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap snap-x border border-slate-800">
                 <button onclick="switchTab('dash')" id="btn-dash" class="tab-btn snap-center px-4 py-2.5 text-xs lg:text-sm font-semibold rounded-lg bg-slate-800 text-white shadow-xs cursor-pointer">Dashboard</button>
@@ -134,9 +134,9 @@
             <!-- SIMULADOR POR TURNOS -->
             <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-center gap-4 border border-slate-800">
                 <div class="space-y-1 w-full md:w-auto">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">Simulador por Turnos (Meta de Capex & Despesas)</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">Simulador por Turnos (5h/turno)</span>
                     <h3 class="text-lg font-bold">Quantos turnos alugar para recuperar o investimento?</h3>
-                    <p class="text-xs text-stone-400">Baseado no maior pacote (10h) e na grade comercial configurada.</p>
+                    <p class="text-xs text-stone-400">Baseado no maior pacote (10h) e na grade com fechamento até 21h.</p>
                 </div>
                 
                 <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
@@ -303,7 +303,7 @@
             <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 space-y-4">
                 <div>
                     <h2 class="text-sm font-bold text-slate-700 mb-1">⚙️ Matriz de Uso Próprio da Proprietária (Sala 01 ou Sala 02)</h2>
-                    <p class="text-xs text-slate-400">Segunda a sexta (tarde e noite) e Sábado (somente manhã). Sábado tarde e noite não estão disponíveis.</p>
+                    <p class="text-xs text-slate-400">Selecione em qual sala a proprietária utilizará os turnos. O funcionamento vai até 21h (Pacotes de 5h/turno).</p>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -323,9 +323,33 @@
                     </table>
                 </div>
 
-                <div class="flex flex-col sm:flex-row justify-between items-center bg-slate-100 p-4 rounded-xl gap-3">
-                    <span class="text-xs font-bold text-slate-700">Total de Turnos Comerciais Disponíveis (2 Salas):</span>
-                    <span id="cfg-total-turnos-badge" class="text-lg font-black text-slate-900">84 turnos/mês</span>
+                <!-- PAINEL DETALHADO POR ESPAÇO (SALA 1 vs SALA 2) -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60 flex flex-col justify-between">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sala 01 (Disponibilidade)</span>
+                        <div class="my-2 space-y-0.5">
+                            <span id="cfg-resumo-sala1" class="text-base font-black text-slate-900 block">0 turnos livres</span>
+                            <span id="cfg-dona-sala1" class="text-[11px] text-slate-500 block">Dona: 0 turnos</span>
+                        </div>
+                        <span class="text-[9px] text-slate-400">Total base: 51 turnos/mês</span>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/60 flex flex-col justify-between">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sala 02 (Disponibilidade)</span>
+                        <div class="my-2 space-y-0.5">
+                            <span id="cfg-resumo-sala2" class="text-base font-black text-slate-900 block">0 turnos livres</span>
+                            <span id="cfg-dona-sala2" class="text-[11px] text-slate-500 block">Dona: 0 turnos</span>
+                        </div>
+                        <span class="text-[9px] text-slate-400">Total base: 51 turnos/mês</span>
+                    </div>
+
+                    <div class="p-4 bg-slate-900 text-white rounded-xl shadow-xs flex flex-col justify-between">
+                        <span class="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Total Geral Comercial</span>
+                        <div class="my-2">
+                            <span id="cfg-total-turnos-badge" class="text-xl font-black text-emerald-400 block">0 turnos/mês</span>
+                        </div>
+                        <span class="text-[9px] text-stone-400">Soma das 2 salas livres</span>
+                    </div>
                 </div>
             </div>
 
@@ -378,7 +402,7 @@
                         <div class="flex flex-col gap-1">
                             <label class="text-[10px] font-bold uppercase text-slate-500">Preço Base do Maior Turno (10h)</label>
                             <input type="number" step="0.01" id="cfg-preco" class="h-11 px-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-hidden w-full font-bold text-slate-700" readonly>
-                            <span class="text-[10px] text-slate-400">Derivado do pacote de 10h (&times; 4h por turno).</span>
+                            <span class="text-[10px] text-slate-400">Derivado do pacote de 10h (&times; 5h por turno).</span>
                         </div>
                     </div>
 
@@ -496,7 +520,7 @@
         const turnosDia = [
             { id: 'manha', label: 'Manhã' },
             { id: 'tarde', label: 'Tarde' },
-            { id: 'noite', label: 'Noite' }
+            { id: 'noite', label: 'Noite (Até 21h)' }
         ];
 
         function renderDonaMatrix() {
@@ -507,7 +531,6 @@
                 rowsHtml += `<tr><td class="p-3 text-left font-bold text-slate-700">${t.label}</td>`;
                 diasSemana.forEach((d, dIdx) => {
                     let key = `${dIdx}_${t.id}`;
-                    // Sábado (dIdx === 5) à tarde e noite não existem
                     if (dIdx === 5 && (t.id === 'tarde' || t.id === 'noite')) {
                         rowsHtml += `<td class="p-3 text-center text-slate-300 font-semibold italic text-[11px] bg-slate-50">-</td>`;
                     } else {
@@ -547,7 +570,6 @@
                 rowsHtml += `<tr><td class="p-3 text-left font-bold text-slate-700">${t.label}</td>`;
                 diasSemana.forEach((d, dIdx) => {
                     let key = `${dIdx}_${t.id}`;
-                    // Sábado (dIdx === 5) à tarde e noite não existem
                     if (dIdx === 5 && (t.id === 'tarde' || t.id === 'noite')) {
                         rowsHtml += `<td class="p-3 text-center text-slate-300 font-semibold italic text-[11px] bg-slate-50">-</td>`;
                     } else {
@@ -577,23 +599,41 @@
         }
 
         function calcularTurnosComerciaisDisponiveis() {
-            let turnosTotaisSala1 = 51, turnosTotaisSala2 = 51; // 5 dias * 2 turnos (10) + 1 sabado manha (1) = 11 por semana * ~4.64 ou base 51 total por sala ajustada sem sab tarde/noite
-            // Vamos computar rigorosamente com base nos turnos ativos na matriz da dona
             let totalSlotsSala1 = 0, totalSlotsSala2 = 0;
+            let donaCountSala1 = 0, donaCountSala2 = 0;
+            let baseTotalSala1 = 0, baseTotalSala2 = 0;
+
             turnosDia.forEach(t => {
                 diasSemana.forEach((d, dIdx) => {
                     if (!(dIdx === 5 && (t.id === 'tarde' || t.id === 'noite'))) {
+                        baseTotalSala1++;
+                        baseTotalSala2++;
                         let key = `${dIdx}_${t.id}`;
                         let donaSala = config.donaSlots && config.donaSlots[key] ? config.donaSlots[key] : 'nenhuma';
+                        if (donaSala === 'sala1') donaCountSala1++;
+                        if (donaSala === 'sala2') donaCountSala2++;
+                        
                         if (donaSala !== 'sala1') totalSlotsSala1++;
                         if (donaSala !== 'sala2') totalSlotsSala2++;
                     }
                 });
             });
+
             let totalComercial = totalSlotsSala1 + totalSlotsSala2;
 
+            // Atualizar UI de resumo por sala nas configurações
+            const resSala1 = document.getElementById('cfg-resumo-sala1');
+            const resSala2 = document.getElementById('cfg-resumo-sala2');
+            const donaSala1 = document.getElementById('cfg-dona-sala1');
+            const donaSala2 = document.getElementById('cfg-dona-sala2');
             const badge = document.getElementById('cfg-total-turnos-badge');
+
+            if(resSala1) resSala1.innerText = `${totalSlotsSala1} turnos livres`;
+            if(resSala2) resSala2.innerText = `${totalSlotsSala2} turnos livres`;
+            if(donaSala1) donaSala1.innerText = `Dona: ${donaCountSala1} turnos`;
+            if(donaSala2) donaSala2.innerText = `Dona: ${donaCountSala2} turnos`;
             if(badge) badge.innerText = `${totalComercial} turnos/mês`;
+
             return totalComercial;
         }
 
@@ -874,7 +914,6 @@
             let totalSlots = 0, achievedScore = 0;
             turnosDia.forEach(t => {
                 diasSemana.forEach((d, dIdx) => {
-                    // Ignora sábado tarde e noite
                     if (!(dIdx === 5 && (t.id === 'tarde' || t.id === 'noite'))) {
                         let key = `${dIdx}_${t.id}`;
                         let isDona = false;
@@ -900,7 +939,7 @@
             const metaPayEl = document.getElementById('meta-meses-payback');
             let mesesPayback = metaPayEl ? parseInt(metaPayEl.value) || 12 : 12;
             let fatMeta = ((capex / mesesPayback) + (baseFixo / qtdMeses)) / ((config.preco - config.custoVariavel)/config.preco);
-            let turnosMeta = Math.ceil(fatMeta / (config.preco * 4));
+            let turnosMeta = Math.ceil(fatMeta / (config.preco * 5)); // 5 horas por turno
 
             const fatMetaEl = document.getElementById('kpi-fat-meta');
             const turnosMetaEl = document.getElementById('kpi-turnos-meta');
