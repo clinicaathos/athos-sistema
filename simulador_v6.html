@@ -539,6 +539,7 @@
             atualizarCustosAutomaticosSemanticamente();
             renderPacotesUI();
             renderGridMatrix();
+            atualizarAnosDisponiveisSelect();
             renderApp();
 
             window.addEventListener('message', (event) => {
@@ -546,6 +547,7 @@
                     if (Array.isArray(event.data.dados)) {
                         lancamentos = event.data.dados;
                         localStorage.setItem('simulador_lancamentos_athos_v53', JSON.stringify(lancamentos));
+                        atualizarAnosDisponiveisSelect();
                         renderApp();
                     }
                 }
@@ -556,6 +558,28 @@
                 if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) menu.classList.add('hidden');
             });
         });
+
+        function atualizarAnosDisponiveisSelect(anoAlvoSugerido = null) {
+            const selectAno = document.getElementById('dash-filtro-ano');
+            if(!selectAno) return;
+            
+            let anosSet = new Set(['2025', '2026', '2027', '2028', '2029', '2030']);
+            lancamentos.forEach(item => {
+                if(item.data && item.data.length >= 4) {
+                    let a = item.data.substring(0,4);
+                    if(/^\d{4}$/.test(a)) anosSet.add(a);
+                }
+            });
+
+            let anosOrdenados = Array.from(anosSet).sort();
+            let valorAtual = anoAlvoSugerido || selectAno.value || '2026';
+
+            let html = '';
+            anosOrdenados.forEach(a => {
+                html += `<option value="${a}" ${a === valorAtual ? 'selected' : ''}>${a}</option>`;
+            });
+            selectAno.innerHTML = html;
+        }
 
         function calcularTotalUsoProprioGrid() {
             let total = 0;
@@ -782,6 +806,7 @@
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array', cellDates: true });
                     let count = 0;
+                    let ultimoAnoEncontrado = null;
 
                     workbook.SheetNames.forEach(sheetName => {
                         try {
@@ -804,12 +829,13 @@
 
                             if (isRec) {
                                 normalizedRows.forEach(r => {
-                                    // IGNORAR SE O STATUS FOR "PENDENTE" OU "ABERTO"
                                     let status = (r['status'] || '').toString().trim().toLowerCase();
                                     if (status.includes('pendente') || status.includes('aberto') || status.includes('aguardando')) return;
 
                                     let rawId = (r['id'] || '').toString().trim() || ('rec-' + Date.now() + '-' + Math.random());
                                     let dt = normalizeDate(r['vencimento'] || r['data']);
+                                    if(dt && dt.length >= 4) ultimoAnoEncontrado = dt.substring(0,4);
+
                                     let prof = r['profissional'] || 'Receita Avulsa';
                                     let obs = r['observacao'] || r['obs'] || '';
                                     let val = parseRawValue(r['valorfinal'] !== undefined && r['valorfinal'] !== "" ? r['valorfinal'] : r['valor']);
@@ -824,6 +850,8 @@
                                 normalizedRows.forEach(r => {
                                     let rawId = (r['id'] || '').toString().trim() || ('desp-' + Date.now() + '-' + Math.random());
                                     let dt = normalizeDate(r['vencimento'] || r['data']);
+                                    if(dt && dt.length >= 4) ultimoAnoEncontrado = dt.substring(0,4);
+
                                     let desc = r['descricao'] || r['desc'] || 'Despesa';
                                     let val = parseRawValue(r['valor']);
                                     if(val === 0) return;
@@ -843,7 +871,8 @@
 
                     localStorage.setItem('simulador_lancamentos_athos_v53', JSON.stringify(lancamentos));
                     atualizarCustosAutomaticosSemanticamente();
-                    triggerToast(`Planilha integrada e categorizada com sucesso! (${count} registros)`, "📥");
+                    atualizarAnosDisponiveisSelect(ultimoAnoEncontrado);
+                    triggerToast(`Planilha integrada com sucesso! (${count} registros)`, "📥");
                     renderApp(); switchTab('dash');
                 } catch(err) { alert("Erro ao processar arquivo Excel."); }
             };
@@ -1173,6 +1202,7 @@
 
             lancamentos.push({ id: 'man-' + Date.now(), data: d, tipo: selectedType, sala, desc, valor: val });
             localStorage.setItem('simulador_lancamentos_athos_v53', JSON.stringify(lancamentos));
+            atualizarAnosDisponiveisSelect(d.substring(0,4));
             document.getElementById('lanc-desc').value = '';
             document.getElementById('lanc-valor').value = '';
             renderApp(); switchTab('dash'); triggerToast("Lançamento salvo com sucesso!", "🟢");
@@ -1181,6 +1211,7 @@
         function deleteLancamento(id) {
             lancamentos = lancamentos.filter(i => i.id !== id);
             localStorage.setItem('simulador_lancamentos_athos_v53', JSON.stringify(lancamentos));
+            atualizarAnosDisponiveisSelect();
             renderApp(); triggerToast("Registro removido.", "🔴");
         }
 
@@ -1188,6 +1219,7 @@
             if(confirm("Deseja apagar todos os dados locais?")) {
                 lancamentos = []; 
                 localStorage.removeItem('simulador_lancamentos_athos_v53');
+                atualizarAnosDisponiveisSelect();
                 renderApp(); triggerToast("Banco limpo.", "🧹");
             }
         }
