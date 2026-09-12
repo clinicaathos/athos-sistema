@@ -649,6 +649,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="nav-item" onclick="showPage('financeiro',this)"><span class="nav-icon">⊟</span>Financeiro</div>
       <div class="nav-item" onclick="showPage('relatorios',this)"><span class="nav-icon">◈</span>Relatórios</div>
       <div class="nav-item" onclick="showPage('lembretes',this)"><span class="nav-icon">◷</span>Lembretes</div>
+      <div class="nav-item" onclick="showPage('anotacoes',this)"><span class="nav-icon">📝</span>Anotações</div>
       <div class="nav-item" onclick="showPage('servicos',this)"><span class="nav-icon">⊗</span>Serviços</div>
       <div class="nav-item" onclick="showPage('levantamento',this)"><span class="nav-icon">◐</span>Levantamento Financeiro</div>
       <div class="sb-group">Sistema</div>
@@ -904,6 +905,14 @@ body.dark .tag{background:#111827;border-color:#374151;}
             </button>
           </div>
         </div>
+        <!-- ITEM 5: Resumo Geral (acumulado) — discreto, fixo no topo -->
+        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;background:#f9fafb;border:1px solid var(--border);border-radius:10px;padding:.65rem 1rem;margin-bottom:.85rem">
+          <span style="font-size:.7rem;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em">Resumo Geral (acumulado)</span>
+          <span style="font-size:.82rem;color:var(--text-light)">Receitas: <strong style="color:var(--success)" id="fin-geral-receita">—</strong></span>
+          <span style="font-size:.82rem;color:var(--text-light)">Despesas: <strong style="color:var(--danger)" id="fin-geral-despesa">—</strong></span>
+          <span style="font-size:.82rem;color:var(--text-light)">Saldo Final: <strong id="fin-geral-saldo">—</strong></span>
+        </div>
+        <div style="font-size:.7rem;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem" id="fin-mes-resumo-label">Resumo do Mês</div>
         <div class="fin-stats">
           <div class="fin-card"><div class="fin-label">Receita Total</div><div class="fin-value" style="color:var(--success)" id="fin-receita-total">—</div><div class="fin-sub" id="fin-receita-sub">—</div></div>
           <div class="fin-card"><div class="fin-label">Despesas</div><div class="fin-value" style="color:var(--danger)" id="fin-despesas-total">—</div><div class="fin-sub">fixos + variáveis + eventuais</div></div>
@@ -1221,6 +1230,31 @@ body.dark .tag{background:#111827;border-color:#374151;}
         </div>
       </div>
 
+      <!-- ══ ANOTAÇÕES (item 4) ══ -->
+      <div class="page" id="page-anotacoes">
+        <div class="sec-header">
+          <span class="sec-title">Anotações</span>
+          <div style="display:flex;gap:.5rem">
+            <button class="btn btn-primary" onclick="openModal('nova-anotacao')">
+              <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Nova Anotação
+            </button>
+          </div>
+        </div>
+        <div style="font-size:.82rem;color:var(--text-light);margin-bottom:1rem">Bloco de notas para informações relevantes que não são necessariamente lembretes — mimos, ideias, projetos, observações.</div>
+        <!-- Filtros -->
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+          <input class="form-input" id="anot-filtro-busca" placeholder="Buscar no texto" style="max-width:220px" oninput="loadAnotacoes()">
+          <select class="form-select" id="anot-filtro-status" style="max-width:150px" onchange="loadAnotacoes()">
+            <option value="">Todos os status</option>
+            <option>Pendente</option><option>Concluído</option>
+          </select>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;margin-top:.5rem">
+          <div class="data-table fin-table-desktop" id="anot-table"></div>
+          <div class="fin-cards-mobile" id="anot-cards-mobile"></div>
+        </div>
+      </div>
+
       <!-- ══ SERVIÇOS ══ -->
       <div class="page" id="page-servicos">
         <div class="sec-header">
@@ -1403,7 +1437,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
     <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="loc-prof" onchange="toggleSaldoPacote()"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
       <div class="form-group" id="loc-sala-group"><label class="form-label">Sala</label><select class="form-select" id="loc-sala" onchange="calcDescontoLocacao()"><option value="1" id="loc-s1-opt">Sala 1</option><option value="2" id="loc-s2-opt">Sala 2</option></select></div>
-      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option>Pacote de 5 Horas</option><option>Pacote de 10 Horas</option><option>Hora Avulsa</option></select></div>
+      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista();toggleQtdAvulsa()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option>Pacote de 5 Horas</option><option>Pacote de 10 Horas</option><option>Hora Avulsa</option></select></div>
     </div>
     <div class="form-group" id="loc-saldo-pacote-group" style="display:none">
       <div style="background:#f3f4f6;border-radius:8px;padding:.6rem .75rem;font-size:.78rem;color:var(--text-light)" id="loc-saldo-pacote-info">—</div>
@@ -1422,8 +1456,18 @@ body.dark .tag{background:#111827;border-color:#374151;}
       </div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Hora Início</label><select class="form-select" id="loc-inicio"><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:30</option><option>18:00</option><option>19:00</option><option>20:00</option><option>21:00</option><option>21:30</option></select></div>
+      <div class="form-group"><label class="form-label">Hora Início</label><select class="form-select" id="loc-inicio" onchange="atualizarResumoQtdAvulsa()"><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:30</option><option>18:00</option><option>19:00</option><option>20:00</option><option>21:00</option><option>21:30</option></select></div>
       <div class="form-group"><label class="form-label">Hora Fim</label><select class="form-select" id="loc-fim"><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>17:30</option><option>19:00</option><option>20:00</option><option>21:00</option><option>21:30</option><option>22:00</option></select></div>
+    </div>
+    <div class="form-row" id="loc-qtd-avulsa-wrap" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Quantidade de horas</label>
+        <input class="form-input" type="number" min="1" max="12" id="loc-qtd-horas" placeholder="Ex: 4" value="1" oninput="atualizarResumoQtdAvulsa()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">&nbsp;</label>
+        <div id="loc-qtd-resumo" style="font-size:.74rem;color:var(--text-lighter);padding-top:.4rem;line-height:1.4"></div>
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Data Início</label><input class="form-input" type="date" id="loc-data-inicio" onchange="toggleDiasSemana()"></div>
@@ -1521,14 +1565,26 @@ body.dark .tag{background:#111827;border-color:#374151;}
     </div>
     <div style="font-size:.78rem;font-weight:600;color:var(--text-light);margin:.75rem 0 .5rem;text-transform:uppercase;letter-spacing:.05em">Endereço</div>
     <div class="form-row">
+      <div class="form-group" style="max-width:200px">
+        <label class="form-label">CEP</label>
+        <div style="display:flex;gap:6px;align-items:flex-start">
+          <input class="form-input" id="prof-cep" placeholder="00000-000" maxlength="9" oninput="mascaraCepInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarCepProfissional();}">
+          <button type="button" onclick="buscarCepProfissional()" title="Buscar endereço pelo CEP" style="flex-shrink:0;width:38px;height:38px;border-radius:8px;border:1px solid var(--border);background:#f9fafb;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-light)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+        </div>
+        <div id="prof-cep-msg" style="font-size:.7rem;margin-top:3px"></div>
+      </div>
+    </div>
+    <div class="form-row">
       <div class="form-group"><label class="form-label">Rua / Av.</label><input class="form-input" id="prof-rua" placeholder="Ex: Rua das Flores"></div>
       <div class="form-group"><label class="form-label">Número</label><input class="form-input" id="prof-numero" placeholder="123"></div>
     </div>
     <div class="form-row">
+      <div class="form-group"><label class="form-label">Complemento <span style="font-weight:400;color:var(--text-lighter);text-transform:none">(opcional)</span></label><input class="form-input" id="prof-complemento" placeholder="Apto, bloco, sala, casa..."></div>
       <div class="form-group"><label class="form-label">Bairro</label><input class="form-input" id="prof-bairro" placeholder="Bairro"></div>
+    </div>
+    <div class="form-row">
       <div class="form-group"><label class="form-label">Cidade / UF</label><input class="form-input" id="prof-cidade" placeholder="São Paulo / SP"></div>
     </div>
-    <div class="form-group"><label class="form-label">CEP</label><input class="form-input" id="prof-cep" placeholder="00000-000" style="width:140px"></div>
     <div style="font-size:.78rem;font-weight:600;color:var(--text-light);margin:.75rem 0 .5rem;text-transform:uppercase;letter-spacing:.05em">Contrato</div>
     <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="prof-vinculo" onchange="updateVinculoAuto()"><option>Hora Avulsa</option><option>Pacote de Horas</option><option>Turno Fixo</option></select></div>
     <div class="form-row">
@@ -1651,6 +1707,24 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <button class="btn btn-primary" style="flex:1" onclick="salvarLembrete()">Salvar</button>
       <button class="btn btn-secondary" id="lembrete-excluir-btn" style="display:none;color:var(--danger)" onclick="excluirLembrete()">Excluir</button>
       <button class="btn btn-secondary" onclick="closeModal('novo-lembrete')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nova Anotação (item 4) -->
+<div class="modal-overlay" id="modal-nova-anotacao" onclick="closeModalBg(event,'nova-anotacao')">
+  <div class="modal modal-sm">
+    <div class="modal-title" id="anot-modal-title">Nova Anotação</div>
+    <input type="hidden" id="anot-edit-id">
+    <div class="form-group"><label class="form-label">Texto</label><textarea class="form-input" id="anot-texto" rows="4" style="resize:vertical" placeholder="Escreva a informação a ser guardada..."></textarea></div>
+    <div class="form-group"><label class="form-label">Data do projeto/conclusão <span style="font-weight:400;color:var(--text-lighter)">(opcional)</span></label><input class="form-input" type="date" id="anot-data"></div>
+    <div class="form-group"><label class="form-label">Status</label>
+      <select class="form-select" id="anot-status"><option>Pendente</option><option>Concluído</option></select>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem">
+      <button class="btn btn-primary" style="flex:1" onclick="salvarAnotacao()">Salvar</button>
+      <button class="btn btn-secondary" id="anot-excluir-btn" style="display:none;color:var(--danger)" onclick="excluirAnotacao()">Excluir</button>
+      <button class="btn btn-secondary" onclick="closeModal('nova-anotacao')">Cancelar</button>
     </div>
   </div>
 </div>
@@ -2195,6 +2269,44 @@ function updateProfSelect() {
     profissionaisCache.map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
 }
 
+// ── ITEM 1.1: Busca automática de endereço pelo CEP (cadastro profissional) ──
+function mascaraCepInput(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,8);
+  if(v.length > 5) v = v.slice(0,5)+'-'+v.slice(5);
+  el.value = v;
+}
+async function buscarCepProfissional() {
+  const cepEl = document.getElementById('prof-cep');
+  const msgEl = document.getElementById('prof-cep-msg');
+  const cep = (cepEl.value||'').replace(/\D/g,'');
+  if(msgEl) { msgEl.textContent=''; msgEl.style.color=''; }
+  if(cep.length !== 8) {
+    if(msgEl) { msgEl.textContent='CEP inválido. Digite os 8 números do CEP.'; msgEl.style.color='var(--danger)'; }
+    return;
+  }
+  if(msgEl) { msgEl.textContent='Buscando endereço...'; msgEl.style.color='var(--text-lighter)'; }
+  try {
+    const resp = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const data = await resp.json();
+    if(data.erro) {
+      if(msgEl) { msgEl.textContent='CEP não encontrado. Verifique e tente novamente.'; msgEl.style.color='var(--danger)'; }
+      return;
+    }
+    const ruaEl = document.getElementById('prof-rua');
+    if(ruaEl) ruaEl.value = data.logradouro || ruaEl.value;
+    const bairroEl = document.getElementById('prof-bairro');
+    if(bairroEl && data.bairro) bairroEl.value = data.bairro;
+    const cidadeEl = document.getElementById('prof-cidade');
+    if(cidadeEl && data.localidade) cidadeEl.value = data.uf ? `${data.localidade} / ${data.uf}` : data.localidade;
+    if(msgEl) { msgEl.textContent='Endereço preenchido automaticamente.'; msgEl.style.color='var(--success)'; }
+    const numEl = document.getElementById('prof-numero');
+    if(numEl) numEl.focus();
+  } catch(e) {
+    if(msgEl) { msgEl.textContent='Não foi possível consultar o CEP agora. Preencha manualmente.'; msgEl.style.color='var(--danger)'; }
+    console.error('Erro ao buscar CEP:', e);
+  }
+}
+
 function updateVinculoAuto() {
   const v = document.getElementById('prof-vinculo').value;
   const f = document.getElementById('prof-vinculo-formal');
@@ -2232,6 +2344,7 @@ function copiarDadosProfissional() {
     { label: 'E-mail', val: v('prof-email') },
     { label: 'Rua/Av.', val: v('prof-rua') },
     { label: 'Número', val: v('prof-numero') },
+    { label: 'Complemento', val: v('prof-complemento') },
     { label: 'Bairro', val: v('prof-bairro') },
     { label: 'Cidade/UF', val: v('prof-cidade') },
     { label: 'CEP', val: v('prof-cep') }
@@ -2255,7 +2368,7 @@ const PROF_CAMPOS_LABEL = {
   conselho:'Conselho', registro:'Nº de registro', especialidade:'Especialidade',
   abordagem:'Abordagem', publicoAlvo:'Público-alvo', valorSessao:'Valor de sessão',
   nascimento:'Data de nascimento', telefone:'Telefone', email:'E-mail',
-  rua:'Rua/Av.', numero:'Número', bairro:'Bairro', cidade:'Cidade/UF', cep:'CEP',
+  rua:'Rua/Av.', numero:'Número', complemento:'Complemento', bairro:'Bairro', cidade:'Cidade/UF', cep:'CEP',
   vinculo:'Vínculo', status:'Status', vinculoFormal:'Vínculo formal',
   contratoInicio:'Contrato início', contratoFim:'Contrato fim', obs:'Observações',
   vencLocacao:'Vencimento da locação'
@@ -2285,6 +2398,7 @@ async function salvarProfissional() {
     email: document.getElementById('prof-email').value,
     rua: document.getElementById('prof-rua').value,
     numero: document.getElementById('prof-numero').value,
+    complemento: document.getElementById('prof-complemento')?.value || '',
     bairro: document.getElementById('prof-bairro').value,
     cidade: document.getElementById('prof-cidade').value,
     cep: document.getElementById('prof-cep').value,
@@ -2353,7 +2467,7 @@ function verProfissional(id) {
       ${p.valorSessao?`<div style="background:#f9fafb;border-radius:7px;padding:.7rem;border:1px solid var(--border)"><div style="font-size:.72rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Valor da Sessão</div><div style="font-size:.82rem;font-weight:500">R$ ${p.valorSessao}</div></div>`:''}
       ${p.renovacoes?`<div style="background:#f9fafb;border-radius:7px;padding:.7rem;border:1px solid var(--border)"><div style="font-size:.72rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Renovações</div><div style="font-size:.82rem;font-weight:500">${p.renovacoes}ª renovação</div></div>`:''}
     </div>
-    ${p.rua?`<div style="background:#f9fafb;border-radius:7px;padding:.7rem;border:1px solid var(--border);margin-bottom:1rem"><div style="font-size:.72rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Endereço</div><div style="font-size:.82rem">${p.rua}, ${p.numero||''} — ${p.bairro||''} — ${p.cidade||''} · CEP ${p.cep||''}</div></div>`:''}
+    ${p.rua?`<div style="background:#f9fafb;border-radius:7px;padding:.7rem;border:1px solid var(--border);margin-bottom:1rem"><div style="font-size:.72rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Endereço</div><div style="font-size:.82rem">${p.rua}, ${p.numero||''}${p.complemento?' — '+p.complemento:''} — ${p.bairro||''} — ${p.cidade||''} · CEP ${p.cep||''}</div></div>`:''}
     ${p.obs?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:.7rem;margin-bottom:1rem;font-size:.82rem"><strong>Observações:</strong> ${p.obs}</div>`:''}
     <div class="modal-actions">
       <button class="btn btn-danger" onclick="excluirProfissional('${id}')">Excluir</button>
@@ -2465,6 +2579,8 @@ function editarProfissional(id) {
   document.getElementById('prof-email').value = p.email||'';
   document.getElementById('prof-rua').value = p.rua||'';
   document.getElementById('prof-numero').value = p.numero||'';
+  if(document.getElementById('prof-complemento')) document.getElementById('prof-complemento').value = p.complemento||'';
+  if(document.getElementById('prof-cep-msg')) document.getElementById('prof-cep-msg').textContent = '';
   document.getElementById('prof-bairro').value = p.bairro||'';
   document.getElementById('prof-cidade').value = p.cidade||'';
   document.getElementById('prof-cep').value = p.cep||'';
@@ -2693,13 +2809,15 @@ function loadDashboard() {
       if(s.includes('ii') || s.includes('2') || s === s2.toLowerCase()) return 's2';
       return 's1';
     }
-    let miniItems = [];
+    let itensS1 = [], itensS2 = [];
     hoje_loc.sort((a,b)=>(a.inicio||'').localeCompare(b.inicio||'')).forEach(l=>{
       const sala = getSalaKey(l.sala);
-      const salaLabel = sala==='s1' ? s1 : s2;
       const prof = profissionaisCache.find(p=>p.id===l.profId)?.nome || l.profId || '?';
       const horario = l.inicio && l.fim ? `${l.inicio}–${l.fim}` : (l.inicio || '—');
-      miniItems.push(`<div class="mini-item"><span class="mini-time" style="width:auto;min-width:78px">${horario}</span><span class="mini-room">${salaLabel}</span><span class="mini-name">${prof}</span></div>`);
+      const item = `<div class="mini-item"><span class="mini-time" style="width:auto;min-width:78px">${horario}</span><span class="mini-name">${prof}</span></div>`;
+      if(sala==='s2') itensS2.push(item); else itensS1.push(item);
+      // Sala Mista ocupa as duas colunas simultaneamente
+      if(l.sala==='mista') { if(sala==='s1') itensS2.push(item); else itensS1.push(item); }
     });
     const ocupados = Math.min(hoje_loc.length, 6);
     // (removidas referências a #dash-turnos/#dash-turnos-sub — esses elementos
@@ -2707,7 +2825,24 @@ function loadDashboard() {
     // interrompia a execução, impedindo o card "Hoje" de carregar a agenda)
     const badgeEl = document.getElementById('dash-hoje-count');
     if(badgeEl) badgeEl.textContent=`${ocupados} turno${ocupados!==1?'s':''}`;
-    document.getElementById('dash-hoje-list').innerHTML=miniItems.length?miniItems.join(''):emptyState('calendar','Nenhuma locação hoje','As duas salas estão livres.','Nova locação',"openModal('nova-locacao')");
+    // ITEM 6: agenda do dia separada em colunas por sala, para facilitar
+    // visualizar ocupação simultânea (antes era uma lista única cronológica
+    // misturando as duas salas).
+    if(!hoje_loc.length) {
+      document.getElementById('dash-hoje-list').innerHTML = emptyState('calendar','Nenhuma locação hoje','As duas salas estão livres.','Nova locação',"openModal('nova-locacao')");
+    } else {
+      document.getElementById('dash-hoje-list').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+          <div>
+            <div style="font-size:.72rem;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">${s1}</div>
+            ${itensS1.length ? itensS1.join('') : '<div style="font-size:.76rem;color:var(--text-lighter);padding:.4rem 0">Livre</div>'}
+          </div>
+          <div style="border-left:1px solid var(--border);padding-left:.5rem">
+            <div style="font-size:.72rem;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">${s2}</div>
+            ${itensS2.length ? itensS2.join('') : '<div style="font-size:.76rem;color:var(--text-lighter);padding:.4rem 0">Livre</div>'}
+          </div>
+        </div>`;
+    }
 
     // Barras de ocupação — conta locações ativas para cada dia da semana atual
     // usando a mesma lógica de recorrência global (locAtivaEmDia), incluindo diasSemana e exceções
@@ -3325,18 +3460,39 @@ async function loadFinanceiro() {
   try {
     const hoje2 = toDateStrLocal(new Date());
 
-    // Resumo do topo: buscar TODOS os pagos (sem filtro de mês)
+    // Resumo geral (acumulado): buscar TODOS os pagos, sem filtro de mês
     const [recTodosSnap, despTodosSnap] = await Promise.all([
       db.collection('receitas').where('status','==','Pago').get(),
       db.collection('despesas').where('status','==','Pago').get()
     ]);
-    const totalRecPago = recTodosSnap.docs.reduce((s,d)=>s+(parseMoney(d.data().valor)||0),0);
-    const totalDespPago = despTodosSnap.docs.reduce((s,d)=>s+(parseMoney(d.data().valor)||0),0);
+    const totalRecGeral = recTodosSnap.docs.reduce((s,d)=>s+(parseMoney(d.data().valor)||0),0);
+    const totalDespGeral = despTodosSnap.docs.reduce((s,d)=>s+(parseMoney(d.data().valor)||0),0);
+    const saldoGeral = totalRecGeral - totalDespGeral;
+    document.getElementById('fin-geral-receita').textContent = formatMoney(totalRecGeral);
+    document.getElementById('fin-geral-despesa').textContent = formatMoney(totalDespGeral);
+    document.getElementById('fin-geral-saldo').textContent = formatMoney(saldoGeral);
+    document.getElementById('fin-geral-saldo').style.color = saldoGeral>=0?'var(--success)':'var(--danger)';
+
+    // Resumo do mês: mesmos lançamentos pagos, mas filtrados pela data da baixa
+    // (item 3.5 — usar a data efetiva da baixa, não o vencimento, para o recorte mensal)
+    function _dataMovResumo(d) {
+      if(d.dataBaixa) return d.dataBaixa;
+      if(d.updatedAt && typeof d.updatedAt.toDate === 'function') return toDateStrLocal(d.updatedAt.toDate());
+      return d.vencimento||'';
+    }
+    const mesRef = String(hoje.getMonth()+1).padStart(2,'0');
+    const anoRef = String(hoje.getFullYear());
+    const prefixoMes = `${anoRef}-${mesRef}`;
+    const recMes = recTodosSnap.docs.filter(d=>_dataMovResumo(d.data()).startsWith(prefixoMes));
+    const despMes = despTodosSnap.docs.filter(d=>_dataMovResumo(d.data()).startsWith(prefixoMes));
+    const totalRecPago = recMes.reduce((s,d)=>s+(parseMoney(d.data().valor)||0),0);
+    const totalDespPago = despMes.reduce((s,d)=>s+(parseMoney(d.data().valor)||0),0);
     const saldo = totalRecPago - totalDespPago;
+    document.getElementById('fin-mes-resumo-label').textContent = `Resumo do Mês — ${meses[hoje.getMonth()]}`;
     document.getElementById('fin-receita-total').textContent = formatMoney(totalRecPago);
     document.getElementById('fin-despesas-total').textContent = formatMoney(totalDespPago);
     document.getElementById('fin-saldo').textContent = formatMoney(saldo);
-    document.getElementById('fin-saldo-sub').textContent = (saldo>=0?'resultado positivo':'resultado negativo')+' (somente pagos)';
+    document.getElementById('fin-saldo-sub').textContent = (saldo>=0?'resultado positivo':'resultado negativo')+' (somente pagos, mês atual)';
     document.getElementById('fin-saldo').style.color = saldo>=0?'var(--success)':'var(--danger)';
     updateStickySummary(totalRecPago, totalDespPago);
 
@@ -3611,11 +3767,47 @@ async function renderPrevisao() {
   }
 }
 
+// ── ITEM 3: Data da baixa — pede a data real de pagamento/recebimento em vez de
+// assumir sempre a data de hoje. Usado sempre que o status passa de Pendente
+// para Pago; ao reverter (Pago → Pendente) o dataBaixa é limpo imediatamente,
+// sem precisar de confirmação de data.
+function pedirDataBaixa(id, colecao, desc, valor, vencimento) {
+  window._baixaPendente = { id, colecao };
+  const infoEl = document.getElementById('fin-baixa-info');
+  if(infoEl) infoEl.innerHTML = `<strong>${desc||(colecao==='receitas'?'Receita':'Despesa')}</strong>${valor?' — '+valor:''}${vencimento?` · vencimento ${formatDate(vencimento)}`:''}`;
+  const dataEl = document.getElementById('fin-baixa-data-input');
+  if(dataEl) dataEl.value = toDateStrLocal(new Date());
+  openModal('fin-baixa-data');
+}
+async function confirmarDataBaixa() {
+  const p = window._baixaPendente;
+  if(!p) { closeModal('fin-baixa-data'); return; }
+  const dataEl = document.getElementById('fin-baixa-data-input');
+  const dataBaixa = dataEl?.value || toDateStrLocal(new Date());
+  try {
+    await db.collection(p.colecao).doc(p.id).update({
+      status: 'Pago',
+      dataBaixa,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('Baixa registrada!', 'success');
+    closeModal('fin-baixa-data');
+    window._baixaPendente = null;
+    loadFinanceiro();
+    loadDashboard();
+    if(document.getElementById('fin-mov')?.classList.contains('active')) loadMovimentacao();
+  } catch(e) { showToast('Erro ao dar baixa.', 'error'); console.error(e); }
+}
+
 async function toggleStatusRec(el,id) {
   const novoStatus=el.textContent.trim()==='Pago'?'Pendente':'Pago';
+  if(novoStatus==='Pago') {
+    const r = receitasCache?.find(x=>x.id===id);
+    pedirDataBaixa(id, 'receitas', r?.profissional||r?.descricao, r?formatMoney(parseMoney(r.valorFinal??r.valor)||0):'', r?.vencimento);
+    return;
+  }
   try {
-    const payload={status:novoStatus, updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
-    payload.dataBaixa = novoStatus==='Pago' ? toDateStrLocal(new Date()) : null;
+    const payload={status:novoStatus, dataBaixa:null, updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
     await db.collection('receitas').doc(id).update(payload);
     el.textContent=novoStatus;
     el.className=`badge ${novoStatus==='Pago'?'badge-success':'badge-warning'} status-click`;
@@ -3628,9 +3820,13 @@ async function toggleStatusRec(el,id) {
 
 async function toggleStatusDesp(el,id) {
   const novoStatus=el.textContent.trim()==='Pago'?'Pendente':'Pago';
+  if(novoStatus==='Pago') {
+    const d = despesasCache?.find(x=>x.id===id);
+    pedirDataBaixa(id, 'despesas', d?.descricao, d?formatMoney(parseMoney(d.valor)||0):'', d?.vencimento);
+    return;
+  }
   try {
-    const payload={status:novoStatus, updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
-    payload.dataBaixa = novoStatus==='Pago' ? toDateStrLocal(new Date()) : null;
+    const payload={status:novoStatus, dataBaixa:null, updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
     await db.collection('despesas').doc(id).update(payload);
     el.textContent=novoStatus;
     el.className=`badge ${novoStatus==='Pago'?'badge-success':'badge-warning'} status-click`;
@@ -4085,6 +4281,12 @@ function editarLocacao(id, dataClicada) {
     const vincSel=document.getElementById('loc-vinculo');
     if(vincSel) vincSel.value=l.vinculo||'Turno Fixo (4h)';
     toggleSalaMista();
+    // Ao editar uma locação já existente, o campo de quantidade não se aplica —
+    // ele só serve para gerar VÁRIAS locações novas de uma vez (item 7.1).
+    const qtdWrap = document.getElementById('loc-qtd-avulsa-wrap');
+    if(qtdWrap) qtdWrap.style.display = 'none';
+    const qtdInput = document.getElementById('loc-qtd-horas');
+    if(qtdInput) qtdInput.value = '1';
     const iniSel=document.getElementById('loc-inicio');
     if(iniSel) iniSel.value=l.inicio||'08:00';
     const fimSel=document.getElementById('loc-fim');
@@ -4429,11 +4631,34 @@ async function salvarLocacao() {
     if(bloqueado) { showToast('Um dos turnos selecionados está bloqueado nesta data. Remova o bloqueio antes de locar.','error'); return; }
   } catch(e){/* se falhar verificação, continua */}
 
+  // ITEM 7.1: Hora Avulsa por quantidade — gera N locações de 1h sequenciais
+  // a partir da Hora Início, em vez de exigir uma inserção manual por hora.
+  const qtdAvulsa = (!editId && vinculo === 'Hora Avulsa') ? (parseInt(document.getElementById('loc-qtd-horas')?.value) || 1) : 1;
+
   try {
     let locacaoId = editId;
     if(editId) {
       await db.collection('locacoes').doc(editId).update(data);
       showToast('Locação atualizada!','success');
+    } else if(qtdAvulsa > 1) {
+      // Recarrega as locações existentes para checar conflito slot a slot
+      // (a checagem geral acima usou o intervalo selecionado, mas aqui cada
+      // hora vira um registro independente e precisa ser validada individualmente).
+      const snapTodas = await db.collection('locacoes').get();
+      const todasAtuais = snapTodas.docs.map(d=>({id:d.id,...d.data()}));
+      const iniMin = _horaParaMin(data.inicio);
+      const geradas = [];
+      for(let i=0;i<qtdAvulsa;i++) {
+        const slot = {...data, inicio: _minParaHora(iniMin+i*60), fim: _minParaHora(iniMin+(i+1)*60)};
+        const conflitoSlot = verificarConflito(slot, [...todasAtuais, ...geradas]);
+        if(conflitoSlot) { showToast(`Conflito no horário ${slot.inicio}–${slot.fim}: ${conflitoSlot}`, 'error'); return; }
+        geradas.push(slot);
+      }
+      for(const slot of geradas) {
+        const ref = await db.collection('locacoes').add({...slot, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+        await gerarLancamentoLocacao({...slot, id: ref.id});
+      }
+      showToast(`${qtdAvulsa} locações de Hora Avulsa criadas (${geradas[0].inicio}–${geradas[geradas.length-1].fim})!`, 'success');
     } else {
       data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
       const ref = await db.collection('locacoes').add(data);
@@ -5413,7 +5638,7 @@ function closeMobileSidebar() {
 }
 
 // ══ NAV ══
-const pageTitles={dashboard:'Dashboard',agenda:'Agenda',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',servicos:'Serviços',configuracoes:'Configurações',turnos:'Turnos',levantamento:'Levantamento Financeiro',analise:'Análise de Negócio'};
+const pageTitles={dashboard:'Dashboard',agenda:'Agenda',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',anotacoes:'Anotações',servicos:'Serviços',configuracoes:'Configurações',turnos:'Turnos',levantamento:'Levantamento Financeiro',analise:'Análise de Negócio'};
 
 function showPage(n,el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -5423,6 +5648,7 @@ function showPage(n,el) {
   document.getElementById('page-title').textContent=pageTitles[n]||n;
   closeMobileSidebar();
   if(n==='lembretes') loadLembretes();
+  if(n==='anotacoes') loadAnotacoes();
   if(n==='servicos') loadServicos();
   if(n==='turnos') loadDashCapacidade('turnos-capacidade-list','turnos-cap-mes-label');
   if(n==='levantamento') LevSim.init();
@@ -5446,6 +5672,7 @@ function openModal(id) {
       for(let i=0;i<=6;i++){const cb=document.getElementById(`loc-dia-${i}`);if(cb)cb.checked=false;}
       const recSel=document.getElementById('loc-recorrencia');
       if(recSel){recSel.value='Apenas este horário';toggleDiasSemana();}
+      toggleQtdAvulsa();
     }
   }
   if(id==='novo-plano'){
@@ -5457,6 +5684,16 @@ function openModal(id) {
       // Só reseta se for novo cadastro (editarProfissional seta o id antes de openModal)
       document.getElementById('prof-modal-title').textContent='Novo Profissional';
       document.getElementById('prof-vinculo-formal').value='Sem vínculo';
+    }
+  }
+  if(id==='nova-anotacao'){
+    const anotEditId = document.getElementById('anot-edit-id');
+    if(anotEditId && !anotEditId.value) {
+      document.getElementById('anot-modal-title').textContent='Nova Anotação';
+      document.getElementById('anot-texto').value='';
+      document.getElementById('anot-data').value='';
+      document.getElementById('anot-status').value='Pendente';
+      document.getElementById('anot-excluir-btn').style.display='none';
     }
   }
   if(id==='nova-despesa'){
@@ -5535,6 +5772,10 @@ function closeModal(id){
   }
   if(id==='novo-lembrete'){
     const el=document.getElementById('lembrete-edit-id');
+    if(el) el.value='';
+  }
+  if(id==='nova-anotacao'){
+    const el=document.getElementById('anot-edit-id');
     if(el) el.value='';
   }
   if(id==='novo-servico'){
@@ -5769,6 +6010,32 @@ function toggleSalaMista() {
   if(!grupo) return;
   const isMista = vinculo === 'Turno 8h — Sala Mista';
   grupo.style.display = isMista ? 'none' : '';
+}
+
+// ── ITEM 7.1: Horas avulsas por quantidade ──
+// Ao selecionar Hora Avulsa, exibe um campo de quantidade que, quando maior
+// que 1, gera automaticamente N locações sequenciais de 1h a partir da Hora
+// Início, somando a quantidade informada — em vez de o usuário cadastrar uma
+// hora por vez.
+function _horaParaMin(h) { const [hh,mm]=(h||'00:00').split(':').map(Number); return hh*60+(mm||0); }
+function _minParaHora(m) { const hh=Math.floor(m/60)%24, mm=m%60; return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`; }
+function toggleQtdAvulsa() {
+  const vinculo = document.getElementById('loc-vinculo').value;
+  const wrap = document.getElementById('loc-qtd-avulsa-wrap');
+  if(!wrap) return;
+  wrap.style.display = vinculo === 'Hora Avulsa' ? '' : 'none';
+  if(vinculo === 'Hora Avulsa') atualizarResumoQtdAvulsa();
+}
+function atualizarResumoQtdAvulsa() {
+  const resumoEl = document.getElementById('loc-qtd-resumo');
+  if(!resumoEl) return;
+  const qtd = parseInt(document.getElementById('loc-qtd-horas')?.value) || 1;
+  const inicio = document.getElementById('loc-inicio')?.value || '08:00';
+  if(qtd <= 1) { resumoEl.textContent = ''; return; }
+  const iniMin = _horaParaMin(inicio);
+  const periodos = [];
+  for(let i=0;i<qtd;i++) periodos.push(`${_minParaHora(iniMin+i*60)}–${_minParaHora(iniMin+(i+1)*60)}`);
+  resumoEl.innerHTML = `Serão criadas <strong>${qtd} locações</strong> de 1h cada: ${periodos.join(', ')}.`;
 }
 
 // ── DESCONTO RECEITA ──
@@ -6572,10 +6839,15 @@ function initSwipe() {
         const tipo = card.dataset.tipo;
         const status = card.dataset.status;
         const novoStatus = status === 'Pago' ? 'Pendente' : 'Pago';
+        const col = tipo === 'rec' ? 'receitas' : 'despesas';
+        if(novoStatus === 'Pago') {
+          const cache = tipo === 'rec' ? receitasCache : despesasCache;
+          const item = cache?.find(x=>x.id===id);
+          pedirDataBaixa(id, col, item?.profissional||item?.descricao, item?formatMoney(parseMoney(item.valorFinal??item.valor)||0):'', item?.vencimento);
+          return;
+        }
         try {
-          const col = tipo === 'rec' ? 'receitas' : 'despesas';
-          const payload = {status: novoStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
-          payload.dataBaixa = novoStatus==='Pago' ? toDateStrLocal(new Date()) : null;
+          const payload = {status: novoStatus, dataBaixa: null, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
           await db.collection(col).doc(id).update(payload);
           card.dataset.status = novoStatus;
           showToast(`Marcado como ${novoStatus}!`, 'success');
@@ -6629,9 +6901,13 @@ function buscarDesp(q) {
 // ── TOGGLE STATUS BY ID (mobile cards) ──
 async function toggleStatusRecById(id, el) {
   const novoStatus = el.textContent.trim() === 'Pago' ? 'Pendente' : 'Pago';
+  if(novoStatus==='Pago') {
+    const r = receitasCache?.find(x=>x.id===id);
+    pedirDataBaixa(id, 'receitas', r?.profissional||r?.descricao, r?formatMoney(parseMoney(r.valorFinal??r.valor)||0):'', r?.vencimento);
+    return;
+  }
   try {
-    const payload={status: novoStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
-    payload.dataBaixa = novoStatus==='Pago' ? toDateStrLocal(new Date()) : null;
+    const payload={status: novoStatus, dataBaixa:null, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
     await db.collection('receitas').doc(id).update(payload);
     el.textContent = novoStatus;
     el.className = `badge ${novoStatus==='Pago'?'badge-success':'badge-warning'}`;
@@ -6644,9 +6920,13 @@ async function toggleStatusRecById(id, el) {
 
 async function toggleStatusDespById(id, el) {
   const novoStatus = el.textContent.trim() === 'Pago' ? 'Pendente' : 'Pago';
+  if(novoStatus==='Pago') {
+    const d = despesasCache?.find(x=>x.id===id);
+    pedirDataBaixa(id, 'despesas', d?.descricao, d?formatMoney(parseMoney(d.valor)||0):'', d?.vencimento);
+    return;
+  }
   try {
-    const payload={status: novoStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
-    payload.dataBaixa = novoStatus==='Pago' ? toDateStrLocal(new Date()) : null;
+    const payload={status: novoStatus, dataBaixa:null, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
     await db.collection('despesas').doc(id).update(payload);
     el.textContent = novoStatus;
     el.className = `badge ${novoStatus==='Pago'?'badge-success':'badge-warning'}`;
@@ -6922,6 +7202,18 @@ async function confirmarExclusaoLancamento() {
       if(p.data.vencimento) await registrarExclusaoLancamentoLocacao(p.data.origemLocacaoId, p.data.vencimento);
       await db.collection(p.colecao).doc(p.id).update({ origemLocacaoId: firebase.firestore.FieldValue.delete() });
       showToast('Lançamento devolvido — mantido como pendência avulsa.', 'success');
+    } else if(p.data.origemLocacaoId && destino === 'encerrar_futuro') {
+      // Item 2.2 — recorrência de locação sem data fim: encerra a partir desta
+      // ocorrência (grava dataFim um dia antes) e remove/devolve os pendentes
+      // futuros gerados por ela. excluirLancamentosPendentesDaLocacao só atua
+      // sobre status 'Pendente', então lançamentos já baixados nunca são tocados.
+      if(!p.data.vencimento) { showToast('Não foi possível identificar a data deste lançamento.', 'error'); return; }
+      const dCorte = new Date(p.data.vencimento+'T12:00:00');
+      dCorte.setDate(dCorte.getDate()-1);
+      const novoFim = toDateStrLocal(dCorte);
+      await db.collection('locacoes').doc(p.data.origemLocacaoId).update({ dataFim: novoFim });
+      await excluirLancamentosPendentesDaLocacao(p.data.origemLocacaoId, novoFim, 'excluir');
+      showToast('Recorrência encerrada a partir desta data! Lançamentos já baixados foram preservados.', 'success');
     } else {
       // Antes de apagar um lançamento vindo de locação recorrente, registra o
       // vencimento cancelado nela — senão a geração mensal automática recria
@@ -6936,10 +7228,15 @@ async function confirmarExclusaoLancamento() {
         const snap = await db.collection(p.colecao).where('recorrenciaId', '==', p.data.recorrenciaId).get();
         let alvo = snap.docs;
         if(escopo === 'future') alvo = alvo.filter(d => (d.data().vencimento || '') >= (p.data.vencimento || ''));
+        // Preservar histórico: uma exclusão em lote (futuros/série) nunca remove
+        // lançamentos que já foram baixados/concluídos — só o pendente selecionado
+        // explicitamente ('single') pode ser removido mesmo se já estiver pago.
+        const preservados = alvo.filter(d => d.data().status === 'Pago').length;
+        alvo = alvo.filter(d => d.data().status !== 'Pago');
         const batch = db.batch();
         alvo.forEach(d => batch.delete(d.ref));
         await batch.commit();
-        showToast(`${alvo.length} lançamento(s) excluído(s)!`, 'success');
+        showToast(`${alvo.length} lançamento(s) excluído(s)!${preservados?` ${preservados} já baixado(s) foram preservados.`:''}`, 'success');
       }
     }
     closeModal('fin-excluir-confirm');
@@ -7057,7 +7354,7 @@ async function confirmarEdicaoRecorrente() {
         .get();
       const futuros = snap.docs.filter(doc => {
         const venc = doc.data().vencimento || '';
-        return venc >= p.vencimento; // este e futuros
+        return venc >= p.vencimento && doc.data().status !== 'Pago'; // este e futuros, exceto já baixados
       });
       if(futuros.length === 0) {
         await db.collection(p.colecao).doc(p.id).update({...p.data, historico: historicoEntry});
@@ -7348,6 +7645,167 @@ async function excluirLembrete() {
     closeModal('novo-lembrete');
     showToast('Lembrete excluído!','success');
     loadLembretes();
+  } catch(e){showToast('Erro ao excluir.','error');}
+}
+
+// ══════════════════════════════════════════
+// ══ ANOTAÇÕES (item 4) ══
+// Bloco de notas para informações relevantes que não são necessariamente
+// lembretes — texto livre, data opcional, status Pendente/Concluído.
+// Organização visual espelha a de Lembretes: concluídos em seção própria,
+// recolhida por padrão.
+// ══════════════════════════════════════════
+async function loadAnotacoes() {
+  const table = document.getElementById('anot-table');
+  const mobileEl = document.getElementById('anot-cards-mobile');
+  if(!table) return;
+  table.innerHTML = '<div style="color:var(--text-lighter);font-size:.83rem;padding:1rem">Carregando...</div>';
+  try {
+    const snap = await db.collection('anotacoes').orderBy('createdAt','desc').get();
+    let docs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const fBusca = (document.getElementById('anot-filtro-busca')?.value||'').toLowerCase();
+    const fStatus = document.getElementById('anot-filtro-status')?.value||'';
+    if(fBusca) docs = docs.filter(d=>(d.texto||'').toLowerCase().includes(fBusca));
+    if(fStatus) docs = docs.filter(d=>d.status===fStatus);
+    if(!docs.length) {
+      table.innerHTML = emptyState('edit','Nenhuma anotação encontrada','Ajuste os filtros ou cadastre uma nova anotação.','Nova anotação',"openModal('nova-anotacao')");
+      if(mobileEl) mobileEl.innerHTML = emptyState('edit','Nenhuma anotação encontrada','','Nova anotação',"openModal('nova-anotacao')");
+      return;
+    }
+    const pendentes = docs.filter(a => a.status !== 'Concluído');
+    const concluidos = docs.filter(a => a.status === 'Concluído');
+    const expandido = window._anotConcluidosExpandido === true;
+
+    const trunc = (t,n) => (t||'').length > n ? t.substring(0,n)+'...' : (t||'');
+    const rowDesktop = a => `<div class="dt-row" style="grid-template-columns:3fr 1fr 1fr 80px 40px">
+        <span style="font-weight:500;cursor:pointer;color:var(--gold)${a.status==='Concluído'?';text-decoration:line-through;color:var(--text-lighter)':''}" onclick="editarAnotacao('${a.id}')" title="${(a.texto||'').replace(/"/g,'&quot;')}">${trunc(a.texto,70)||'—'}</span>
+        <span style="color:var(--text-light)">${a.data?formatDate(a.data):'—'}</span>
+        <span><span class="badge ${a.status==='Concluído'?'badge-success':'badge-warning'} status-click" onclick="toggleAnotacaoConcluida('${a.id}',this)">${a.status||'Pendente'}</span></span>
+        <span><button class="btn btn-secondary" style="font-size:.72rem;padding:4px 9px" onclick="editarAnotacao('${a.id}')">Editar</button></span>
+        <span><button class="fin-del-btn" style="opacity:1" onclick="excluirAnotacaoRapido('${a.id}')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></span>
+      </div>`;
+    const cardMobile = a => `<div class="fin-card-item">
+        <div class="fin-card-item-top">
+          <div class="fin-card-item-name"${a.status==='Concluído'?' style="text-decoration:line-through;color:var(--text-lighter)"':''}>${trunc(a.texto,60)||'—'}</div>
+        </div>
+        <div class="fin-card-item-meta">
+          <span class="badge ${a.status==='Concluído'?'badge-success':'badge-warning'}" onclick="toggleAnotacaoConcluida('${a.id}',this)" style="cursor:pointer">${a.status||'Pendente'}</span>
+          ${a.data?`<span><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> ${formatDate(a.data)}</span>`:''}
+        </div>
+        <div class="fin-card-item-actions">
+          <button class="btn btn-secondary btn-sm" onclick="editarAnotacao('${a.id}')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Editar</button>
+          <button class="fin-del-btn" onclick="excluirAnotacaoRapido('${a.id}')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+        </div>
+      </div>`;
+
+    let desktopHTML = `<div class="dt-head" style="grid-template-columns:3fr 1fr 1fr 80px 40px"><span>Anotação</span><span>Data</span><span>Status</span><span></span><span></span></div>`;
+    desktopHTML += pendentes.length
+      ? pendentes.map(rowDesktop).join('')
+      : '<div style="padding:1rem;text-align:center;color:var(--text-lighter);font-size:.82rem">Nenhuma anotação pendente</div>';
+    if(concluidos.length) {
+      desktopHTML += `<div class="dt-row" style="grid-template-columns:1fr;cursor:pointer;user-select:none;background:#f9fafb" onclick="toggleAnotacoesConcluidosGrupo()">
+        <span style="font-size:.8rem;font-weight:600;color:var(--text-light);display:flex;align-items:center;gap:6px"><span id="anot-concl-arrow">${expandido?'▼':'▶️'}</span> Concluídos (${concluidos.length})</span>
+      </div>
+      <div id="anot-concluidos-rows" style="display:${expandido?'':'none'}">${concluidos.map(rowDesktop).join('')}</div>`;
+    }
+    table.innerHTML = desktopHTML;
+
+    if(mobileEl) {
+      let mobileHTML = pendentes.length
+        ? pendentes.map(cardMobile).join('')
+        : '<div style="padding:1rem;text-align:center;color:var(--text-lighter);font-size:.82rem">Nenhuma anotação pendente</div>';
+      if(concluidos.length) {
+        mobileHTML += `<div class="fin-card-item" style="cursor:pointer;user-select:none;background:#f9fafb" onclick="toggleAnotacoesConcluidosGrupo()">
+          <div class="fin-card-item-name" style="font-size:.8rem;font-weight:600;color:var(--text-light);display:flex;align-items:center;gap:6px"><span id="anot-concl-arrow-mobile">${expandido?'▼':'▶️'}</span> Concluídos (${concluidos.length})</div>
+        </div>
+        <div id="anot-concluidos-rows-mobile" style="display:${expandido?'':'none'}">${concluidos.map(cardMobile).join('')}</div>`;
+      }
+      mobileEl.innerHTML = mobileHTML;
+    }
+  } catch(e) {
+    console.error(e);
+    table.innerHTML = '<div style="color:var(--danger);font-size:.83rem;padding:1rem">Erro ao carregar anotações.</div>';
+  }
+}
+
+function toggleAnotacoesConcluidosGrupo() {
+  window._anotConcluidosExpandido = !(window._anotConcluidosExpandido === true);
+  const expandido = window._anotConcluidosExpandido;
+  const rows = document.getElementById('anot-concluidos-rows');
+  const arrow = document.getElementById('anot-concl-arrow');
+  if(rows) rows.style.display = expandido ? '' : 'none';
+  if(arrow) arrow.textContent = expandido ? '▼' : '▶️';
+  const rowsMob = document.getElementById('anot-concluidos-rows-mobile');
+  const arrowMob = document.getElementById('anot-concl-arrow-mobile');
+  if(rowsMob) rowsMob.style.display = expandido ? '' : 'none';
+  if(arrowMob) arrowMob.textContent = expandido ? '▼' : '▶️';
+}
+
+async function toggleAnotacaoConcluida(id, el) {
+  const concluido = !el.classList.contains('badge-success');
+  try {
+    await db.collection('anotacoes').doc(id).update({
+      status: concluido ? 'Concluído' : 'Pendente',
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    loadAnotacoes();
+  } catch(e) { showToast('Erro ao atualizar anotação.', 'error'); }
+}
+
+async function excluirAnotacaoRapido(id) {
+  if(!confirm('Excluir esta anotação? Esta ação não pode ser desfeita.')) return;
+  try {
+    await db.collection('anotacoes').doc(id).delete();
+    showToast('Anotação excluída!','success');
+    loadAnotacoes();
+  } catch(e){ showToast('Erro ao excluir.','error'); }
+}
+
+async function salvarAnotacao() {
+  const editId = document.getElementById('anot-edit-id').value;
+  const data = {
+    texto: document.getElementById('anot-texto').value.trim(),
+    data: document.getElementById('anot-data').value,
+    status: document.getElementById('anot-status').value,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if(!data.texto){showToast('Escreva o texto da anotação.','error');return;}
+  try {
+    if(editId) {
+      await db.collection('anotacoes').doc(editId).update(data);
+      showToast('Anotação atualizada!','success');
+    } else {
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('anotacoes').add(data);
+      showToast('Anotação salva!','success');
+    }
+    closeModal('nova-anotacao');
+    loadAnotacoes();
+  } catch(e){showToast('Erro ao salvar anotação.','error');}
+}
+
+function editarAnotacao(id) {
+  db.collection('anotacoes').doc(id).get().then(doc=>{
+    if(!doc.exists) return;
+    const a = doc.data();
+    document.getElementById('anot-edit-id').value = id;
+    document.getElementById('anot-modal-title').textContent = 'Editar Anotação';
+    document.getElementById('anot-excluir-btn').style.display = 'inline-flex';
+    document.getElementById('anot-texto').value = a.texto||'';
+    document.getElementById('anot-data').value = a.data||'';
+    document.getElementById('anot-status').value = a.status||'Pendente';
+    openModal('nova-anotacao');
+  });
+}
+
+async function excluirAnotacao() {
+  const id = document.getElementById('anot-edit-id').value;
+  if(!id || !confirm('Excluir esta anotação?')) return;
+  try {
+    await db.collection('anotacoes').doc(id).delete();
+    closeModal('nova-anotacao');
+    showToast('Anotação excluída!','success');
+    loadAnotacoes();
   } catch(e){showToast('Erro ao excluir.','error');}
 }
 
@@ -7722,7 +8180,7 @@ async function verHistoricoProf(profId) {
           <input type="radio" name="fin-excl-destino" id="fin-excl-destino-excluir" value="excluir" style="margin-top:2px;accent-color:var(--gold)" checked>
           <div>
             <div style="font-size:.86rem;font-weight:600">Excluir</div>
-            <div style="font-size:.77rem;color:var(--text-lighter);margin-top:2px">Remove o lançamento permanentemente.</div>
+            <div style="font-size:.77rem;color:var(--text-lighter);margin-top:2px">Remove somente este lançamento.</div>
           </div>
         </label>
         <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px">
@@ -7732,12 +8190,36 @@ async function verHistoricoProf(profId) {
             <div style="font-size:.77rem;color:var(--text-lighter);margin-top:2px">Mantém o lançamento em A Pagar/A Receber, apenas desvinculado da locação.</div>
           </div>
         </label>
+        <label id="fin-excl-destino-encerrar-wrap" style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;padding:.75rem;border:1.5px solid var(--border);border-radius:9px">
+          <input type="radio" name="fin-excl-destino" id="fin-excl-destino-encerrar" value="encerrar_futuro" style="margin-top:2px;accent-color:var(--gold)">
+          <div>
+            <div style="font-size:.86rem;font-weight:600">Este e todos os futuros desta locação</div>
+            <div style="font-size:.77rem;color:var(--text-lighter);margin-top:2px">Encerra a recorrência a partir desta data. Lançamentos já baixados são preservados.</div>
+          </div>
+        </label>
       </div>
     </div>
 
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('fin-excluir-confirm')">Cancelar</button>
       <button class="btn btn-danger" onclick="confirmarExclusaoLancamento()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ITEM 3: Data da baixa — permite informar quando o pagamento/recebimento realmente ocorreu -->
+<div class="modal-overlay" id="modal-fin-baixa-data" onclick="closeModalBg(event,'fin-baixa-data')">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-title">Dar baixa</div>
+    <div id="fin-baixa-info" style="background:#f9fafb;border:1px solid var(--border);border-radius:9px;padding:.7rem .85rem;margin-bottom:1rem;font-size:.84rem;line-height:1.5"></div>
+    <div class="form-group">
+      <label class="form-label">Data da baixa</label>
+      <input type="date" class="form-input" id="fin-baixa-data-input">
+      <div style="font-size:.74rem;color:var(--text-lighter);margin-top:4px">Data em que o pagamento ou recebimento efetivamente ocorreu. Pode ser diferente de hoje.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('fin-baixa-data')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarDataBaixa()">Confirmar baixa</button>
     </div>
   </div>
 </div>
