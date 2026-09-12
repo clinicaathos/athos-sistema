@@ -3957,6 +3957,68 @@ function renderAgendaDia() {
       mapaBloq[`${b.turno}_${salaKey}`] = b;
     });
 
+    // ── CORREÇÃO: ocupação por horário específico, não por turno inteiro ──
+    // Antes, cada turno+sala guardava só UMA locação (mapa[turno_sala] = l),
+    // então quando havia várias Horas Avulsas separadas no mesmo turno+sala
+    // (ex.: 4 HE de 1h cada), cada uma sobrescrevia a anterior e só a(s)
+    // última(s) processada(s) apareciam na visualização. Agora calculamos
+    // quais das 4 células de horário de cada turno cada locação realmente
+    // ocupa: vínculos de turno inteiro (Turno Fixo, Pacote, Turno 8h) seguem
+    // ocupando o turno completo; Hora Avulsa ocupa só as células cujo
+    // intervalo [inicio,fim) sobrepõe o horário daquela célula específica —
+    // permitindo que múltiplas Horas Avulsas coexistam no mesmo turno+sala.
+    function _toMin(hhmm) { const [h,m]=(hhmm||'00:00').split(':').map(Number); return h*60+(m||0); }
+    function locsDoTurnoSala(tk, sk) {
+      return locacoesDia.filter(l => {
+        const salaKey = getSalaKeyGlobal(l.sala, l.vinculo);
+        if(salaKey === 'mista') { if(sk!=='s1' && sk!=='s2') return false; }
+        else if(salaKey !== sk) return false;
+        return getTurnosOcupados(l).includes(tk);
+      });
+    }
+    function celulasDoTurno(locs, horasArr, fechamento) {
+      const cells = new Array(horasArr.length).fill(null);
+      locs.forEach(l => {
+        const isAvulsa = (l.vinculo||'') === 'Hora Avulsa';
+        let idxs;
+        if(!isAvulsa) {
+          idxs = horasArr.map((_,i)=>i); // ocupa o turno inteiro
+        } else {
+          const li = _toMin(l.inicio), lf = _toMin(l.fim);
+          idxs = [];
+          horasArr.forEach((h,i)=>{
+            const slotIni = _toMin(h);
+            const slotFim = i+1 < horasArr.length ? _toMin(horasArr[i+1]) : _toMin(fechamento);
+            if(slotIni < lf && slotFim > li) idxs.push(i);
+          });
+        }
+        idxs.forEach(i => { if(!cells[i]) cells[i] = l; }); // primeira reserva encontrada prevalece no conflito
+      });
+      return cells;
+    }
+    function _tipoLabelCel(l, tRange) {
+      if((l.vinculo||'') === 'Hora Avulsa') return `${l.inicio||''} às ${l.fim||''}`;
+      return tRange;
+    }
+    function buildColunaHtml(cells, tRange, corDefault, sala) {
+      const htmls = new Array(cells.length);
+      let i = 0;
+      while(i < cells.length) {
+        const loc = cells[i];
+        if(!loc) {
+          htmls[i] = `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>`;
+          i++; continue;
+        }
+        let span = 1;
+        while(i+span < cells.length && cells[i+span] && cells[i+span].id === loc.id) span++;
+        const prof = profissionaisCache.find(p=>p.id===loc.profId)?.nome || loc.profId || '?';
+        htmls[i] = `<div class="hora-cell" style="background:${loc.cor||corDefault};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer;grid-row:span ${span}" onclick="editarLocacao('${loc.id}','${dataStr}')">${prof}<br><span style="font-size:.72rem;font-weight:400;opacity:.85">${_tipoLabelCel(loc, tRange)}</span></div>`;
+        for(let k=1;k<span;k++) htmls[i+k] = '';
+        i += span;
+      }
+      return htmls;
+    }
+
     function slotHtml(turno, sala, profNome, cor, locId) {
       if(profNome) return `<div class="hora-cell" style="background:${cor||'var(--gold)'};opacity:.85;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer" onclick="editarLocacao('${locId}','${dataStr}')">${profNome}</div>`;
       return `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>`;
@@ -3974,30 +4036,15 @@ function renderAgendaDia() {
     const cadeadoSvg = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
     document.getElementById('agenda-dia-body').innerHTML=turnos.map((t,ti)=>{
       const tk = turnoKeys[ti];
-      const l1 = mapa[`${tk}_s1`];
-      const l2 = mapa[`${tk}_s2`];
       const b1 = mapaBloq[`${tk}_s1`];
       const b2 = mapaBloq[`${tk}_s2`];
-      const p1 = l1 ? (profissionaisCache.find(p=>p.id===l1.profId)?.nome || l1.profId || '?') : null;
-      const p2 = l2 ? (profissionaisCache.find(p=>p.id===l2.profId)?.nome || l2.profId || '?') : null;
-      function tipoLabel(l, tRange) {
-        if(!l) return '';
-        const v = (l.vinculo||'').toLowerCase();
-        if(v.includes('turno') || v.includes('pacote')) return tRange;
-        // Hora avulsa: mostrar horário específico
-        return `${l.inicio||''} às ${l.fim||''}`;
-      }
-      const tipo1 = tipoLabel(l1, t.range);
-      const tipo2 = tipoLabel(l2, t.range);
-      function celula(i, prof, loc, bloq, tipo, corPadrao, sala) {
-        if(i!==0) {
-          if(bloq) return ''; // já coberto pelo grid-row:span da primeira linha
-          if(prof) return '';
-          return `<div class="hora-cell" onclick="openModal('nova-locacao')"></div>`;
-        }
-        if(bloq) return `<div class="hora-cell" style="${bloqStyle};grid-row:span 4" title="${bloq.motivo}${bloq.obs?' — '+bloq.obs:''}" onclick="editarBloqueio('${bloq.id}')">${cadeadoSvg}<span>Bloqueado<br><span style="font-size:.68rem;font-weight:400">${bloq.motivo}</span></span></div>`;
-        if(prof) return `<div class="hora-cell" style="background:${corPadrao};opacity:.9;border-radius:6px;padding:4px 8px;font-size:.72rem;font-weight:600;color:#fff;cursor:pointer;grid-row:span 4" onclick="editarLocacao('${loc.id}','${dataStr}')">${prof}<br><span style="font-size:.72rem;font-weight:400;opacity:.85">${tipo}</span></div>`;
-        return `<div class="hora-cell" onclick="openModal('nova-locacao')"><button class="add-btn-cell">+</button></div>`;
+      // Se houver bloqueio, ele tem prioridade e ocupa o turno inteiro (comportamento já existente).
+      // Caso contrário, calculamos a ocupação célula a célula, permitindo várias Horas Avulsas distintas.
+      const colS1 = b1 ? null : buildColunaHtml(celulasDoTurno(locsDoTurnoSala(tk,'s1'), t.horas, t.fechamento), t.range, 'var(--gold)', '1');
+      const colS2 = b2 ? null : buildColunaHtml(celulasDoTurno(locsDoTurnoSala(tk,'s2'), t.horas, t.fechamento), t.range, '#3d8a7a', '2');
+      function bloqCelula(i, bloq) {
+        if(i!==0) return ''; // já coberto pelo grid-row:span da primeira linha
+        return `<div class="hora-cell" style="${bloqStyle};grid-row:span ${t.horas.length}" title="${bloq.motivo}${bloq.obs?' — '+bloq.obs:''}" onclick="editarBloqueio('${bloq.id}')">${cadeadoSvg}<span>Bloqueado<br><span style="font-size:.68rem;font-weight:400">${bloq.motivo}</span></span></div>`;
       }
       return `
       <div class="turno-sec">
@@ -4008,8 +4055,8 @@ function renderAgendaDia() {
         ${t.horas.map((h,i)=>`
         <div class="hora-row">
           <div class="hora-label">${h}</div>
-          ${celula(i, p1, l1, b1, tipo1, l1?.cor||'var(--gold)', '1')}
-          ${celula(i, p2, l2, b2, tipo2, l2?.cor||'#3d8a7a', '2')}
+          ${b1 ? bloqCelula(i, b1) : colS1[i]}
+          ${b2 ? bloqCelula(i, b2) : colS2[i]}
         </div>`).join('')}
         <div class="hora-row" style="min-height:18px;border-bottom:2px solid #e9ecef">
           <div class="hora-label" style="font-size:.74rem;padding-top:2px;color:var(--gold);font-weight:600">${t.fechamento}</div>
@@ -4641,7 +4688,10 @@ function renderAgendaSemana() {
       return l.dataInicio <= diasStr[5] && fim >= diasStr[0];
     });
 
-    // Mapa: turno_sala_dataStr → locação (somente nos dias em que a locação de fato ocorre)
+    // Mapa: turno_sala_dataStr → lista de locações (somente nos dias em que a locação de fato ocorre)
+    // CORREÇÃO: antes guardava uma única locação por célula (mapa[chave]=l), então quando
+    // havia mais de uma Hora Avulsa no mesmo turno+sala+dia, a última sobrescrevia as demais
+    // e elas somem da visualização. Agora acumulamos todas em uma lista por célula.
     const mapa = {};
     semLocacoes.forEach(l=>{
       const sk=getSalaKeyGlobal(l.sala, l.vinculo);
@@ -4649,8 +4699,12 @@ function renderAgendaSemana() {
       diasStr.forEach(ds=>{
         if(!locAtivaEmDia(l, ds)) return;
         turnosOcup.forEach(tk => {
-          if(sk==='mista') { mapa[`${tk}_s1_${ds}`]=l; mapa[`${tk}_s2_${ds}`]=l; }
-          else mapa[`${tk}_${sk}_${ds}`]=l;
+          if(sk==='mista') {
+            (mapa[`${tk}_s1_${ds}`] = mapa[`${tk}_s1_${ds}`]||[]).push(l);
+            (mapa[`${tk}_s2_${ds}`] = mapa[`${tk}_s2_${ds}`]||[]).push(l);
+          } else {
+            (mapa[`${tk}_${sk}_${ds}`] = mapa[`${tk}_${sk}_${ds}`]||[]).push(l);
+          }
         });
       });
     });
@@ -4674,7 +4728,7 @@ function renderAgendaSemana() {
         <div class="wg-row">
           <div class="wg-time">${sala.n}</div>
           ${diasStr.map((ds,di)=>{
-            const loc=mapa[`${t.key}_${sala.k}_${ds}`];
+            const locs=mapa[`${t.key}_${sala.k}_${ds}`]||[];
             const bloq=mapaBloq[`${t.key}_${sala.k}_${ds}`];
             const isH=ds===hoje;
             if(bloq){
@@ -4682,13 +4736,18 @@ function renderAgendaSemana() {
                 <span style="font-size:.68rem;font-weight:600;color:#4b5563;padding:2px 4px">🔒 ${bloq.motivo}</span>
               </div>`;
             }
-            if(loc){
-              const prof=profissionaisCache.find(p=>p.id===loc.profId)?.nome||loc.profId||'?';
-              const ehHoraAvulsa = (loc.vinculo||'')==='Hora Avulsa';
-              const horarioLabel = ehHoraAvulsa && loc.inicio && loc.fim ? `<br><span style="font-size:.65rem;font-weight:400;opacity:.9">${loc.inicio}–${loc.fim}</span>` : '';
-              return `<div class="wg-cell${isH?' wg-today':''}" style="background:${loc.cor||'var(--gold)'};opacity:.85;cursor:pointer" onclick="editarLocacao('${loc.id}','${ds}')" title="${prof}${ehHoraAvulsa&&loc.inicio&&loc.fim?' — '+loc.inicio+' às '+loc.fim:''}">
-                <span style="font-size:.72rem;font-weight:600;color:#fff;padding:2px 4px">${prof}${horarioLabel}</span>
-              </div>`;
+            if(locs.length){
+              // Ordenar por horário de início quando disponível, para exibição consistente
+              const locsOrd = [...locs].sort((a,b)=>(a.inicio||'').localeCompare(b.inicio||''));
+              const itens = locsOrd.map(loc=>{
+                const prof=profissionaisCache.find(p=>p.id===loc.profId)?.nome||loc.profId||'?';
+                const ehHoraAvulsa = (loc.vinculo||'')==='Hora Avulsa';
+                const horarioLabel = ehHoraAvulsa && loc.inicio && loc.fim ? `<br><span style="font-size:.65rem;font-weight:400;opacity:.9">${loc.inicio}–${loc.fim}</span>` : '';
+                return `<div style="background:${loc.cor||'var(--gold)'};opacity:.85;cursor:pointer;border-radius:4px;padding:2px 4px;margin-bottom:2px" onclick="editarLocacao('${loc.id}','${ds}')" title="${prof}${ehHoraAvulsa&&loc.inicio&&loc.fim?' — '+loc.inicio+' às '+loc.fim:''}">
+                  <span style="font-size:.72rem;font-weight:600;color:#fff">${prof}${horarioLabel}</span>
+                </div>`;
+              }).join('');
+              return `<div class="wg-cell${isH?' wg-today':''}" style="display:flex;flex-direction:column;background:transparent;padding:2px">${itens}</div>`;
             }
             return `<div class="wg-cell${isH?' wg-today':''}" onclick="openModal('nova-locacao')"><button class="wg-add">+</button></div>`;
           }).join('')}
