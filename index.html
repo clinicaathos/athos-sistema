@@ -299,10 +299,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .wg-turno-name span{font-size:.7rem;font-weight:400;color:var(--text-lighter);text-transform:none;letter-spacing:0;}
 .wg-turno-fill{border-right:1px solid var(--border);}
 .wg-turno-fill:last-child{border-right:none;}
-.wg-row{display:grid;grid-template-columns:80px repeat(6,1fr);border-bottom:1px solid var(--border);min-height:64px;min-width:600px;}
+.wg-row{display:grid;grid-template-columns:80px repeat(6,1fr);border-bottom:1px solid var(--border);min-height:100px;min-width:600px;}
 .wg-row:last-child{border-bottom:none;}
 .wg-time{padding:.5rem .875rem;font-size:.74rem;font-weight:500;color:var(--text-lighter);border-right:1px solid var(--border);background:#fafafa;display:flex;align-items:flex-start;padding-top:6px;}
-.wg-cell{border-right:1px solid var(--border);min-height:64px;padding:4px;cursor:pointer;transition:background .1s;display:flex;align-items:stretch;}
+.wg-cell{border-right:1px solid var(--border);min-height:100px;padding:4px;cursor:pointer;transition:background .1s;display:flex;align-items:stretch;}
 .wg-cell:last-child{border-right:none;}
 .wg-cell:hover{background:rgba(160,120,80,.03);}
 .wg-cell.wg-occ{cursor:default;}
@@ -703,6 +703,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
         </div>
         <div class="stats-grid">
           <div class="stat-card"><div class="stat-label">Receita do Mês</div><div class="stat-value" style="color:var(--gold)" id="dash-receita">—</div><div class="stat-sub" id="dash-receita-sub">carregando...</div></div>
+          <div class="stat-card"><div class="stat-label">Despesa do Mês</div><div class="stat-value" style="color:var(--warning)" id="dash-despesa">—</div><div class="stat-sub" id="dash-despesa-sub">carregando...</div></div>
           <div class="stat-card"><div class="stat-label">Profissionais Ativos</div><div class="stat-value" id="dash-profs">—</div><div class="stat-sub" id="dash-profs-sub">carregando...</div></div>
           <div class="stat-card"><div class="stat-label">A Receber</div><div class="stat-value" style="color:var(--danger)" id="dash-receber">—</div><div class="stat-sub" id="dash-receber-sub">carregando...</div></div>
         </div>
@@ -1504,8 +1505,15 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div style="font-size:.72rem;color:var(--text-lighter);margin-top:4px" id="loc-dias-semana-hint">Selecione os dias em que a locação se repete dentro do período.</div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Desconto (%)</label><input class="form-input" id="loc-desconto" type="number" min="0" max="100" placeholder="0" oninput="calcDescontoLocacao()"></div>
+      <div class="form-group"><label class="form-label">Desconto (%)</label><input class="form-input" id="loc-desconto" type="number" min="0" max="100" placeholder="0" oninput="calcDescontoLocacao();onDescontoInput()"></div>
       <div class="form-group"><label class="form-label">Valor final</label><input class="form-input" id="loc-valor-final" readonly placeholder="Automático" style="background:#f9fafb;color:var(--success);font-weight:600"></div>
+    </div>
+    <div id="loc-desconto-vigencia-group" style="display:none">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Desconto válido a partir de</label><input class="form-input" type="date" id="loc-desconto-inicio"></div>
+        <div class="form-group"><label class="form-label">Desconto válido até</label><input class="form-input" type="date" id="loc-desconto-fim"></div>
+      </div>
+      <div style="font-size:.72rem;color:var(--text-lighter);margin:-.25rem 0 .75rem">Fora desse período a cobrança volta ao valor cheio automaticamente. O sistema avisa no Dashboard 2 dias antes do término.</div>
     </div>
     <div class="form-group"><label class="form-label">Observação (exibida na agenda)</label><input class="form-input" type="text" id="loc-obs" placeholder="Ex: Último dia, Início de contrato..."></div>
     <div class="form-group">
@@ -2752,6 +2760,7 @@ function updateDashboardProfs() {
   });
   const vinculoAlertas = checkVinculoAlertas(profissionaisCache);
   vinculoAlertas.forEach(a => alertas.push(a));
+  (window._alertasDesconto||[]).forEach(a => alertas.push(a));
 
   document.getElementById('dash-alertas-count').textContent=alertas.length;
   if(alertas.length===0){
@@ -2764,7 +2773,7 @@ function updateDashboardProfs() {
           <div style="font-size:.8rem;font-weight:500">${a.title}</div>
           <div style="font-size:.7rem;color:var(--text-lighter)">${a.sub}</div>
         </div>
-        ${a.action?`<button class="btn btn-secondary btn-sm" onclick="${a.action}">Renovar</button>`:''}
+        ${a.action?`<button class="btn btn-secondary btn-sm" onclick="${a.action}">${a.actionLabel||'Renovar'}</button>`:''}
       </div>`).join('');
   }
 }
@@ -2952,8 +2961,51 @@ function loadDashboard() {
     if(atraso_items.length>8) lista.innerHTML+=`<div style="font-size:.72rem;color:var(--text-lighter);text-align:center;padding:.5rem 0">+${atraso_items.length-8} mais...</div>`;
   }).catch(()=>{});
 
+  // Despesa do mês (mesmo critério da receita: vencimento dentro do mês)
+  db.collection('despesas').get().then(snap=>{
+    const despesas = snap.docs.map(d=>d.data())
+      .filter(x => x.vencimento && x.vencimento >= inicioPeriodo && x.vencimento <= fimPeriodo);
+    const totalDesp = despesas.reduce((s,x)=>s+(parseMoney(x.valor)||0),0);
+    const despPaga = despesas.filter(x=>x.status==='Pago').reduce((s,x)=>s+(parseMoney(x.valor)||0),0);
+    const despPend = despesas.filter(x=>x.status!=='Pago').length;
+    document.getElementById('dash-despesa').textContent = formatMoney(totalDesp);
+    document.getElementById('dash-despesa-sub').textContent = `${formatMoney(despPaga)} pago · ${despPend} pendente(s)`;
+  }).catch(e=>{console.error('Dashboard despesas:', e);});
+
+  // Alerta de término de desconto de locação (2 dias antes)
+  carregarAlertasDesconto();
+
   // Novas seções — item 4
   loadDashAgenda();
+}
+
+// ── ALERTA: desconto de locação terminando (até 2 dias) ──
+async function carregarAlertasDesconto() {
+  try {
+    const snap = await db.collection('locacoes').get();
+    const hojeStr = toDateStrLocal(new Date());
+    const hojeD = new Date(hojeStr+'T12:00:00');
+    const out = [];
+    snap.docs.forEach(d=>{
+      const l = {id:d.id, ...d.data()};
+      if(!(parseFloat(l.desconto) > 0) || !l.descontoFim) return;
+      if(l.dataFim && l.dataFim < hojeStr) return;          // locação já encerrada
+      if(l.dataFim && l.dataFim <= l.descontoFim) return;   // locação acaba junto/antes do desconto
+      const diff = Math.round((new Date(l.descontoFim+'T12:00:00') - hojeD)/86400000);
+      if(diff < 0 || diff > 2) return;
+      const prof = profissionaisCache.find(p=>p.id===l.profId)?.nome || 'Profissional';
+      const quando = diff===0 ? 'termina HOJE' : diff===1 ? 'termina amanhã' : 'termina em 2 dias';
+      out.push({
+        icon:'<svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+        title:`Desconto de ${l.desconto}% ${quando}`,
+        sub:`${prof} — até ${formatDate(l.descontoFim)}. Avise o profissional.`,
+        action:`editarLocacao('${l.id}','${l.dataInicio||''}')`,
+        actionLabel:'Ver locação'
+      });
+    });
+    window._alertasDesconto = out;
+    if(typeof updateDashboardProfs === 'function') updateDashboardProfs();
+  } catch(e) { console.error('Alertas de desconto:', e); }
 }
 
 // ── ITEM 4: Lembretes e próximos vencimentos (7 dias) ──
@@ -4188,7 +4240,7 @@ function renderAgendaDia() {
     function celulasDoTurno(locs, horasArr, fechamento) {
       const cells = new Array(horasArr.length).fill(null);
       locs.forEach(l => {
-        const isAvulsa = (l.vinculo||'') === 'Hora Avulsa';
+        const isAvulsa = ehReservaPorHorario(l); // Hora Avulsa e pacotes ocupam só o período reservado
         let idxs;
         if(!isAvulsa) {
           idxs = horasArr.map((_,i)=>i); // ocupa o turno inteiro
@@ -4206,7 +4258,7 @@ function renderAgendaDia() {
       return cells;
     }
     function _tipoLabelCel(l, tRange) {
-      if((l.vinculo||'') === 'Hora Avulsa') return `${l.inicio||''} às ${l.fim||''}`;
+      if(ehReservaPorHorario(l) && l.inicio && l.fim) return rotuloPeriodo(l);
       return tRange;
     }
     function buildColunaHtml(cells, tRange, corDefault, sala) {
@@ -4314,6 +4366,7 @@ function editarLocacao(id, dataClicada) {
     const salaSel=document.getElementById('loc-sala');
     if(salaSel) salaSel.value=(l.sala==='mista'?'1':l.sala)||'1';
     const vincSel=document.getElementById('loc-vinculo');
+    garantirOpcaoVinculo(l.vinculo);
     if(vincSel) vincSel.value=l.vinculo||'Turno Fixo (4h)';
     toggleSalaMista();
     // Ao editar uma locação já existente, o campo de quantidade não se aplica —
@@ -4343,6 +4396,8 @@ function editarLocacao(id, dataClicada) {
     if(obsEl) obsEl.value=l.obs||'';
     const descEl=document.getElementById('loc-desconto');
     if(descEl) descEl.value=l.desconto||'';
+    const dvIni=document.getElementById('loc-desconto-inicio'); if(dvIni) dvIni.value=l.descontoInicio||'';
+    const dvFim=document.getElementById('loc-desconto-fim'); if(dvFim) dvFim.value=l.descontoFim||'';
     calcDescontoLocacao();
     toggleSaldoPacote();
     // Selecionar cor
@@ -4632,6 +4687,10 @@ async function salvarLocacao() {
     obs:document.getElementById('loc-obs').value,
     cor:selectedColor,
     desconto: desconto,
+    // Vigência do desconto: fora desse período a cobrança usa o valor cheio (valorBase)
+    descontoInicio: descontoNum > 0 ? (document.getElementById('loc-desconto-inicio').value || '') : '',
+    descontoFim: descontoNum > 0 ? (document.getElementById('loc-desconto-fim').value || '') : '',
+    valorBase: valorBase.toFixed(2),
     valorLancamento: valorLancamento >= 0 ? valorLancamento.toFixed(2) : null,
     diaVencimento: rec !== 'Apenas este horário' ? diaVencimento : null,
     updatedAt:firebase.firestore.FieldValue.serverTimestamp()
@@ -4639,6 +4698,10 @@ async function salvarLocacao() {
   if(!data.profId){showToast('Selecione um profissional.','error');return;}
   if(!data.dataInicio){showToast('Informe a data de início.','error');return;}
   if(rec !== 'Apenas este horário' && !diaVencimento){showToast('Informe o dia de vencimento do lançamento mensal.','error');return;}
+  if(descontoNum > 0) {
+    if(!data.descontoInicio || !data.descontoFim){showToast('Informe o período de vigência do desconto (início e término).','error');return;}
+    if(data.descontoFim < data.descontoInicio){showToast('O fim da vigência do desconto não pode ser anterior ao início.','error');return;}
+  }
 
   // Validação de conflito aprimorada
   try {
@@ -4764,15 +4827,17 @@ async function gerarLancamentoLocacao(locacao, vencimentoStr) {
   const prof = profissionaisCache.find(p=>p.id===locacao.profId);
   const salaNome = String(locacao.sala)==='2' ? (appConfig.sala2||'Áthos II') : (appConfig.sala1||'Áthos I');
 
+  // Desconto só vale dentro do período de vigência; fora dele, cobra o valor cheio
+  const calcVal = calcularValorLocacaoNaData(locacao, venc);
   await db.collection('receitas').add({
     profissional: prof?.nome || 'Profissional',
     profId: locacao.profId,
     categoria: 'Locação de Sala',
     tipo: 'Locação',
     subcategoria: locacao.vinculo || '',
-    valor: locacao.valorLancamento,
-    desconto: locacao.desconto || '0',
-    valorFinal: locacao.valorLancamento,
+    valor: calcVal.valor,
+    desconto: calcVal.desconto,
+    valorFinal: calcVal.valor,
     vencimento: venc,
     obs: `Locação ${salaNome} — gerado automaticamente`,
     status: 'Pendente',
@@ -4926,6 +4991,9 @@ function renderAgendaSemana() {
     if(s.includes('ii')||s.includes('2')) return 's2';
     return 's1';
   }
+  // Limites de cada turno em minutos (08–12, 13–17, 17h30–21h30)
+  const LIM_TURNO = {manha:[480,720], tarde:[780,1020], noite:[1050,1290]};
+  function _minDe(h){ const [hh,mm]=(h||'00:00').split(':').map(Number); return hh*60+(mm||0); }
 
   // Render skeleton primeiro
   const headerDias = `<div class="wg-head-dias" style="display:grid;grid-template-columns:80px repeat(6,1fr);background:#f3f4f6;border-bottom:1px solid var(--border);min-width:600px">
@@ -4997,17 +5065,28 @@ function renderAgendaSemana() {
               </div>`;
             }
             if(locs.length){
-              // Ordenar por horário de início quando disponível, para exibição consistente
-              const locsOrd = [...locs].sort((a,b)=>(a.inicio||'').localeCompare(b.inicio||''));
-              const itens = locsOrd.map(loc=>{
+              // O bloco ocupa todo o período do turno (ou só o período reservado, no caso de
+              // Hora Avulsa/pacote), com altura proporcional à duração.
+              const ALT = 96; // altura em px de um turno de 4h
+              const [tIni,tFimMin] = LIM_TURNO[t.key];
+              const dur = tFimMin - tIni;
+              const blocos = locs.map(loc=>{
                 const prof=profissionaisCache.find(p=>p.id===loc.profId)?.nome||loc.profId||'?';
-                const ehHoraAvulsa = (loc.vinculo||'')==='Hora Avulsa';
-                const horarioLabel = ehHoraAvulsa && loc.inicio && loc.fim ? `<br><span style="font-size:.65rem;font-weight:400;opacity:.9">${loc.inicio}–${loc.fim}</span>` : '';
-                return `<div style="background:${loc.cor||'var(--gold)'};opacity:.85;cursor:pointer;border-radius:4px;padding:2px 4px;margin-bottom:2px" onclick="editarLocacao('${loc.id}','${ds}')" title="${prof}${ehHoraAvulsa&&loc.inicio&&loc.fim?' — '+loc.inicio+' às '+loc.fim:''}">
-                  <span style="font-size:.72rem;font-weight:600;color:#fff">${prof}${horarioLabel}</span>
-                </div>`;
+                const parcial = ehReservaPorHorario(loc) && loc.inicio && loc.fim;
+                let a=tIni, b=tFimMin;
+                if(parcial) {
+                  a=Math.max(tIni,_minDe(loc.inicio)); b=Math.min(tFimMin,_minDe(loc.fim));
+                  if(b<=a){ a=tIni; b=tFimMin; }
+                }
+                const topPct=(a-tIni)/dur*100, hPct=(b-a)/dur*100;
+                const pxH=(b-a)/dur*ALT;
+                const periodo = parcial ? rotuloPeriodo(loc) : '';
+                const conteudo = pxH>=44
+                  ? `<span style="font-size:.72rem;font-weight:600;color:#fff;line-height:1.2">${prof}</span>${periodo?`<span style="font-size:.65rem;font-weight:400;color:#fff;opacity:.9">${periodo}</span>`:''}`
+                  : `<span style="font-size:.68rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${prof}${periodo?' · '+periodo:''}</span>`;
+                return `<div style="position:absolute;left:0;right:0;top:${topPct}%;height:${hPct}%;box-sizing:border-box;background:${loc.cor||'var(--gold)'};opacity:.9;cursor:pointer;border-radius:4px;padding:3px 5px;overflow:hidden;display:flex;flex-direction:column;justify-content:${pxH>=44?'flex-start':'center'};gap:1px" onclick="editarLocacao('${loc.id}','${ds}')" title="${prof}${periodo?' — '+periodo:' — '+t.range}">${conteudo}</div>`;
               }).join('');
-              return `<div class="wg-cell${isH?' wg-today':''}" style="display:flex;flex-direction:column;background:transparent;padding:2px">${itens}</div>`;
+              return `<div class="wg-cell${isH?' wg-today':''}" style="background:transparent;padding:2px"><div style="position:relative;width:100%;height:${ALT}px">${blocos}</div></div>`;
             }
             return `<div class="wg-cell${isH?' wg-today':''}" onclick="openModal('nova-locacao')"><button class="wg-add">+</button></div>`;
           }).join('')}
@@ -5086,6 +5165,8 @@ async function loadPlanos() {
   try {
     const snap=await db.collection('planos').get();
     const planos=snap.docs.map(d=>({id:d.id,...d.data()}));
+    _planosCache = planos;
+    popularVinculosLocacao();
     const grid=document.getElementById('planos-pacotes-list');
     const cards=planos.map(p=>`
       <div class="plano-card">
@@ -5701,6 +5782,10 @@ function openModal(id) {
       if(excBtn) excBtn.style.display='none';
       const obsEl=document.getElementById('loc-obs');
       if(obsEl) obsEl.value='';
+      popularVinculosLocacao();
+      const dvI=document.getElementById('loc-desconto-inicio'); if(dvI) dvI.value='';
+      const dvF=document.getElementById('loc-desconto-fim'); if(dvF) dvF.value='';
+      toggleVigenciaDesconto();
       selectedColor='#a07850';
       document.querySelectorAll('.color-dot').forEach((d,i)=>d.classList.toggle('selected',i===0));
       // Reset dias da semana
@@ -6011,6 +6096,8 @@ function valorBaseLocacao(sala, vinculo) {
     // nesse caso o valor segue pela sala selecionada no campo Sala.
     return s === '2' ? num(config.precoTurno8hS2) : num(config.precoTurno8hS1);
   }
+  const planoSel = _planoPorNome(vinculo);
+  if(planoSel) return num(planoSel.valor);
   if(vinculo === 'Pacote de 10 Horas' || vinculo === 'Pacote de Horas') {
     return num(config.preco10h);
   }
@@ -6025,7 +6112,39 @@ function valorBaseLocacao(sala, vinculo) {
 }
 
 // ── DESCONTO LOCAÇÃO ──
+function toggleVigenciaDesconto() {
+  const g = document.getElementById('loc-desconto-vigencia-group');
+  if(!g) return;
+  const d = parseFloat(document.getElementById('loc-desconto')?.value) || 0;
+  g.style.display = d > 0 ? '' : 'none';
+}
+// Ao digitar um desconto: mostra a vigência e sugere o início = data de início da locação
+function onDescontoInput() {
+  toggleVigenciaDesconto();
+  const d = parseFloat(document.getElementById('loc-desconto')?.value) || 0;
+  const ini = document.getElementById('loc-desconto-inicio');
+  if(d > 0 && ini && !ini.value) ini.value = document.getElementById('loc-data-inicio')?.value || '';
+  if(d <= 0) {
+    if(ini) ini.value = '';
+    const fim = document.getElementById('loc-desconto-fim'); if(fim) fim.value = '';
+  }
+}
+
+// Valor a cobrar de uma locação numa data de vencimento, respeitando a vigência do desconto
+function calcularValorLocacaoNaData(loc, dataRef) {
+  const descNum = parseFloat(loc.desconto) || 0;
+  const semVigencia = !loc.descontoInicio && !loc.descontoFim;
+  if(descNum <= 0 || semVigencia) return { valor: loc.valorLancamento, desconto: loc.desconto || '0' };
+  const dentro = (!loc.descontoInicio || dataRef >= loc.descontoInicio) && (!loc.descontoFim || dataRef <= loc.descontoFim);
+  if(dentro) return { valor: loc.valorLancamento, desconto: loc.desconto };
+  let base = parseFloat(loc.valorBase);
+  if(!(base > 0)) base = valorBaseLocacao(loc.sala, loc.vinculo);
+  if(!(base > 0) && descNum < 100) base = parseFloat(loc.valorLancamento) / (1 - descNum/100);
+  return { valor: base > 0 ? base.toFixed(2) : loc.valorLancamento, desconto: '0' };
+}
+
 function calcDescontoLocacao() {
+  toggleVigenciaDesconto();
   const sala = document.getElementById('loc-sala').value;
   const vinculo = document.getElementById('loc-vinculo').value;
   const desconto = parseFloat(document.getElementById('loc-desconto').value) || 0;
@@ -6320,7 +6439,7 @@ async function toggleSaldoPacote() {
   const vinculo = document.getElementById('loc-vinculo').value;
   const grupo = document.getElementById('loc-saldo-pacote-group');
   const sessaoGrupo = document.getElementById('loc-horas-sessao-group');
-  const isPacote = vinculo.startsWith('Pacote de');
+  const isPacote = horasDoPacote(vinculo) > 0;
   if(!grupo) return;
   if(!isPacote) {
     grupo.style.display='none';
@@ -6332,12 +6451,18 @@ async function toggleSaldoPacote() {
   const info = document.getElementById('loc-saldo-pacote-info');
   if(!profId) { info.innerHTML='Selecione um profissional para ver o saldo de horas.'; return; }
   info.innerHTML='<span style="color:var(--text-lighter);font-size:.78rem">Verificando pacotes ativos...</span>';
-  const ativos = await getPacotesAtivos(profId);
+  const todosAtivos = await getPacotesAtivos(profId);
+  // Pacote que já consumiu todas as horas (saldo 0) não é opção de consumo e não
+  // deve ser mencionado ao usuário: o que importa é que será criado um novo pacote.
+  const ativos = todosAtivos.filter(p => Math.max(0, p.totalHoras - (p.horasUsadas||0)) > 0);
   const hNovo = horasDoPacote(vinculo);
   if(ativos.length === 0) {
-    // Nenhum pacote ativo — será criado um novo; mostrar campo de horas da primeira sessão
+    // Nenhum pacote com saldo — será criado um novo; mostrar campo de horas da primeira sessão
     _saldoPacoteAtual = hNovo;
-    info.innerHTML = `<div style="font-size:.82rem">Nenhum pacote ativo. Será criado um novo pacote de <strong>${hNovo}h</strong> ao confirmar.</div>`;
+    info.innerHTML = `<div style="font-size:.82rem">Será criado um novo pacote de <strong>${hNovo}h</strong> ao confirmar.</div>`;
+    // Limpa a escolha anterior (consumir/novo) para não ficar valor antigo "escondido"
+    const tipoEl0 = document.getElementById('loc-pacote-escolha-tipo'); if(tipoEl0) tipoEl0.innerHTML='';
+    const listaEl0 = document.getElementById('loc-pacote-lista'); if(listaEl0) listaEl0.innerHTML='';
     document.getElementById('loc-pacote-escolha').style.display='none';
     document.getElementById('loc-pacote-id-vinc').value='';
     if(sessaoGrupo) sessaoGrupo.style.display='';
@@ -6401,10 +6526,57 @@ function toggleEscolhaPacote() {
   }
 }
 
+// Planos cadastrados em "Planos e Pacotes" (preenchido por loadPlanos)
+let _planosCache = [];
+function _planoPorNome(nome) {
+  if(!nome) return null;
+  return _planosCache.find(p => (p.nome||'') === nome) || null;
+}
+
 function horasDoPacote(vinculo) {
+  // Pacotes cadastrados em "Planos e Pacotes": o vínculo é o próprio nome do plano
+  const pl = _planoPorNome(vinculo);
+  if(pl) return parseFloat(String(pl.horas||'0').replace(',','.')) || 0;
+  // Nomes antigos (locações já existentes)
   if(vinculo === 'Pacote de 5 Horas') return 5;
   if(vinculo === 'Pacote de 10 Horas' || vinculo === 'Pacote de Horas') return 10;
   return 0;
+}
+
+// Reserva que ocupa só o período escolhido (e não o turno inteiro)
+function ehReservaPorHorario(l) {
+  const v = (l && l.vinculo) || '';
+  return v === 'Hora Avulsa' || horasDoPacote(v) > 0;
+}
+function fmtHoraCurta(h) {
+  if(!h) return '';
+  const [hh,mm] = h.split(':');
+  return (mm && mm !== '00') ? `${parseInt(hh)}h${mm}` : `${parseInt(hh)}h`;
+}
+function rotuloPeriodo(l) { return `${fmtHoraCurta(l.inicio)} às ${fmtHoraCurta(l.fim)}`; }
+
+// Garante que o valor atual (ex.: nome antigo de pacote) exista como opção no select
+function garantirOpcaoVinculo(v) {
+  const sel = document.getElementById('loc-vinculo');
+  if(!sel || !v) return;
+  if(![...sel.options].some(o => o.value === v)) {
+    const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o);
+  }
+}
+
+// Monta a lista de vínculos do agendamento usando o nome EXATO dos pacotes
+// cadastrados na aba "Planos e Pacotes".
+function popularVinculosLocacao() {
+  const sel = document.getElementById('loc-vinculo');
+  if(!sel) return;
+  const atual = sel.value;
+  const fixos = ['Turno Fixo (4h)','Turno 8h — Áthos I','Turno 8h — Áthos II','Turno 8h — Sala Mista'];
+  const nomesPlanos = [...new Set(_planosCache.map(p => p.nome).filter(Boolean))];
+  const pacotes = nomesPlanos.length ? nomesPlanos : ['Pacote de 5 Horas','Pacote de 10 Horas'];
+  const lista = [...fixos, ...pacotes, 'Hora Avulsa'];
+  sel.innerHTML = '';
+  lista.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+  if(atual) { garantirOpcaoVinculo(atual); sel.value = atual; }
 }
 
 // ── CRIAÇÃO / VINCULAÇÃO DE PACOTE AO CONFIRMAR LOCAÇÃO ──
