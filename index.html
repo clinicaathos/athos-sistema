@@ -1319,6 +1319,8 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div class="cfg-row"><div><div class="cfg-label">Hora Avulsa</div></div><input class="cfg-input" id="preco-avulsa" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Pacote 5h / mês</div></div><input class="cfg-input" id="preco-5h" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Pacote 10h / mês</div></div><input class="cfg-input" id="preco-10h" placeholder="R$ 0,00"></div>
+            <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .5rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Planos cadastrados (Planos e Pacotes)</div>
+            <div id="cfg-planos-lista" style="font-size:.8rem;color:var(--text-lighter)">Carregando...</div>
             <div class="cfg-row"><div><div class="cfg-label">Desconto padrão (%)</div><div class="cfg-sub">Aplicado automaticamente se configurado</div></div><input class="cfg-input" id="preco-desconto" placeholder="0" type="number" min="0" max="100" style="width:80px;text-align:center"></div>
           </div>
           <div class="card">
@@ -2265,9 +2267,24 @@ function renderProfissionais(profs, filtro='todos') {
         ${p.abordagem?`<span class="tag">${p.abordagem}</span>`:''}
         ${p.publicoAlvo?`<span class="tag">${p.publicoAlvo}</span>`:''}
         ${(vencido||vencendo)?`<button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="event.stopPropagation();abrirRenovar('${p.id}')">Renovar</button>`:''}
+        <button class="btn btn-secondary btn-sm" style="${(vencido||vencendo)?'':'margin-left:auto'}" onclick="event.stopPropagation();alternarStatusProfissional('${p.id}')">${p.status==='Inativo'?'Reativar':'Desativar'}</button>
       </div>
     </div>`;
   }).join('');
+}
+
+async function alternarStatusProfissional(id) {
+  const p = profissionaisCache.find(x=>x.id===id); if(!p) return;
+  const novo = p.status==='Inativo' ? 'Ativo' : 'Inativo';
+  const msg = novo==='Inativo'
+    ? `Desativar ${p.nome}? O histórico, o financeiro e os agendamentos anteriores continuam salvos. Ele não aparecerá em novos agendamentos e lançamentos, e as cobranças recorrentes automáticas serão pausadas.`
+    : `Reativar ${p.nome}?`;
+  if(!confirm(msg)) return;
+  try {
+    await db.collection('profissionais').doc(id).update({status:novo, updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    showToast(novo==='Inativo'?'Profissional desativado.':'Profissional reativado.','success');
+    loadProfissionais();
+  } catch(e) { showToast('Erro ao alterar o status.','error'); }
 }
 
 function filterProfs(filtro, el) {
@@ -3589,6 +3606,21 @@ function montarMensagemAvisar(r) {
   return `Olá, ${nome}! Tudo bem?\n\nEste é um lembrete referente à sua locação na Áthos. O vencimento do pagamento será no dia ${venc}.\n\nValor da locação: ${valor}\n\nApós a realização do pagamento, pedimos a gentileza de encaminhar o comprovante para confirmação.\n\nFicamos à disposição. Obrigada!`;
 }
 
+function tagPagamento(r) {
+  const sz = 'font-size:.62rem;margin-left:4px';
+  const hoje = toDateStrLocal(new Date());
+  if(r.status==='Pago') {
+    if(!r.dataBaixa || !r.vencimento) return '';
+    return r.dataBaixa > r.vencimento
+      ? `<span class="badge badge-danger" style="${sz}">Pago em atraso</span>`
+      : `<span class="badge badge-success" style="${sz}">Pago em dia</span>`;
+  }
+  if(!r.vencimento) return '';
+  return r.vencimento < hoje
+    ? `<span class="badge badge-danger" style="${sz}">Em atraso</span>`
+    : `<span class="badge badge-neutral" style="${sz}">A vencer</span>`;
+}
+
 function renderReceitas(receitas) {
   receitasCache = [...receitas].sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||''));
   _renderReceitasData(receitas);
@@ -3615,7 +3647,7 @@ function _renderReceitasData(receitas) {
         <span style="color:var(--text-light)">${r.tipo||'—'}</span>
         <span>${r.vencimento?formatDate(r.vencimento):'—'}</span>
         <span style="font-weight:600">${formatMoney(r.valor)}</span>
-        <span><span class="badge ${r.status==='Pago'?'badge-success':'badge-warning'} status-click" onclick="toggleStatusRec(this,'${r.id}')">${r.status||'Pendente'}</span></span>
+        <span><span class="badge ${r.status==='Pago'?'badge-success':'badge-warning'} status-click" onclick="toggleStatusRec(this,'${r.id}')">${r.status||'Pendente'}</span>${tagPagamento(r)}</span>
         <span>${wppLink&&r.status!=='Pago'?`<a href="${wppLink}" target="_blank" class="wpp-btn"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9.3 8.4 8.5 8.5 0 0 1-3.7-.9L3 21l2-5a8.4 8.4 0 1 1 16-4.5z"/></svg> Avisar</a>`:'—'}</span>
         <span><button class="fin-del-btn" style="opacity:1" onclick="excluirLancamento('${r.id}','receitas')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></span>
       </div>`;}).join('');
@@ -3631,7 +3663,7 @@ function _renderReceitasData(receitas) {
         <div class="fin-card-item-value" style="color:var(--success)">${formatMoney(r.valor)}</div>
       </div>
       <div class="fin-card-item-meta">
-        <span class="badge ${r.status==='Pago'?'badge-success':'badge-warning'}" onclick="toggleStatusRecById('${r.id}',this)" style="cursor:pointer">${r.status||'Pendente'}</span>
+        <span class="badge ${r.status==='Pago'?'badge-success':'badge-warning'}" onclick="toggleStatusRecById('${r.id}',this)" style="cursor:pointer">${r.status||'Pendente'}</span>${tagPagamento(r)}
         <span>${r.tipo||'—'}</span>
         ${r.vencimento?`<span><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> ${formatDate(r.vencimento)}</span>`:''}
         ${wppLink&&r.status!=='Pago'?`<a href="${wppLink}" target="_blank" class="wpp-btn"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9.3 8.4 8.5 8.5 0 0 1-3.7-.9L3 21l2-5a8.4 8.4 0 1 1 16-4.5z"/></svg> Avisar</a>`:''}
@@ -3751,6 +3783,16 @@ async function renderPrevisao() {
     const recFuturasCompletas = [...recFuturas, ...locacoesPrevistas];
     const recPrev = recFuturasCompletas.reduce((s, r) => s + (parseMoney(r.valor) || 0), 0);
 
+    // Pendências de meses anteriores: ficam identificadas à parte, sem contar como realizadas
+    const [recAntSnap, despAntSnap] = await Promise.all([
+      db.collection('receitas').where('vencimento','<',proxMesInicio).get(),
+      db.collection('despesas').where('vencimento','<',proxMesInicio).get()
+    ]);
+    const recAnt = recAntSnap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.status!=='Pago' && (parseMoney(r.valor)||0)>0).sort((a,b)=>a.vencimento>b.vencimento?1:-1);
+    const despAnt = despAntSnap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.status!=='Pago' && (parseMoney(r.valor)||0)>0).sort((a,b)=>a.vencimento>b.vencimento?1:-1);
+    const recAntTot = recAnt.reduce((s,r)=>s+(parseMoney(r.valor)||0),0);
+    const despAntTot = despAnt.reduce((s,r)=>s+(parseMoney(r.valor)||0),0);
+
     // Alerta de contrato vencendo
     const profs = profissionaisCache.filter(p => p.status === 'Ativo');
 
@@ -3783,6 +3825,7 @@ async function renderPrevisao() {
         <div class="prev-label">Saldo Projetado</div>
         <div class="prev-value" style="color:${saldoPrev >= 0 ? 'var(--success)' : 'var(--danger)'}">${formatMoney(saldoPrev)}</div>
         <div class="prev-sub" style="color:${saldoPrev >= 0 ? 'var(--success)' : 'var(--danger)'}">estimativa ${saldoPrev >= 0 ? 'positiva' : 'negativa'}</div>
+        ${(recAnt.length||despAnt.length)?`<div class="prev-sub" style="margin-top:4px">Pendentes de meses anteriores (fora do cálculo): a receber ${formatMoney(recAntTot)} · a pagar ${formatMoney(despAntTot)}</div>`:''}
       </div>
       ${alertaContrato ? `<div class="prev-card" style="background:var(--warning-bg);border-color:#fde68a">
         <div class="prev-label" style="color:var(--warning)">
@@ -3825,6 +3868,10 @@ async function renderPrevisao() {
             <span class="prev-row-value" style="color:var(--danger)">${formatMoney(d.valor)}</span>
           </div>`).join('')
       : emptyState('receipt', 'Nenhuma despesa prevista', `Nenhum lançamento pendente com vencimento em ${proxMesLabel}.`, 'Lançar despesa', "openModal('nova-despesa')");
+
+    const blocoAnt = (lista, cor) => lista.length ? `<div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-lighter);margin:.75rem 0 .25rem">Pendentes de meses anteriores — não realizados</div>` + lista.map(x=>`<div class="prev-row"><span class="prev-row-label">${x.profissional||x.descricao||'—'} <span class="badge badge-warning" style="font-size:.63rem">Pendente</span> <span style="font-size:.72rem;color:var(--text-lighter);margin-left:3px">${formatDate(x.vencimento)}</span></span><span class="prev-row-value" style="color:${cor}">${formatMoney(x.valor)}</span></div>`).join('') : '';
+    document.getElementById('prev-receitas').insertAdjacentHTML('beforeend', blocoAnt(recAnt,'var(--success)'));
+    document.getElementById('prev-despesas').insertAdjacentHTML('beforeend', blocoAnt(despAnt,'var(--danger)'));
 
   } catch(e) {
     console.error('Erro ao carregar previsão:', e);
@@ -4856,9 +4903,12 @@ async function gerarLancamentosLocacoesMensais() {
     const hoje = new Date();
     const anoAtual = hoje.getFullYear(), mesAtual = hoje.getMonth();
     const snap = await db.collection('locacoes').get();
+    const _profsSnap = await db.collection('profissionais').get();
+    const _inativos = new Set(_profsSnap.docs.filter(d=>d.data().status==='Inativo').map(d=>d.id));
     for(const doc of snap.docs) {
       const l = {id:doc.id, ...doc.data()};
       if(!l.recorrencia || l.recorrencia === 'Apenas este horário') continue;
+      if(_inativos.has(l.profId)) continue; // profissional desativado: não gera nova cobrança
       if(!l.diaVencimento || !l.valorLancamento) continue;
       // Não gerar para locações já encerradas
       if(l.dataFim) {
@@ -5084,7 +5134,7 @@ function renderAgendaSemana() {
                 const conteudo = pxH>=44
                   ? `<span style="font-size:.72rem;font-weight:600;color:#fff;line-height:1.2">${prof}</span>${periodo?`<span style="font-size:.65rem;font-weight:400;color:#fff;opacity:.9">${periodo}</span>`:''}`
                   : `<span style="font-size:.68rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${prof}${periodo?' · '+periodo:''}</span>`;
-                return `<div style="position:absolute;left:0;right:0;top:${topPct}%;height:${hPct}%;box-sizing:border-box;background:${loc.cor||'var(--gold)'};opacity:.9;cursor:pointer;border-radius:4px;padding:3px 5px;overflow:hidden;display:flex;flex-direction:column;justify-content:${pxH>=44?'flex-start':'center'};gap:1px" onclick="editarLocacao('${loc.id}','${ds}')" title="${prof}${periodo?' — '+periodo:' — '+t.range}">${conteudo}</div>`;
+                return `<div style="position:absolute;left:0;right:0;top:${topPct}%;height:${hPct}%;box-sizing:border-box;background:${loc.cor||(String(loc.sala)==='2'?'#3d8a7a':'var(--gold)')};opacity:.9;cursor:pointer;border-radius:4px;padding:3px 5px;overflow:hidden;display:flex;flex-direction:column;justify-content:${pxH>=44?'flex-start':'center'};gap:1px" onclick="editarLocacao('${loc.id}','${ds}')" title="${prof}${periodo?' — '+periodo:' — '+t.range}">${conteudo}</div>`;
               }).join('');
               return `<div class="wg-cell${isH?' wg-today':''}" style="background:transparent;padding:2px"><div style="position:relative;width:100%;height:${ALT}px">${blocos}</div></div>`;
             }
@@ -5167,6 +5217,9 @@ async function loadPlanos() {
     const planos=snap.docs.map(d=>({id:d.id,...d.data()}));
     _planosCache = planos;
     popularVinculosLocacao();
+    const cfgPl = document.getElementById('cfg-planos-lista');
+    if(cfgPl) cfgPl.innerHTML = planos.length ? planos.map(p=>`<div class="cfg-row"><div><div class="cfg-label">${p.nome||'—'}</div><div class="cfg-sub">${p.horas||0}h / mês</div></div><span style="font-size:.82rem;font-weight:600">${p.valor?'R$ '+p.valor:'a definir'}</span></div>`).join('') : 'Nenhum plano cadastrado.';
+    atualizarTurnosPlanos();
     const grid=document.getElementById('planos-pacotes-list');
     const cards=planos.map(p=>`
       <div class="plano-card">
@@ -5181,6 +5234,32 @@ async function loadPlanos() {
       </div>`).join('');
     grid.innerHTML=cards+`<div class="plano-card" style="border-style:dashed;box-shadow:none;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;min-height:130px;gap:5px" onclick="novoPlano()"><div style="font-size:1.4rem;color:#d1d5db">+</div><div style="font-size:.75rem;color:var(--text-lighter)">Criar novo pacote</div></div>`;
   } catch(e){console.error(e);}
+}
+
+// Turnos Fixos (Planos e Pacotes): profissionais com locação recorrente ativa de turno, por turno
+async function atualizarTurnosPlanos() {
+  try {
+    const hoje = toDateStrLocal(new Date());
+    const [locSnap, profSnap] = await Promise.all([db.collection('locacoes').get(), db.collection('profissionais').get()]);
+    const inativos = new Set(profSnap.docs.filter(d=>d.data().status==='Inativo').map(d=>d.id));
+    const sets = {manha:new Set(), tarde:new Set(), noite:new Set()};
+    locSnap.docs.forEach(d=>{
+      const l = d.data();
+      if(!l.recorrencia || l.recorrencia==='Apenas este horário') return;
+      if(l.dataFim && l.dataFim < hoje) return;
+      if(!String(l.vinculo||'').startsWith('Turno')) return;
+      if(inativos.has(l.profId)) return;
+      getTurnosOcupados(l).forEach(k=>{ if(sets[k]) sets[k].add(l.profId); });
+    });
+    ['manha','tarde','noite'].forEach(k=>{
+      const el = document.getElementById(`turno-${k}-count`);
+      if(el) { el.textContent = sets[k].size; el.className = 'badge ' + (sets[k].size ? 'badge-success' : 'badge-neutral'); }
+    });
+    const c = appConfig || {};
+    const v1 = (c.precoTurnoS1||'').toString().trim(), v2 = (c.precoTurnoS2||'').toString().trim();
+    const txt = (v1||v2) ? `${v1?'I: R$ '+v1.replace(/^R\$\s*/,''):''}${v1&&v2?' · ':''}${v2?'II: R$ '+v2.replace(/^R\$\s*/,''):''}` : 'a definir';
+    document.querySelectorAll('.turno-valor-manha,.turno-valor-tarde,.turno-valor-noite').forEach(e=>{ e.textContent = txt; });
+  } catch(e) { console.error('Turnos em Planos:', e); }
 }
 
 function novoPlano() {
@@ -5976,7 +6055,7 @@ function _renderMovData(lista) {
       <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="${x._tipo==='Receita'?`editarReceita('${x.id}')`:`editarDespesa('${x.id}')`}">${x.profissional||x.descricao||'—'}${x.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> ${x.obs}</span>`:''}</span>
       <span><span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.7rem">${x._tipo}</span></span>
       <span style="color:var(--text-light)">${x.categoria||x.tipo||'—'}</span>
-      <span>${x._dataMov?formatDate(x._dataMov):'—'}${x.dataBaixa && x.vencimento && x.dataBaixa!==x.vencimento?`<br><span style="font-size:.68rem;color:var(--text-lighter)">venc. ${formatDate(x.vencimento)}</span>`:''}</span>
+      <span>${x._tipo==='Receita'?tagPagamento(x)+'<br>':''}${x._dataMov?formatDate(x._dataMov):'—'}${x.vencimento && x.dataBaixa!==x.vencimento?`<br><span style="font-size:.68rem;color:var(--text-lighter)">venc. ${formatDate(x.vencimento)}</span>`:''}</span>
       <span style="font-weight:600;color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</span>
       <span>${x.status==='Pago'?`<button class="btn btn-secondary btn-sm" onclick="devolverParaPagar('${x.id}','${x._tipo==='Receita'?'receitas':'despesas'}')">↩ Devolver</button>`:'—'}</span>
       <span><button class="fin-del-btn" style="opacity:1" onclick="excluirLancamento('${x.id}','${x._tipo==='Receita'?'receitas':'despesas'}')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></span>
@@ -5984,7 +6063,7 @@ function _renderMovData(lista) {
   if(mobileEl) mobileEl.innerHTML = lista.map(x=>`
     <div class="fin-card-item" style="pointer-events:auto">
       <div class="fin-card-item-top">
-        <div class="fin-card-item-name">${x.profissional||x.descricao||'—'} <span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.7rem">${x._tipo}</span></div>
+        <div class="fin-card-item-name">${x.profissional||x.descricao||'—'} <span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.7rem">${x._tipo}</span>${x._tipo==='Receita'?tagPagamento(x):''}</div>
         <div class="fin-card-item-value" style="color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</div>
       </div>
       <div class="fin-card-item-meta">
