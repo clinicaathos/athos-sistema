@@ -1315,11 +1315,13 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div class="cfg-row"><div><div class="cfg-label">Áthos I — Turno 8h</div><div class="cfg-sub">equivalente a 2 turnos</div></div><input class="cfg-input" id="preco-turno8h-s1" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Áthos II — Turno 8h</div><div class="cfg-sub">equivalente a 2 turnos</div></div><input class="cfg-input" id="preco-turno8h-s2" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Sala Mista — Turno 8h</div><div class="cfg-sub">valor independente, não usa Áthos I nem Áthos II</div></div><input class="cfg-input" id="preco-turno8h-mista" placeholder="R$ 0,00"></div>
-            <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .5rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Outros</div>
+            <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .25rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Outros</div>
+            <div class="cfg-sub" style="margin-bottom:.4rem">Preço de tabela para o que não é turno: Hora Avulsa e pacotes padrão. É o valor sugerido na locação quando não existe um plano cadastrado com o mesmo nome.</div>
             <div class="cfg-row"><div><div class="cfg-label">Hora Avulsa</div></div><input class="cfg-input" id="preco-avulsa" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Pacote 5h / mês</div></div><input class="cfg-input" id="preco-5h" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Pacote 10h / mês</div></div><input class="cfg-input" id="preco-10h" placeholder="R$ 0,00"></div>
-            <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .5rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Planos cadastrados (Planos e Pacotes)</div>
+            <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .25rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Planos cadastrados (Planos e Pacotes)</div>
+            <div class="cfg-sub" style="margin-bottom:.4rem">Somente consulta. Para criar ou alterar um plano, use a aba Planos e Pacotes. Se o nome do plano for igual ao de um item de "Outros", o valor do plano prevalece.</div>
             <div id="cfg-planos-lista" style="font-size:.8rem;color:var(--text-lighter)">Carregando...</div>
             <div class="cfg-row"><div><div class="cfg-label">Desconto padrão (%)</div><div class="cfg-sub">Aplicado automaticamente se configurado</div></div><input class="cfg-input" id="preco-desconto" placeholder="0" type="number" min="0" max="100" style="width:80px;text-align:center"></div>
           </div>
@@ -2204,7 +2206,7 @@ function renderProfissionais(profs, filtro='todos') {
 
   if(filtered.length===0){grid.innerHTML='<div style="font-size:.82rem;color:var(--text-lighter);padding:2rem;text-align:center;grid-column:1/-1">Nenhum profissional encontrado.</div>';return;}
 
-  grid.innerHTML = filtered.map(p => {
+  const _card = p => {
     const isBday = p.nascimento && new Date(p.nascimento).toDateString().slice(4,10) === hoje.toDateString().slice(4,10);
     const diffDias = p.contratoFim ? Math.floor((new Date(p.contratoFim+'T12:00:00')-hoje)/(1000*60*60*24)) : null;
     const vencido = diffDias !== null && diffDias < 0;
@@ -2244,7 +2246,7 @@ function renderProfissionais(profs, filtro='todos') {
       }).join('');
     }
 
-    return `<div class="prof-card" onclick="verProfissional('${p.id}')">
+    return `<div class="prof-card" style="${p.status==='Inativo'?'opacity:.62;':''}" onclick="verProfissional('${p.id}')">
       <div class="prof-top">
         <div style="position:relative;display:inline-block">
           <div class="prof-av">${initials}</div>
@@ -2270,7 +2272,17 @@ function renderProfissionais(profs, filtro='todos') {
         <button class="btn btn-secondary btn-sm" style="${(vencido||vencendo)?'':'margin-left:auto'}" onclick="event.stopPropagation();alternarStatusProfissional('${p.id}')">${p.status==='Inativo'?'Reativar':'Desativar'}</button>
       </div>
     </div>`;
-  }).join('');
+  };
+
+  // Em "Todos" (e "Vencendo"), separa visualmente ativos e inativos
+  if(filtro==='ativo' || filtro==='inativo') { grid.innerHTML = filtered.map(_card).join(''); return; }
+  const _ativos = filtered.filter(p=>p.status!=='Inativo');
+  const _inat = filtered.filter(p=>p.status==='Inativo');
+  const _head = (txt,n,cor)=>`<div style="grid-column:1/-1;display:flex;align-items:center;gap:.6rem;margin:.25rem 0 .1rem"><span style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${cor}">${txt} (${n})</span><span style="flex:1;height:1px;background:var(--border)"></span></div>`;
+  let _html = '';
+  if(_ativos.length) _html += _head('Ativos',_ativos.length,'var(--success)') + _ativos.map(_card).join('');
+  if(_inat.length) _html += _head('Inativos',_inat.length,'var(--text-lighter)') + _inat.map(_card).join('');
+  grid.innerHTML = _html;
 }
 
 async function alternarStatusProfissional(id) {
@@ -8389,6 +8401,24 @@ async function verHistoricoProf(profId) {
 
     const totalFat = recAll.reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
     const totalPago = recAll.filter(r=>r.status==='Pago').reduce((s,r)=>s+(parseFloat(r.valor)||0),0);
+    // Lançamentos em atraso: pagos após o vencimento (data da baixa > vencimento)
+    // ou ainda abertos com vencimento já vencido. O mês de referência é o do vencimento.
+    const _hojeStr = toDateStrLocal(new Date());
+    const _mesLbl = ym => { const [y,m]=ym.split('-'); return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][+m-1]+'/'+y; };
+    const _atrasoDe = r => {
+      if(!r.vencimento) return null;
+      if(r.status==='Pago') return (r.dataBaixa && r.dataBaixa > r.vencimento) ? 'pago' : null;
+      return r.vencimento < _hojeStr ? 'aberto' : null;
+    };
+    const atrasoPorMes = {};
+    recAll.forEach(r=>{
+      const t=_atrasoDe(r); if(!t) return;
+      const ym=r.vencimento.slice(0,7);
+      const g=atrasoPorMes[ym]=atrasoPorMes[ym]||{qtd:0,total:0,abertos:0,itens:[]};
+      g.qtd++; g.total+=parseFloat(r.valor)||0; if(t==='aberto') g.abertos++;
+      g.itens.push({r,t});
+    });
+    const mesesAtraso = Object.keys(atrasoPorMes).sort().reverse();
     const totalTurnos = locacoes.filter(l=>(l.vinculo||'').toLowerCase().includes('turno')).length;
     const totalHoras = locacoes.filter(l=>(l.vinculo||'').toLowerCase().includes('hora')).length;
 
@@ -8397,7 +8427,8 @@ async function verHistoricoProf(profId) {
       <div class="stat-card" style="min-width:130px"><div class="stat-label">Total Recebido</div><div style="font-size:1rem;font-weight:700;color:var(--success)">${formatMoney(totalPago)}</div></div>
       <div class="stat-card" style="min-width:110px"><div class="stat-label">Locações Turno</div><div style="font-size:1rem;font-weight:700">${totalTurnos}</div></div>
       <div class="stat-card" style="min-width:110px"><div class="stat-label">Horas Avulsas</div><div style="font-size:1rem;font-weight:700">${totalHoras}</div></div>
-      <div class="stat-card" style="min-width:110px"><div class="stat-label">Alterações</div><div style="font-size:1rem;font-weight:700">${alteracoes.length}</div></div>`;
+      <div class="stat-card" style="min-width:110px"><div class="stat-label">Alterações</div><div style="font-size:1rem;font-weight:700">${alteracoes.length}</div></div>
+      <div class="stat-card" style="min-width:110px"><div class="stat-label">Meses em atraso</div><div style="font-size:1rem;font-weight:700;color:${mesesAtraso.length?'var(--danger)':'var(--success)'}">${mesesAtraso.length}</div></div>`;
 
     // Montar linha do tempo combinada
     const eventos = [];
@@ -8408,8 +8439,14 @@ async function verHistoricoProf(profId) {
         desc:`Encerramento — ${l.vinculo||'—'} | Sala ${l.sala||'?'}`});
     });
     recAll.forEach(r=>{
-      if(r.vencimento) eventos.push({data:r.vencimento, tipo:'receita',
-        desc:`Lançamento ${r.status==='Pago'?'pago':'pendente'} — ${r.descricao||r.tipo||'—'} — ${formatMoney(parseFloat(r.valor)||0)}`});
+      if(r.vencimento) {
+        const t=_atrasoDe(r);
+        const tag = t==='pago' ? `<span class="badge badge-danger" style="font-size:.62rem;margin-left:4px">Pago em atraso</span>`
+                  : t==='aberto' ? `<span class="badge badge-danger" style="font-size:.62rem;margin-left:4px">Em atraso</span>` : '';
+        const extra = t ? `<div style="font-size:.74rem;color:var(--danger);margin-top:2px">Referente a ${_mesLbl(r.vencimento.slice(0,7))} · vencimento ${formatDate(r.vencimento)}${t==='pago'?' · baixa em '+formatDate(r.dataBaixa):' · ainda em aberto'}</div>` : '';
+        eventos.push({data:r.vencimento, tipo:'receita', extra,
+          desc:`Lançamento ${r.status==='Pago'?'pago':'pendente'} — ${r.descricao||r.tipo||'—'} — ${formatMoney(parseFloat(r.valor)||0)}${tag}`});
+      }
     });
     // Alterações cadastrais da nova coleção historicoProf
     alteracoes.forEach(h=>{
@@ -8446,7 +8483,12 @@ async function verHistoricoProf(profId) {
       edicao:'<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
     };
     const colorMap = {locacao:'var(--gold)',fim:'var(--danger)',receita:'var(--success)',edicao:'#6d5aac'};
-    if(tlEl) tlEl.innerHTML = eventos.map(e=>`
+    const atrasoHtml = mesesAtraso.length ? `
+      <div style="background:var(--danger-bg,#fef2f2);border:1px solid #fecaca;border-radius:9px;padding:.7rem .85rem;margin-bottom:.75rem">
+        <div style="font-size:.74rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--danger);margin-bottom:.4rem">Meses com lançamento em atraso</div>
+        ${mesesAtraso.map(ym=>{const g=atrasoPorMes[ym]; return `<div style="display:flex;justify-content:space-between;gap:.5rem;font-size:.8rem;padding:.2rem 0"><span style="font-weight:600">${_mesLbl(ym)}</span><span>${g.qtd} lançamento${g.qtd!==1?'s':''} · ${formatMoney(g.total)} · ${g.abertos?g.abertos+' em aberto':'pago em atraso'}</span></div>`;}).join('')}
+      </div>` : '';
+    if(tlEl) tlEl.innerHTML = atrasoHtml + eventos.map(e=>`
       <div style="display:flex;gap:.75rem;padding:.7rem 0;border-bottom:1px solid var(--border)">
         <div style="width:28px;height:28px;border-radius:50%;background:${colorMap[e.tipo]||'var(--text-lighter)'};color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">${iconMap[e.tipo]||''}</div>
         <div style="flex:1">
