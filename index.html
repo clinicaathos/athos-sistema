@@ -651,6 +651,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="nav-item" onclick="showPage('lembretes',this)"><span class="nav-icon">◷</span>Lembretes</div>
       <div class="nav-item" onclick="showPage('anotacoes',this)"><span class="nav-icon">📝</span>Anotações</div>
       <div class="nav-item" onclick="showPage('servicos',this)"><span class="nav-icon">⊗</span>Serviços</div>
+      <div class="nav-item" onclick="showPage('materiais',this)"><span class="nav-icon">⚖</span>Materiais</div>
       <div class="nav-item" onclick="showPage('levantamento',this)"><span class="nav-icon">◐</span>Levantamento Financeiro</div>
       <div class="sb-group">Sistema</div>
       <div class="nav-item" onclick="showPage('configuracoes',this)"><span class="nav-icon">⊕</span>Configurações</div>
@@ -800,7 +801,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
           <div class="agenda-legend">
             <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Turno Fixo</div>
             <div class="legend-item"><div class="legend-dot" style="background:#3d8a7a"></div>Pacote de Horas</div>
-            <div class="legend-item"><div class="legend-dot" style="background:#6d5aac"></div>Hora Avulsa</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#6d5aac"></div>Athos Singular</div>
             <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div>Último dia</div>
             <div class="legend-item"><div class="legend-dot" style="border:1.5px dashed #d1d5db;background:transparent"></div>Disponível</div>
             <div class="legend-item"><div class="legend-dot" style="background:repeating-linear-gradient(45deg,#9ca3af,#9ca3af 3px,#d1d5db 3px,#d1d5db 6px)"></div>Bloqueado</div>
@@ -829,7 +830,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
           <div class="agenda-legend" style="margin-top:.75rem">
             <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Turno Fixo</div>
             <div class="legend-item"><div class="legend-dot" style="background:#3d8a7a"></div>Pacote de Horas</div>
-            <div class="legend-item"><div class="legend-dot" style="background:#6d5aac"></div>Hora Avulsa</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#6d5aac"></div>Athos Singular</div>
             <div class="legend-item"><div class="legend-dot" style="border:1.5px dashed #d1d5db;background:transparent"></div>Disponível</div>
             <div class="legend-item"><div class="legend-dot" style="background:repeating-linear-gradient(45deg,#9ca3af,#9ca3af 3px,#d1d5db 3px,#d1d5db 6px)"></div>Bloqueado</div>
           </div>
@@ -847,7 +848,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
           <div class="agenda-legend" style="margin-top:.75rem">
             <div class="legend-item"><div class="legend-dot" style="background:rgba(160,120,80,.3)"></div>Turno Fixo</div>
             <div class="legend-item"><div class="legend-dot" style="background:rgba(61,138,122,.3)"></div>Pacote de Horas</div>
-            <div class="legend-item"><div class="legend-dot" style="background:rgba(109,90,172,.3)"></div>Hora Avulsa</div>
+            <div class="legend-item"><div class="legend-dot" style="background:rgba(109,90,172,.3)"></div>Athos Singular</div>
           </div>
         </div>
       </div>
@@ -1086,7 +1087,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
               <div style="display:flex;gap:4px">
                 <button class="qf-btn relat-loc-tipo-btn active" data-tipo="todos" onclick="setRelatTipoLoc('todos')" style="font-size:.72rem;padding:3px 9px">Todos</button>
                 <button class="qf-btn relat-loc-tipo-btn" data-tipo="turno" onclick="setRelatTipoLoc('turno')" style="font-size:.72rem;padding:3px 9px">Turnos</button>
-                <button class="qf-btn relat-loc-tipo-btn" data-tipo="avulsa" onclick="setRelatTipoLoc('avulsa')" style="font-size:.72rem;padding:3px 9px">Hora Avulsa</button>
+                <button class="qf-btn relat-loc-tipo-btn" data-tipo="avulsa" onclick="setRelatTipoLoc('avulsa')" style="font-size:.72rem;padding:3px 9px">Athos Singular</button>
               </div>
             </div>
             <canvas id="chart-ocupacao" height="100"></canvas>
@@ -1210,7 +1211,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
           <input class="form-input" id="lmb-filtro-busca" placeholder="Buscar por título" style="max-width:180px" oninput="loadLembretes()">
           <select class="form-select" id="lmb-filtro-status" style="max-width:150px" onchange="loadLembretes()">
             <option value="">Todos os status</option>
-            <option>Pendente</option><option>Concluído</option>
+            <option>Pendente</option><option>Em andamento</option><option>Concluído</option>
           </select>
           <select class="form-select" id="lmb-filtro-prioridade" style="max-width:150px" onchange="loadLembretes()">
             <option value="">Toda prioridade</option>
@@ -1223,6 +1224,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
         <div class="stats-grid" style="margin-bottom:1rem">
           <div class="stat-card"><div class="stat-label">Total no filtro</div><div class="stat-value" id="lmb-total">—</div></div>
           <div class="stat-card"><div class="stat-label">Pendentes</div><div class="stat-value" id="lmb-pendentes">—</div></div>
+          <div class="stat-card"><div class="stat-label">Em andamento</div><div class="stat-value" id="lmb-andamento">—</div></div>
           <div class="stat-card"><div class="stat-label">Vencidos</div><div class="stat-value" style="color:var(--danger)" id="lmb-vencidos">—</div></div>
         </div>
         <div class="card" style="padding:0;overflow:hidden;margin-top:.5rem">
@@ -1263,6 +1265,44 @@ body.dark .tag{background:#111827;border-color:#374151;}
         <div class="card" style="padding:0;overflow:hidden;margin-top:.5rem">
           <div class="data-table fin-table-desktop" id="anot-table"></div>
           <div class="fin-cards-mobile" id="anot-cards-mobile"></div>
+        </div>
+      </div>
+
+      <!-- ══ MATERIAIS — EMPRÉSTIMO E RESERVA ══ -->
+      <div class="page" id="page-materiais">
+        <div class="sec-header">
+          <span class="sec-title">Empréstimo e Reserva de Materiais</span>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn btn-secondary" onclick="exportarMateriaisCSV()">↓ Exportar CSV</button>
+            <button class="btn btn-secondary" onclick="abrirMateriaisCad()">Materiais</button>
+            <button class="btn btn-primary" onclick="novaReservaMaterial()">+ Nova reserva</button>
+          </div>
+        </div>
+        <div class="divider-label" style="margin-top:.25rem">Situação atual</div>
+        <div class="planos-grid" id="mat-situacao"></div>
+        <div class="stats-grid" style="margin-bottom:1rem">
+          <div class="stat-card" style="cursor:pointer" onclick="matQuick('uso')"><div class="stat-label">Em utilização</div><div class="stat-value" id="mat-st-uso">—</div></div>
+          <div class="stat-card" style="cursor:pointer" onclick="matQuick('nd')"><div class="stat-label">Não devolvidos</div><div class="stat-value" style="color:var(--danger)" id="mat-st-nd">—</div></div>
+          <div class="stat-card" style="cursor:pointer" onclick="matQuick('cf')"><div class="stat-label">Conflitos</div><div class="stat-value" style="color:var(--danger)" id="mat-st-cf">—</div></div>
+          <div class="stat-card"><div class="stat-label">Total no filtro</div><div class="stat-value" id="mat-st-total">—</div></div>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+          <select class="form-select" id="mat-f-material" style="max-width:170px" onchange="renderMateriais()"></select>
+          <select class="form-select" id="mat-f-prof" style="max-width:190px" onchange="renderMateriais()"></select>
+          <select class="form-select" id="mat-f-cons" style="max-width:150px" onchange="renderMateriais()"></select>
+          <select class="form-select" id="mat-f-sres" style="max-width:190px" onchange="renderMateriais()">
+            <option value="">Toda reserva</option><option>Reservada</option><option>Cancelada</option>
+          </select>
+          <select class="form-select" id="mat-f-sdev" style="max-width:160px" onchange="renderMateriais()">
+            <option value="">Toda devolução</option><option value="Pendente">Pendente</option><option value="Devolvido">Devolvido</option><option value="NaoDevolvido">Não devolvido</option>
+          </select>
+          <input class="form-input" type="date" id="mat-f-ini" style="max-width:140px" onchange="renderMateriais()" title="Período — de">
+          <input class="form-input" type="date" id="mat-f-fim" style="max-width:140px" onchange="renderMateriais()" title="Período — até">
+          <button class="btn btn-secondary btn-sm" id="mat-quick-limpar" style="display:none" onclick="matQuick('')">Limpar filtro rápido</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div class="data-table fin-table-desktop" id="mat-table"></div>
+          <div class="fin-cards-mobile" id="mat-cards-mobile"></div>
         </div>
       </div>
 
@@ -1316,14 +1356,13 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div class="cfg-row"><div><div class="cfg-label">Áthos II — Turno 8h</div><div class="cfg-sub">equivalente a 2 turnos</div></div><input class="cfg-input" id="preco-turno8h-s2" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Sala Mista — Turno 8h</div><div class="cfg-sub">valor independente, não usa Áthos I nem Áthos II</div></div><input class="cfg-input" id="preco-turno8h-mista" placeholder="R$ 0,00"></div>
             <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .25rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Outros</div>
-            <div class="cfg-sub" style="margin-bottom:.4rem">Preço de tabela para o que não é turno: Hora Avulsa e pacotes padrão. É o valor sugerido na locação quando não existe um plano cadastrado com o mesmo nome.</div>
-            <div class="cfg-row"><div><div class="cfg-label">Hora Avulsa</div></div><input class="cfg-input" id="preco-avulsa" placeholder="R$ 0,00"></div>
+            <div class="cfg-sub" style="margin-bottom:.4rem">Preço de tabela para o que não é turno: Athos Singular e pacotes padrão. É o valor sugerido na locação quando não existe um plano cadastrado com o mesmo nome.</div>
+            <div class="cfg-row"><div><div class="cfg-label">Athos Singular</div></div><input class="cfg-input" id="preco-avulsa" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Pacote 5h / mês</div></div><input class="cfg-input" id="preco-5h" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Pacote 10h / mês</div></div><input class="cfg-input" id="preco-10h" placeholder="R$ 0,00"></div>
             <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .25rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Planos cadastrados (Planos e Pacotes)</div>
             <div class="cfg-sub" style="margin-bottom:.4rem">Somente consulta. Para criar ou alterar um plano, use a aba Planos e Pacotes. Se o nome do plano for igual ao de um item de "Outros", o valor do plano prevalece.</div>
             <div id="cfg-planos-lista" style="font-size:.8rem;color:var(--text-lighter)">Carregando...</div>
-            <div class="cfg-row"><div><div class="cfg-label">Desconto padrão (%)</div><div class="cfg-sub">Aplicado automaticamente se configurado</div></div><input class="cfg-input" id="preco-desconto" placeholder="0" type="number" min="0" max="100" style="width:80px;text-align:center"></div>
           </div>
           <div class="card">
             <div class="cfg-title">Horários de Funcionamento</div>
@@ -1452,7 +1491,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
     <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="loc-prof" onchange="toggleSaldoPacote()"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
       <div class="form-group" id="loc-sala-group"><label class="form-label">Sala</label><select class="form-select" id="loc-sala" onchange="calcDescontoLocacao()"><option value="1" id="loc-s1-opt">Sala 1</option><option value="2" id="loc-s2-opt">Sala 2</option></select></div>
-      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista();toggleQtdAvulsa()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option>Pacote de 5 Horas</option><option>Pacote de 10 Horas</option><option>Hora Avulsa</option></select></div>
+      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista();toggleQtdAvulsa()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option>Pacote de 5 Horas</option><option>Pacote de 10 Horas</option><option value="Hora Avulsa">Athos Singular</option></select></div>
     </div>
     <div class="form-group" id="loc-saldo-pacote-group" style="display:none">
       <div style="background:#f3f4f6;border-radius:8px;padding:.6rem .75rem;font-size:.78rem;color:var(--text-light)" id="loc-saldo-pacote-info">—</div>
@@ -1509,7 +1548,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div style="font-size:.72rem;color:var(--text-lighter);margin-top:4px" id="loc-dias-semana-hint">Selecione os dias em que a locação se repete dentro do período.</div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Desconto (%)</label><input class="form-input" id="loc-desconto" type="number" min="0" max="100" placeholder="0" oninput="calcDescontoLocacao();onDescontoInput()"></div>
+      <div class="form-group"><label class="form-label">Desconto padrão (%)</label><input class="form-input" id="loc-desconto" type="number" min="0" max="100" placeholder="0" oninput="calcDescontoLocacao();onDescontoInput()"><div style="font-size:.7rem;color:var(--text-lighter);margin-top:3px">Usar apenas em casos excepcionais.</div></div>
       <div class="form-group"><label class="form-label">Valor final</label><input class="form-input" id="loc-valor-final" readonly placeholder="Automático" style="background:#f9fafb;color:var(--success);font-weight:600"></div>
     </div>
     <div id="loc-desconto-vigencia-group" style="display:none">
@@ -1608,7 +1647,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="form-group"><label class="form-label">Cidade / UF</label><input class="form-input" id="prof-cidade" placeholder="São Paulo / SP"></div>
     </div>
     <div style="font-size:.78rem;font-weight:600;color:var(--text-light);margin:.75rem 0 .5rem;text-transform:uppercase;letter-spacing:.05em">Contrato</div>
-    <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="prof-vinculo" onchange="updateVinculoAuto()"><option>Hora Avulsa</option><option>Pacote de Horas</option><option>Turno Fixo</option></select></div>
+    <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="prof-vinculo" onchange="updateVinculoAuto()"><option value="Hora Avulsa">Athos Singular</option><option>Pacote de Horas</option><option>Turno Fixo</option></select></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="prof-status"><option>Ativo</option><option>Inativo</option></select></div>
       <div class="form-group"><label class="form-label">Vínculo Formal</label><input class="form-input" id="prof-vinculo-formal" readonly value="Sem vínculo" style="background:#f9fafb;color:var(--text-light)"></div>
@@ -1723,13 +1762,55 @@ body.dark .tag{background:#111827;border-color:#374151;}
     </div>
     <div class="form-group"><label class="form-label">Observação</label><textarea class="form-input" id="lembrete-obs" rows="2" style="resize:vertical"></textarea></div>
     <div class="form-group"><label class="form-label">Status</label>
-      <select class="form-select" id="lembrete-status"><option>Pendente</option><option>Concluído</option></select>
+      <select class="form-select" id="lembrete-status"><option>Pendente</option><option>Em andamento</option><option>Concluído</option></select>
     </div>
     <div style="display:flex;gap:.5rem;margin-top:.5rem">
       <button class="btn btn-primary" style="flex:1" onclick="salvarLembrete()">Salvar</button>
       <button class="btn btn-secondary" id="lembrete-excluir-btn" style="display:none;color:var(--danger)" onclick="excluirLembrete()">Excluir</button>
       <button class="btn btn-secondary" onclick="closeModal('novo-lembrete')">Cancelar</button>
     </div>
+  </div>
+</div>
+
+<!-- Reserva / empréstimo de material -->
+<div class="modal-overlay" id="modal-materiais-reserva" onclick="closeModalBg(event,'materiais-reserva')">
+  <div class="modal modal-sm">
+    <div class="modal-title" id="mres-title">Nova reserva de material</div>
+    <input type="hidden" id="mres-edit-id">
+    <div class="form-group"><label class="form-label">Material</label><select class="form-select" id="mres-material"></select></div>
+    <div class="form-group"><label class="form-label">Profissional responsável</label><select class="form-select" id="mres-prof"></select></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Início</label><input class="form-input" type="datetime-local" id="mres-inicio"></div>
+      <div class="form-group"><label class="form-label">Término</label><input class="form-input" type="datetime-local" id="mres-fim"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Consultório</label><select class="form-select" id="mres-consultorio"></select></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Status da reserva</label>
+        <select class="form-select" id="mres-status"><option>Reservada</option><option>Cancelada</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Status da devolução</label>
+        <select class="form-select" id="mres-devolucao"><option value="Pendente">Pendente</option><option value="Devolvido">Devolvido</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-input" id="mres-obs" rows="2" style="resize:vertical"></textarea></div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem">
+      <button class="btn btn-primary" style="flex:1" onclick="salvarReservaMaterial()">Salvar</button>
+      <button class="btn btn-secondary" id="mres-excluir-btn" style="display:none;color:var(--danger)" onclick="excluirReservaMaterial()">Excluir</button>
+      <button class="btn btn-secondary" onclick="closeModal('materiais-reserva')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cadastro de materiais -->
+<div class="modal-overlay" id="modal-materiais-cad" onclick="closeModalBg(event,'materiais-cad')">
+  <div class="modal modal-sm">
+    <div class="modal-title">Materiais</div>
+    <div style="font-size:.75rem;color:var(--text-lighter);margin-bottom:.75rem">Cadastre os itens que podem ser reservados. Materiais inativos não aparecem em novas reservas, mas o histórico é mantido.</div>
+    <div id="mcad-lista" style="margin-bottom:.75rem"></div>
+    <div class="form-group"><label class="form-label">Novo material</label>
+      <div style="display:flex;gap:.5rem"><input class="form-input" id="mcad-nome" placeholder="Ex: Balança de bioimpedância" onkeydown="if(event.key==='Enter')adicionarMaterial()"><button class="btn btn-primary" onclick="adicionarMaterial()">Adicionar</button></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end"><button class="btn btn-secondary" onclick="closeModal('materiais-cad')">Fechar</button></div>
   </div>
 </div>
 
@@ -1858,7 +1939,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
           <option>Extra</option>
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="receita-tipo"><option>Turno Fixo</option><option>Pacote de Horas</option><option>Hora Avulsa</option><option>Não se aplica</option></select></div>
+      <div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="receita-tipo"><option>Turno Fixo</option><option>Pacote de Horas</option><option value="Hora Avulsa">Athos Singular</option><option>Não se aplica</option></select></div>
     </div>
     <div class="form-group"><label class="form-label">Subcategoria</label><select class="form-select" id="receita-subcat"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
@@ -2130,16 +2211,8 @@ function applyConfig() {
   if(appConfig.hrTarde) document.getElementById('hr-tarde').value = appConfig.hrTarde;
   if(appConfig.hrNoite) document.getElementById('hr-noite').value = appConfig.hrNoite;
   else document.getElementById('hr-noite').value = '17h30 às 21h30';
-  if(appConfig.precoTurnoS1) document.getElementById('preco-turno-s1').value = appConfig.precoTurnoS1;
-  if(appConfig.precoTurnoS2) document.getElementById('preco-turno-s2').value = appConfig.precoTurnoS2;
-  if(appConfig.precoTurno8hS1) document.getElementById('preco-turno8h-s1').value = appConfig.precoTurno8hS1;
-  if(appConfig.precoTurno8hS2) document.getElementById('preco-turno8h-s2').value = appConfig.precoTurno8hS2;
-  if(appConfig.precoTurno8hMista) document.getElementById('preco-turno8h-mista').value = appConfig.precoTurno8hMista;
-  // compat legado
-  if(appConfig.precoTurno && !appConfig.precoTurnoS1) { document.getElementById('preco-turno-s1').value = appConfig.precoTurno; document.getElementById('preco-turno-s2').value = appConfig.precoTurno; }
-  if(appConfig.precoAvulsa) document.getElementById('preco-avulsa').value = appConfig.precoAvulsa;
-  if(appConfig.preco10h) document.getElementById('preco-10h').value = appConfig.preco10h;
-  if(appConfig.preco5h) document.getElementById('preco-5h').value = appConfig.preco5h;
+  preencherValoresTabela();
+  renderConfigPlanos();
 }
 
 async function saveConfig() {
@@ -2162,7 +2235,7 @@ async function saveConfig() {
   };
   try {
     await db.collection('config').doc('geral').set(config, {merge:true});
-    appConfig = config;
+    appConfig = {...appConfig, ...config};
     applyConfig();
     showToast('Configurações salvas!','success');
   } catch(e) {
@@ -2260,7 +2333,7 @@ function renderProfissionais(profs, filtro='todos') {
       </div>
       <div class="prof-name">${p.nome||'—'}${isBday?' <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8M4 16s1.5-2 4-2 4 2 4 2 1.5-2 4-2 4 2 4 2M12 7v4M12 7a2 2 0 1 0-2-2c0 1.1 2 2 2 2z"/></svg>':''}</div>
       <div class="prof-spec">${p.especialidade||''}${p.conselho?' · '+p.conselho+' '+p.registro:''}</div>
-      ${p.vinculo?`<div class="prof-info"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> ${p.vinculo}</div>`:''}
+      ${p.vinculo?`<div class="prof-info"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> ${rotuloVinc(p.vinculo)}</div>`:''}
       ${p.contratoFim?`<div class="prof-info" style="${vencido?'color:var(--danger);font-weight:600':vencendo?'color:var(--warning)':''}"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> ${vencido?'<svg class="ic ic-sm" viewBox="0 0 24 24" style="stroke:none"><circle cx="12" cy="12" r="6" fill="#dc2626"/></svg> VENCIDO — ':vencendo?'<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg> ':''}Contrato ${vencido?'em':'até'} ${formatDate(p.contratoFim)}</div>`:''}
       ${p.rua?`<div class="prof-info"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg> ${p.rua}, ${p.numero||''} — ${p.cidade||''}</div>`:''}
       ${horasBar}
@@ -2510,7 +2583,7 @@ function verProfissional(id) {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:.625rem;margin-bottom:1rem">
       <div style="background:#f9fafb;border-radius:7px;padding:.7rem;border:1px solid var(--border)"><div style="font-size:.72rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">CPF</div><div style="font-size:.82rem;font-weight:500">${p.cpf||'—'}</div></div>
       <div style="background:#f9fafb;border-radius:7px;padding:.7rem;border:1px solid var(--border)"><div style="font-size:.72rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Nascimento</div><div style="font-size:.82rem;font-weight:500">${p.nascimento?formatDate(p.nascimento):'—'}</div></div>
-      <div style="background:#f9fafb;border-radius:7px;padding:.7rem;border:1px solid var(--border)"><div style="font-size:.72rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Vínculo</div><div style="font-size:.82rem;font-weight:500">${p.vinculo||'—'}</div></div>
+      <div style="background:#f9fafb;border-radius:7px;padding:.7rem;border:1px solid var(--border)"><div style="font-size:.72rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Vínculo</div><div style="font-size:.82rem;font-weight:500">${rotuloVinc(p.vinculo||'—')}</div></div>
       <div style="background:#f9fafb;border-radius:7px;padding:.7rem;border:1px solid var(--border)"><div style="font-size:.72rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Contrato até</div><div style="font-size:.82rem;font-weight:500">${p.contratoFim?formatDate(p.contratoFim):'—'}</div></div>
       ${p.abordagem?`<div style="background:#f9fafb;border-radius:7px;padding:.7rem;border:1px solid var(--border)"><div style="font-size:.72rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Abordagem</div><div style="font-size:.82rem;font-weight:500">${p.abordagem}</div></div>`:''}
       ${p.publicoAlvo?`<div style="background:#f9fafb;border-radius:7px;padding:.7rem;border:1px solid var(--border)"><div style="font-size:.72rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Público-alvo</div><div style="font-size:.82rem;font-weight:500">${p.publicoAlvo}</div></div>`:''}
@@ -2555,7 +2628,7 @@ async function abrirLocacaoRecorrenteProf(profId) {
       const valorTxt = valorNum !== null && !isNaN(valorNum) ? formatMoney(valorNum) : '—';
       const descontoTxt = l.desconto && parseFloat(l.desconto) > 0 ? ` (desconto ${l.desconto}%)` : '';
       return `<div style="border:1px solid var(--border);border-radius:9px;padding:.75rem">
-        <div style="font-size:.85rem;font-weight:600">${l.vinculo||''} — ${salaNome}</div>
+        <div style="font-size:.85rem;font-weight:600">${rotuloVinc(l.vinculo||'')} — ${salaNome}</div>
         <div style="font-size:.78rem;color:var(--text-light);margin-top:2px">${l.recorrencia} · vencimento dia ${l.diaVencimento||'—'} · ${valorTxt}${descontoTxt}</div>
         <div style="font-size:.76rem;color:var(--text-lighter);margin-top:2px">Desde ${l.dataInicio?formatDate(l.dataInicio):'—'}${l.dataFim?` até ${formatDate(l.dataFim)}`:''}</div>
         <div style="display:flex;gap:.5rem;margin-top:.6rem">
@@ -3339,7 +3412,7 @@ async function calcularAnalise() {
     const recDetalheEl = document.getElementById('analise-rec-detalhe');
     if(recDetalheEl) recDetalheEl.innerHTML = Object.entries(recPorCat).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>`
       <div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.3rem 0;border-bottom:1px solid var(--border)">
-        <span>${cat}</span><span style="font-weight:600;color:var(--success)">${formatMoney(val)}</span>
+        <span>${rotuloVinc(cat)}</span><span style="font-weight:600;color:var(--success)">${formatMoney(val)}</span>
       </div>`).join('') + `<div style="display:flex;justify-content:space-between;font-size:.8rem;padding:.4rem 0;font-weight:700">
         <span>Total</span><span style="color:var(--success)">${formatMoney(totalRec)}</span></div>`;
 
@@ -3442,7 +3515,7 @@ async function loadDashAgenda() {
         html: `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid var(--border)">
           <div style="flex:1">
             <span style="font-size:.76rem;font-weight:600">💰 ${r.profissional||r.descricao||'Receita'}</span>
-            <div style="font-size:.72rem;color:var(--text-lighter)">${r.tipo||''} — ${formatMoney(r.valor)}</div>
+            <div style="font-size:.72rem;color:var(--text-lighter)">${rotuloVinc(r.tipo||'')} — ${formatMoney(r.valor)}</div>
           </div>
           <span style="font-size:.7rem;font-weight:600;color:var(--warning);white-space:nowrap;margin-left:.5rem">Vence ${formatDate(r.vencimento)}</span>
         </div>`
@@ -3656,7 +3729,7 @@ function _renderReceitasData(receitas) {
       return `<div class="dt-row" style="grid-template-columns:28px 2fr 1fr 1fr 1fr 1fr 80px 40px">
         <span><input type="checkbox" class="rec-sel-cb" data-id="${r.id}" onchange="updateLoteBtn('rec')"></span>
         <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="editarReceita('${r.id}')">${r.profissional||'—'}${r.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> ${r.obs}</span>`:''}</span>
-        <span style="color:var(--text-light)">${r.tipo||'—'}</span>
+        <span style="color:var(--text-light)">${rotuloVinc(r.tipo||'—')}</span>
         <span>${r.vencimento?formatDate(r.vencimento):'—'}</span>
         <span style="font-weight:600">${formatMoney(r.valor)}</span>
         <span><span class="badge ${r.status==='Pago'?'badge-success':'badge-warning'} status-click" onclick="toggleStatusRec(this,'${r.id}')">${r.status||'Pendente'}</span>${tagPagamento(r)}</span>
@@ -3676,7 +3749,7 @@ function _renderReceitasData(receitas) {
       </div>
       <div class="fin-card-item-meta">
         <span class="badge ${r.status==='Pago'?'badge-success':'badge-warning'}" onclick="toggleStatusRecById('${r.id}',this)" style="cursor:pointer">${r.status||'Pendente'}</span>${tagPagamento(r)}
-        <span>${r.tipo||'—'}</span>
+        <span>${rotuloVinc(r.tipo||'—')}</span>
         ${r.vencimento?`<span><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> ${formatDate(r.vencimento)}</span>`:''}
         ${wppLink&&r.status!=='Pago'?`<a href="${wppLink}" target="_blank" class="wpp-btn"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9.3 8.4 8.5 8.5 0 0 1-3.7-.9L3 21l2-5a8.4 8.4 0 1 1 16-4.5z"/></svg> Avisar</a>`:''}
       </div>
@@ -4815,7 +4888,7 @@ async function salvarLocacao() {
         const ref = await db.collection('locacoes').add({...slot, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
         await gerarLancamentoLocacao({...slot, id: ref.id});
       }
-      showToast(`${qtdAvulsa} locações de Hora Avulsa criadas (${geradas[0].inicio}–${geradas[geradas.length-1].fim})!`, 'success');
+      showToast(`${qtdAvulsa} locações de Athos Singular criadas (${geradas[0].inicio}–${geradas[geradas.length-1].fim})!`, 'success');
     } else {
       data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
       const ref = await db.collection('locacoes').add(data);
@@ -5229,19 +5302,19 @@ async function loadPlanos() {
     const planos=snap.docs.map(d=>({id:d.id,...d.data()}));
     _planosCache = planos;
     popularVinculosLocacao();
-    const cfgPl = document.getElementById('cfg-planos-lista');
-    if(cfgPl) cfgPl.innerHTML = planos.length ? planos.map(p=>`<div class="cfg-row"><div><div class="cfg-label">${p.nome||'—'}</div><div class="cfg-sub">${p.horas||0}h / mês</div></div><span style="font-size:.82rem;font-weight:600">${p.valor?'R$ '+p.valor:'a definir'}</span></div>`).join('') : 'Nenhum plano cadastrado.';
+    renderConfigPlanos();
+    preencherValoresTabela();
     atualizarTurnosPlanos();
     const grid=document.getElementById('planos-pacotes-list');
     const cards=planos.map(p=>`
       <div class="plano-card">
         <button class="plano-del-btn" onclick="event.stopPropagation();excluirPlano('${p.id}')">×</button>
         <div class="plano-tipo">Pacote Mensal</div>
-        <div class="plano-nome">${p.nome||'—'}</div>
+        <div class="plano-nome">${rotuloVinc(p.nome||'—')}</div>
         <div class="plano-desc">${p.horas||0}h/mês — cobrança recorrente</div>
         <div class="plano-valor">R$ <span>${p.valor||'a definir'}</span></div>
         <div style="margin-top:.875rem;display:flex;gap:6px;align-items:center">
-          <button class="btn btn-secondary btn-sm" onclick="editarPlano('${p.id}','${p.nome}','${p.horas}','${p.valor}')">Editar</button>
+          <button class="btn btn-secondary btn-sm" onclick="editarPlano('${p.id}','${rotuloVinc(p.nome||'')}','${p.horas}','${p.valor}')">Editar</button>
         </div>
       </div>`).join('');
     grid.innerHTML=cards+`<div class="plano-card" style="border-style:dashed;box-shadow:none;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;min-height:130px;gap:5px" onclick="novoPlano()"><div style="font-size:1.4rem;color:#d1d5db">+</div><div style="font-size:.75rem;color:var(--text-lighter)">Criar novo pacote</div></div>`;
@@ -5306,6 +5379,34 @@ async function salvarPlano() {
   } catch(e){showToast('Erro ao salvar plano.','error');}
 }
 
+
+// ── Valores de tabela (turnos, Athos Singular e pacotes 5h/10h): editados em Configurações ──
+const _CAMPOS_TABELA = {
+  'preco-turno-s1':'precoTurnoS1', 'preco-turno-s2':'precoTurnoS2',
+  'preco-turno8h-s1':'precoTurno8hS1', 'preco-turno8h-s2':'precoTurno8hS2',
+  'preco-turno8h-mista':'precoTurno8hMista', 'preco-avulsa':'precoAvulsa',
+  'preco-5h':'preco5h', 'preco-10h':'preco10h'
+};
+function preencherValoresTabela() {
+  const c = appConfig || {};
+  Object.entries(_CAMPOS_TABELA).forEach(([id,k])=>{
+    const el = document.getElementById(id);
+    if(!el || document.activeElement === el) return;
+    let v = c[k];
+    // compat legado: antes havia um único valor de turno para as duas salas
+    if(!v && (k==='precoTurnoS1'||k==='precoTurnoS2') && c.precoTurno) v = c.precoTurno;
+    el.value = v || '';
+  });
+}
+function renderConfigPlanos() {
+  const el = document.getElementById('cfg-planos-lista');
+  if(!el) return;
+  const planos = _planosCache || [];
+  el.innerHTML = planos.length ? planos.map(p=>`<div class="cfg-row"><div><div class="cfg-label">${rotuloVinc(p.nome||'—')}</div><div class="cfg-sub">${p.horas||0}h / mês</div></div><span style="font-size:.82rem;font-weight:600">${p.valor?'R$ '+p.valor:'a definir'}</span></div>`).join('') : 'Nenhum plano cadastrado.';
+}
+function irParaPlanos() {
+  showPage('planos', document.querySelector(".nav-item[onclick*=\"'planos'\"]"));
+}
 
 // ══ RELATÓRIOS ══
 let chartInstances = {};
@@ -5405,8 +5506,8 @@ async function initRelatorios() {
         // Pizza
         const tipoMap={};
         receitas.forEach(r=>{const t=r.tipo||'Outro';tipoMap[t]=(tipoMap[t]||0)+(parseMoney(r.valor)||0);});
-        const pizzaLabels=Object.keys(tipoMap);
-        const pizzaData=pizzaLabels.map(k=>tipoMap[k]);
+        const pizzaLabels=Object.keys(tipoMap).map(rotuloVinc);
+        const pizzaData=Object.keys(tipoMap).map(k=>tipoMap[k]);
         const pizzaCores=['rgba(34,197,94,.8)','rgba(61,138,122,.8)','rgba(109,90,172,.8)','rgba(160,120,80,.8)','rgba(234,179,8,.8)'];
         destroyChart('chart-pizza');
         chartInstances['chart-pizza'] = new Chart(document.getElementById('chart-pizza'),{
@@ -5584,7 +5685,7 @@ function _renderLancamentosRelat() {
     const subs = grupoCat[cat];
     const totalCat = Object.values(subs).flat().reduce((s,x)=>s+(parseMoney(x.valor)||0),0);
     rows += `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;background:var(--bg);font-weight:700;border-top:2px solid var(--border);color:var(--gold)">
-      <span><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> ${cat}</span><span></span><span></span><span></span>
+      <span><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> ${rotuloVinc(cat)}</span><span></span><span></span><span></span>
       <span style="color:var(--text-light)">${formatMoney(totalCat)}</span>
     </div>`;
     const subsOrdenadas = Object.keys(subs).sort((a,b)=>a==='—'?1:b==='—'?-1:a.localeCompare(b,'pt'));
@@ -5657,7 +5758,7 @@ async function _buildGeralExtra(targetEl) {
         ${ativos.map(p=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
           <span style="font-weight:500">${p.nome||'—'}</span>
           <span style="color:var(--text-light)">${p.especialidade||'—'}</span>
-          <span style="color:var(--text-light)">${p.vinculo||'—'}</span>
+          <span style="color:var(--text-light)">${rotuloVinc(p.vinculo||'—')}</span>
           <span style="color:var(--text-light)">${p.contratoFim?formatDate(p.contratoFim):'—'}</span>
         </div>`).join('')}
       </div>`:'<div style="font-size:.82rem;color:var(--text-lighter)">Nenhum profissional ativo.</div>'}
@@ -5845,7 +5946,7 @@ function closeMobileSidebar() {
 }
 
 // ══ NAV ══
-const pageTitles={dashboard:'Dashboard',agenda:'Agenda',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',anotacoes:'Anotações',servicos:'Serviços',configuracoes:'Configurações',turnos:'Turnos',levantamento:'Levantamento Financeiro',analise:'Análise de Negócio'};
+const pageTitles={dashboard:'Dashboard',agenda:'Agenda',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',anotacoes:'Anotações',servicos:'Serviços',materiais:'Empréstimo e Reserva de Materiais',configuracoes:'Configurações',turnos:'Turnos',levantamento:'Levantamento Financeiro',analise:'Análise de Negócio'};
 
 function showPage(n,el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -5856,6 +5957,8 @@ function showPage(n,el) {
   closeMobileSidebar();
   if(n==='lembretes') loadLembretes();
   if(n==='anotacoes') loadAnotacoes();
+  if(n==='materiais') loadMateriais();
+  if(n==='planos') preencherValoresTabela();
   if(n==='servicos') loadServicos();
   if(n==='turnos') loadDashCapacidade('turnos-capacidade-list','turnos-cap-mes-label');
   if(n==='levantamento') LevSim.init();
@@ -6046,7 +6149,7 @@ async function loadMovimentacao() {
     const subcats = [...new Set(movCacheTodos.map(x=>x.subcategoria||'').filter(Boolean))].sort();
     const catSel = document.getElementById('mov-filtro-cat');
     const subSel = document.getElementById('mov-filtro-subcat');
-    if(catSel) catSel.innerHTML = '<option value="">Todas as categorias</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+    if(catSel) catSel.innerHTML = '<option value="">Todas as categorias</option>' + cats.map(c=>`<option value="${c}">${rotuloVinc(c)}</option>`).join('');
     if(subSel) subSel.innerHTML = '<option value="">Todas as subcategorias</option>' + subcats.map(s=>`<option value="${s}">${s}</option>`).join('');
 
     aplicarFiltrosMov();
@@ -6066,7 +6169,7 @@ function _renderMovData(lista) {
     lista.map(x=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 90px 40px">
       <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="${x._tipo==='Receita'?`editarReceita('${x.id}')`:`editarDespesa('${x.id}')`}">${x.profissional||x.descricao||'—'}${x.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> ${x.obs}</span>`:''}</span>
       <span><span class="badge ${x._tipo==='Receita'?'badge-success':'badge-danger'}" style="font-size:.7rem">${x._tipo}</span></span>
-      <span style="color:var(--text-light)">${x.categoria||x.tipo||'—'}</span>
+      <span style="color:var(--text-light)">${rotuloVinc(x.categoria||x.tipo||'—')}</span>
       <span>${x._tipo==='Receita'?tagPagamento(x)+'<br>':''}${x._dataMov?formatDate(x._dataMov):'—'}${x.vencimento && x.dataBaixa!==x.vencimento?`<br><span style="font-size:.68rem;color:var(--text-lighter)">venc. ${formatDate(x.vencimento)}</span>`:''}</span>
       <span style="font-weight:600;color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</span>
       <span>${x.status==='Pago'?`<button class="btn btn-secondary btn-sm" onclick="devolverParaPagar('${x.id}','${x._tipo==='Receita'?'receitas':'despesas'}')">↩ Devolver</button>`:'—'}</span>
@@ -6079,7 +6182,7 @@ function _renderMovData(lista) {
         <div class="fin-card-item-value" style="color:${x._tipo==='Receita'?'var(--success)':'var(--danger)'}">${formatMoney(x.valor)}</div>
       </div>
       <div class="fin-card-item-meta">
-        <span>${x.categoria||x.tipo||'—'}</span>
+        <span>${rotuloVinc(x.categoria||x.tipo||'—')}</span>
         ${x._dataMov?`<span><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Baixa: ${formatDate(x._dataMov)}</span>`:''}
         ${x.obs?`<span title="${x.obs}"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> ${x.obs.substring(0,30)}${x.obs.length>30?'...':''}</span>`:''}
       </div>
@@ -6619,12 +6722,16 @@ function toggleEscolhaPacote() {
 
 // Planos cadastrados em "Planos e Pacotes" (preenchido por loadPlanos)
 let _planosCache = [];
+const _NOMES_SINGULAR = ['Hora Avulsa','Athos Singular'];
 function _planoPorNome(nome) {
   if(!nome) return null;
+  if(_NOMES_SINGULAR.includes(nome)) return _planosCache.find(p => _NOMES_SINGULAR.includes(p.nome||'')) || null;
   return _planosCache.find(p => (p.nome||'') === nome) || null;
 }
 
 function horasDoPacote(vinculo) {
+  // Athos Singular (Hora Avulsa) é cobrado por hora e não gera pacote, mesmo que o plano tenha "horas" preenchidas
+  if(vinculo === 'Hora Avulsa' || vinculo === 'Athos Singular') return 0;
   // Pacotes cadastrados em "Planos e Pacotes": o vínculo é o próprio nome do plano
   const pl = _planoPorNome(vinculo);
   if(pl) return parseFloat(String(pl.horas||'0').replace(',','.')) || 0;
@@ -6639,6 +6746,11 @@ function ehReservaPorHorario(l) {
   const v = (l && l.vinculo) || '';
   return v === 'Hora Avulsa' || horasDoPacote(v) > 0;
 }
+// Nomenclatura: "Hora Avulsa" passou a se chamar "Athos Singular" SOMENTE na exibição.
+// O valor gravado nos registros (locações, profissionais, lançamentos) continua 'Hora Avulsa',
+// então nenhum dado existente nem configuração financeira é alterado.
+const VINC_ROTULOS = {'Hora Avulsa':'Athos Singular'};
+function rotuloVinc(v) { return VINC_ROTULOS[v] || v; }
 function fmtHoraCurta(h) {
   if(!h) return '';
   const [hh,mm] = h.split(':');
@@ -6651,7 +6763,7 @@ function garantirOpcaoVinculo(v) {
   const sel = document.getElementById('loc-vinculo');
   if(!sel || !v) return;
   if(![...sel.options].some(o => o.value === v)) {
-    const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o);
+    const o = document.createElement('option'); o.value = v; o.textContent = rotuloVinc(v); sel.appendChild(o);
   }
 }
 
@@ -6662,11 +6774,11 @@ function popularVinculosLocacao() {
   if(!sel) return;
   const atual = sel.value;
   const fixos = ['Turno Fixo (4h)','Turno 8h — Áthos I','Turno 8h — Áthos II','Turno 8h — Sala Mista'];
-  const nomesPlanos = [...new Set(_planosCache.map(p => p.nome).filter(Boolean))];
-  const pacotes = nomesPlanos.length ? nomesPlanos : ['Pacote de 5 Horas','Pacote de 10 Horas'];
+  const nomesPlanos = [...new Set(_planosCache.map(p => p.nome).filter(n => n && !_NOMES_SINGULAR.includes(n)))];
+  const pacotes = (nomesPlanos.length || _planosCache.length) ? nomesPlanos : ['Pacote de 5 Horas','Pacote de 10 Horas'];
   const lista = [...fixos, ...pacotes, 'Hora Avulsa'];
   sel.innerHTML = '';
-  lista.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+  lista.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = rotuloVinc(v); sel.appendChild(o); });
   if(atual) { garantirOpcaoVinculo(atual); sel.value = atual; }
 }
 
@@ -6909,7 +7021,7 @@ async function gerarRelatFiltrado() {
       const v=catMap[cat];
       totalRecCat+=v.receita; totalDespCat+=v.despesa;
       catHtml+=`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr;background:var(--bg);font-weight:700;border-top:2px solid var(--border)">
-        <span style="color:var(--gold)"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> ${cat}</span>
+        <span style="color:var(--gold)"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> ${rotuloVinc(cat)}</span>
         <span style="color:var(--success)">${v.receita>0?formatMoney(v.receita):'—'}</span>
         <span style="color:var(--danger)">${v.despesa>0?formatMoney(v.despesa):'—'}</span>
         <span style="color:var(--text-light)">${v.itens} item(s)</span>
@@ -6987,7 +7099,7 @@ async function gerarRelatFiltrado() {
         // Cabeçalho da categoria
         const totalCat = Object.values(subs).flat().reduce((s,x)=>s+(parseMoney(x.valor)||0),0);
         rows += `<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;background:var(--bg);font-weight:700;border-top:2px solid var(--border);color:var(--gold)">
-          <span><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> ${cat}</span><span></span><span></span><span></span>
+          <span><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> ${rotuloVinc(cat)}</span><span></span><span></span><span></span>
           <span style="color:var(--text-light)">${formatMoney(totalCat)}</span>
         </div>`;
         // Subcategorias em ordem alfabética
@@ -7071,7 +7183,7 @@ async function gerarRelatFiltrado() {
               ${ativos.map(p=>`<div class="dt-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
                 <span style="font-weight:500">${p.nome||'—'}</span>
                 <span style="color:var(--text-light)">${p.especialidade||'—'}</span>
-                <span style="color:var(--text-light)">${p.vinculo||'—'}</span>
+                <span style="color:var(--text-light)">${rotuloVinc(p.vinculo||'—')}</span>
                 <span style="color:var(--text-light)">${p.contratoFim?formatDate(p.contratoFim):'—'}</span>
               </div>`).join('')}
             </div>`:'<div style="font-size:.82rem;color:var(--text-lighter)">Nenhum profissional ativo.</div>'}
@@ -7780,8 +7892,10 @@ async function loadLembretes() {
     const totalEl = document.getElementById('lmb-total');
     const pendEl = document.getElementById('lmb-pendentes');
     const vencEl = document.getElementById('lmb-vencidos');
+    const andEl = document.getElementById('lmb-andamento');
     if(totalEl) totalEl.textContent = docs.length;
-    if(pendEl) pendEl.textContent = docs.filter(d=>d.status!=='Concluído').length;
+    if(pendEl) pendEl.textContent = docs.filter(d=>d.status!=='Concluído' && d.status!=='Em andamento').length;
+    if(andEl) andEl.textContent = docs.filter(d=>d.status==='Em andamento').length;
     if(vencEl) vencEl.textContent = docs.filter(d=>d.data && d.data<hoje && d.status!=='Concluído').length;
     if(!docs.length) {
       table.innerHTML = emptyState('calendar','Nenhum lembrete encontrado','Ajuste os filtros ou cadastre um novo lembrete.','Novo lembrete',"openModal('novo-lembrete')");
@@ -7805,7 +7919,7 @@ async function loadLembretes() {
         <span style="font-weight:500;cursor:pointer;color:var(--gold)${l.status==='Concluído'?';text-decoration:line-through;color:var(--text-lighter)':''}" onclick="editarLembrete('${l.id}')">${l.titulo||'—'}${l.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">${l.obs}</span>`:''}</span>
         <span>${priBadge(l)||'—'}</span>
         <span style="color:var(--text-light)">${l.data?formatDate(l.data):'—'}${vencido?'<br><span style="color:var(--danger);font-weight:600;font-size:.72rem">Vencido</span>':''}</span>
-        <span><span class="badge ${l.status==='Concluído'?'badge-success':'badge-warning'} status-click" onclick="toggleLembreteConcluido('${l.id}',this)">${l.status||'Pendente'}</span></span>
+        <span><span class="badge ${anotBadgeClass(l.status)} status-click" onclick="cicloStatusLembrete('${l.id}','${l.status||'Pendente'}')">${l.status||'Pendente'}</span></span>
         <span><button class="btn btn-secondary" style="font-size:.72rem;padding:4px 9px" onclick="editarLembrete('${l.id}')">Editar</button></span>
         <span><button class="fin-del-btn" style="opacity:1" onclick="excluirLembreteRapido('${l.id}')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></span>
       </div>`;
@@ -7817,7 +7931,7 @@ async function loadLembretes() {
           <div class="fin-card-item-name"${l.status==='Concluído'?' style="text-decoration:line-through;color:var(--text-lighter)"':''}>${l.titulo||'—'} ${priBadge(l)}</div>
         </div>
         <div class="fin-card-item-meta">
-          <span class="badge ${l.status==='Concluído'?'badge-success':'badge-warning'}" onclick="toggleLembreteConcluido('${l.id}',this)" style="cursor:pointer">${l.status||'Pendente'}</span>
+          <span class="badge ${anotBadgeClass(l.status)}" onclick="cicloStatusLembrete('${l.id}','${l.status||'Pendente'}')" style="cursor:pointer">${l.status||'Pendente'}</span>
           ${l.data?`<span><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> ${formatDate(l.data)}</span>`:''}
           ${vencido?'<span style="color:var(--danger);font-weight:600">Vencido</span>':''}
           ${l.obs?`<span title="${l.obs}">${l.obs.substring(0,30)}${l.obs.length>30?'...':''}</span>`:''}
@@ -7878,6 +7992,18 @@ async function toggleLembreteConcluido(id, el) {
   try {
     await db.collection('lembretes').doc(id).update({
       status: concluido ? 'Concluído' : 'Pendente',
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    loadLembretes();
+  } catch(e) { showToast('Erro ao atualizar lembrete.', 'error'); }
+}
+
+// Badge clicável cicla Pendente → Em andamento → Concluído → Pendente (mesmo padrão de Anotações)
+async function cicloStatusLembrete(id, atual) {
+  const novo = anotProximoStatus(atual);
+  try {
+    await db.collection('lembretes').doc(id).update({
+      status: novo,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     loadLembretes();
@@ -8368,6 +8494,320 @@ async function exportarLembretesCSV() {
 }
 
 // ══════════════════════════════════════════
+// ══ MATERIAIS — EMPRÉSTIMO E RESERVA ══
+// Coleções: materiais e reservasMateriais. Reservas cadastradas manualmente, sem confirmação externa.
+// ══════════════════════════════════════════
+const MAT_RES = 'Reservada';
+let _matCache = [], _resMatCache = [];
+window._matQuick = '';
+
+function escH(s) { return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function matAgora() { const d = new Date(); return `${toDateStrLocal(d)}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function matFmt(s) { if(!s) return '—'; const [d,h] = s.split('T'); return `${formatDate(d)} ${h||''}`.trim(); }
+function matTsMs(t) { if(!t) return 0; if(t.toMillis) return t.toMillis(); const n = new Date(t).getTime(); return isNaN(n) ? 0 : n; }
+function matFmtTs(t) { const ms = matTsMs(t); return ms ? new Date(ms).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}) : ''; }
+// Status da reserva: só "Reservada" ou "Cancelada". Registros antigos (Confirmada/Aguardando/Recusada) são lidos como Reservada/Cancelada.
+function matStatusNorm(r) { return (r.statusReserva === 'Cancelada' || r.statusReserva === 'Recusada') ? 'Cancelada' : MAT_RES; }
+function matAtiva(r) { return matStatusNorm(r) === MAT_RES; }
+function matNome(r) { const m = _matCache.find(x => x.id === r.materialId); return m ? m.nome : (r.materialNome || '—'); }
+
+// Reservas ativas do mesmo material que se sobrepõem ao período de r
+function matConflitos(r) {
+  return _resMatCache.filter(o => o.id !== r.id && o.materialId === r.materialId && matAtiva(o) && o.inicio < r.fim && r.inicio < o.fim);
+}
+function matNaoDevolvida(r) { return matAtiva(r) && r.fim <= matAgora() && r.statusDevolucao !== 'Devolvido'; }
+function matSituacao(materialId) {
+  const agora = matAgora();
+  const ativas = _resMatCache.filter(r => r.materialId === materialId && matAtiva(r) && r.statusDevolucao !== 'Devolvido');
+  const nd = ativas.find(r => r.fim <= agora);
+  if(nd) return {k:'Não devolvido', cls:'badge-danger', ref:nd};
+  const uso = ativas.find(r => r.inicio <= agora && agora < r.fim);
+  if(uso) return {k:'Em utilização', cls:'badge-info', ref:uso};
+  const fut = ativas.filter(r => r.inicio > agora).sort((a,b) => a.inicio.localeCompare(b.inicio))[0];
+  if(fut) return {k:'Reservado', cls:'badge-gold', ref:fut};
+  return {k:'Disponível', cls:'badge-success', ref:null};
+}
+
+// ── Carregamento e renderização ──
+async function loadMateriais() {
+  try {
+    const [mSnap, rSnap] = await Promise.all([db.collection('materiais').get(), db.collection('reservasMateriais').get()]);
+    _matCache = mSnap.docs.map(d => ({id:d.id, ...d.data()})).sort((a,b) => (a.nome||'').localeCompare(b.nome||'','pt'));
+    _resMatCache = rSnap.docs.map(d => ({id:d.id, ...d.data()}));
+    renderMateriais();
+  } catch(e) {
+    console.error(e);
+    const t = document.getElementById('mat-table');
+    if(t) t.innerHTML = '<div style="color:var(--danger);font-size:.83rem;padding:1rem">Erro ao carregar materiais.</div>';
+  }
+}
+
+function matConsultorios() { return [ (appConfig&&appConfig.sala1)||'Áthos I', (appConfig&&appConfig.sala2)||'Áthos II', 'Sala Mista' ]; }
+function matOpts(sel, itens, vazio) {
+  const atual = sel.value;
+  sel.innerHTML = (vazio ? `<option value="">${vazio}</option>` : '') + itens.map(([v,l]) => `<option value="${escH(v)}">${escH(l)}</option>`).join('');
+  if(atual && [...sel.options].some(o => o.value === atual)) sel.value = atual;
+}
+function matPopularFiltros() {
+  matOpts(document.getElementById('mat-f-material'), _matCache.map(m => [m.id, m.nome]), 'Todo material');
+  const profs = [...new Map(_resMatCache.filter(r => r.profId).map(r => [r.profId, r.profNome])).entries()].sort((a,b) => (a[1]||'').localeCompare(b[1]||'','pt'));
+  matOpts(document.getElementById('mat-f-prof'), profs, 'Todo profissional');
+  const cons = [...new Set([...matConsultorios(), ..._resMatCache.map(r => r.consultorio).filter(Boolean)])];
+  matOpts(document.getElementById('mat-f-cons'), cons.map(c => [c,c]), 'Todo consultório');
+}
+function matQuick(k) {
+  window._matQuick = (window._matQuick === k) ? '' : k;
+  renderMateriais();
+}
+
+function matAcoesHTML(r) {
+  const b = (txt, fn, extra='') => `<button class="btn btn-secondary btn-sm" style="font-size:.7rem;padding:3px 8px;${extra}" onclick="${fn}">${txt}</button>`;
+  let h = b('Editar', `editarReservaMaterial('${r.id}')`);
+  if(matAtiva(r) && r.statusDevolucao !== 'Devolvido') h += b('Devolvido', `matDevolver('${r.id}')`);
+  if(matAtiva(r)) h += b('Cancelar', `matCancelar('${r.id}')`, 'color:var(--danger)');
+  return `<div style="display:flex;gap:4px;flex-wrap:wrap">${h}</div>`;
+}
+function matBadgeReserva(r) {
+  const st = matStatusNorm(r);
+  return `<span class="badge ${st === MAT_RES ? 'badge-success' : 'badge-neutral'}">${st}</span>`;
+}
+function matBadgeDevolucao(r) {
+  if(!matAtiva(r)) return '<span style="color:var(--text-lighter)">—</span>';
+  if(r.statusDevolucao === 'Devolvido') return `<span class="badge badge-success">Devolvido</span>${r.devolvidoEm?`<br><span style="font-size:.68rem;color:var(--text-lighter)">${matFmtTs(r.devolvidoEm)}</span>`:''}`;
+  return matNaoDevolvida(r) ? '<span class="badge badge-danger">Não devolvido</span>' : '<span class="badge badge-neutral">Pendente</span>';
+}
+
+function renderMateriais() {
+  const table = document.getElementById('mat-table');
+  if(!table) return;
+  matPopularFiltros();
+  const agora = matAgora();
+
+  // Situação atual de cada material
+  const sit = document.getElementById('mat-situacao');
+  const ativos = _matCache.filter(m => m.ativo !== false);
+  sit.innerHTML = ativos.length ? ativos.map(m => {
+    const s = matSituacao(m.id);
+    const det = s.ref ? `${escH(s.ref.profNome)} · ${matFmt(s.ref.inicio)} → ${matFmt(s.ref.fim)}` : 'Sem reserva ou empréstimo ativo';
+    return `<div class="plano-card"><div class="plano-tipo">Material</div><div class="plano-nome" style="font-size:1rem">${escH(m.nome)}</div>
+      <div style="margin:.4rem 0"><span class="badge ${s.cls}">${s.k}</span></div>
+      <div style="font-size:.74rem;color:var(--text-light)">${det}</div></div>`;
+  }).join('') : emptyState('calendar','Nenhum material cadastrado','Cadastre a balança de bioimpedância ou outro item para começar a reservar.','Cadastrar material',"abrirMateriaisCad()");
+
+  // Indicadores (sobre tudo)
+  const nUso = _resMatCache.filter(r => matAtiva(r) && r.statusDevolucao !== 'Devolvido' && r.inicio <= agora && agora < r.fim).length;
+  const nNd = _resMatCache.filter(matNaoDevolvida).length;
+  const nCf = _resMatCache.filter(r => matAtiva(r) && matConflitos(r).length).length;
+  document.getElementById('mat-st-uso').textContent = nUso;
+  document.getElementById('mat-st-nd').textContent = nNd;
+  document.getElementById('mat-st-cf').textContent = nCf;
+  // Filtros
+  const v = id => document.getElementById(id)?.value || '';
+  let lista = _resMatCache.slice().sort((a,b) => (b.inicio||'').localeCompare(a.inicio||''));
+  if(v('mat-f-material')) lista = lista.filter(r => r.materialId === v('mat-f-material'));
+  if(v('mat-f-prof')) lista = lista.filter(r => r.profId === v('mat-f-prof'));
+  if(v('mat-f-cons')) lista = lista.filter(r => r.consultorio === v('mat-f-cons'));
+  if(v('mat-f-sres')) lista = lista.filter(r => matStatusNorm(r) === v('mat-f-sres'));
+  const sd = v('mat-f-sdev');
+  if(sd === 'NaoDevolvido') lista = lista.filter(matNaoDevolvida);
+  else if(sd) lista = lista.filter(r => (r.statusDevolucao||'Pendente') === sd);
+  if(v('mat-f-ini')) lista = lista.filter(r => (r.fim||'').slice(0,10) >= v('mat-f-ini'));
+  if(v('mat-f-fim')) lista = lista.filter(r => (r.inicio||'').slice(0,10) <= v('mat-f-fim'));
+  const q = window._matQuick;
+  if(q === 'uso') lista = lista.filter(r => matAtiva(r) && r.statusDevolucao !== 'Devolvido' && r.inicio <= agora && agora < r.fim);
+  if(q === 'nd') lista = lista.filter(matNaoDevolvida);
+  if(q === 'cf') lista = lista.filter(r => matAtiva(r) && matConflitos(r).length);
+  document.getElementById('mat-quick-limpar').style.display = q ? '' : 'none';
+  document.getElementById('mat-st-total').textContent = lista.length;
+
+  const mobile = document.getElementById('mat-cards-mobile');
+  if(!lista.length) {
+    const vazio = emptyState('calendar','Nenhuma reserva encontrada','Ajuste os filtros ou cadastre uma nova reserva.','Nova reserva',"novaReservaMaterial()");
+    table.innerHTML = vazio; if(mobile) mobile.innerHTML = vazio;
+    return;
+  }
+  const cols = '1.2fr 1.2fr 1.5fr .9fr 1fr 1fr 190px';
+  const flags = r => `${matAtiva(r) && matConflitos(r).length ? '<br><span class="badge badge-danger" style="font-size:.66rem">⚠ Conflito de horário</span>' : ''}`;
+  table.innerHTML = `<div class="dt-head" style="grid-template-columns:${cols}"><span>Material</span><span>Profissional</span><span>Período</span><span>Consultório</span><span>Reserva</span><span>Devolução</span><span></span></div>` +
+    lista.map(r => `<div class="dt-row" style="grid-template-columns:${cols};align-items:start">
+      <span style="font-weight:500">${escH(matNome(r))}${r.obs?`<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400">${escH(r.obs.length>40?r.obs.slice(0,40)+'...':r.obs)}</span>`:''}</span>
+      <span>${escH(r.profNome||'—')}</span>
+      <span style="color:var(--text-light)">${matFmt(r.inicio)}<br>até ${matFmt(r.fim)}${flags(r)}</span>
+      <span>${escH(r.consultorio||'—')}</span>
+      <span>${matBadgeReserva(r)}</span>
+      <span>${matBadgeDevolucao(r)}</span>
+      <span>${matAcoesHTML(r)}</span>
+    </div>`).join('');
+  if(mobile) mobile.innerHTML = lista.map(r => `<div class="fin-card-item">
+      <div class="fin-card-item-top"><div class="fin-card-item-name">${escH(matNome(r))}</div></div>
+      <div class="fin-card-item-meta" style="flex-wrap:wrap;gap:6px">
+        <span>${escH(r.profNome||'—')}</span><span>${escH(r.consultorio||'—')}</span>
+        <span>${matFmt(r.inicio)} → ${matFmt(r.fim)}</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:.4rem 0">${matBadgeReserva(r)} ${matBadgeDevolucao(r)}${flags(r)}</div>
+      <div class="fin-card-item-actions">${matAcoesHTML(r)}</div>
+    </div>`).join('');
+}
+
+// Atualiza a situação sozinha conforme o relógio passa (sem novas leituras no banco)
+setInterval(() => { if(document.getElementById('page-materiais')?.classList.contains('active')) renderMateriais(); }, 60000);
+
+// ── Modal de reserva ──
+function matPrepararModal(r) {
+  const mats = _matCache.filter(m => m.ativo !== false || (r && m.id === r.materialId));
+  matOpts(document.getElementById('mres-material'), mats.map(m => [m.id, m.nome]));
+  const profs = profissionaisCache.filter(p => p.status !== 'Inativo' || (r && p.id === r.profId)).sort((a,b) => (a.nome||'').localeCompare(b.nome||'','pt'));
+  matOpts(document.getElementById('mres-prof'), profs.map(p => [p.id, p.nome]), 'Selecione...');
+  const cons = [...new Set([...matConsultorios(), ...(r && r.consultorio ? [r.consultorio] : [])])];
+  matOpts(document.getElementById('mres-consultorio'), cons.map(c => [c,c]));
+}
+async function novaReservaMaterial() {
+  if(!_matCache.length) await loadMateriais();
+  if(!_matCache.filter(m => m.ativo !== false).length) { showToast('Cadastre um material primeiro.','error'); abrirMateriaisCad(); return; }
+  matPrepararModal(null);
+  const d = new Date(); d.setMinutes(0,0,0); d.setHours(d.getHours()+1);
+  const f = new Date(d.getTime() + 3600000);
+  const fmt = x => `${toDateStrLocal(x)}T${String(x.getHours()).padStart(2,'0')}:00`;
+  document.getElementById('mres-edit-id').value = '';
+  document.getElementById('mres-title').textContent = 'Nova reserva de material';
+  document.getElementById('mres-excluir-btn').style.display = 'none';
+  document.getElementById('mres-prof').value = '';
+  document.getElementById('mres-inicio').value = fmt(d);
+  document.getElementById('mres-fim').value = fmt(f);
+  document.getElementById('mres-status').value = MAT_RES;
+  document.getElementById('mres-devolucao').value = 'Pendente';
+  document.getElementById('mres-obs').value = '';
+  openModal('materiais-reserva');
+}
+function editarReservaMaterial(id) {
+  const r = _resMatCache.find(x => x.id === id); if(!r) return;
+  matPrepararModal(r);
+  document.getElementById('mres-edit-id').value = id;
+  document.getElementById('mres-title').textContent = 'Editar reserva';
+  document.getElementById('mres-excluir-btn').style.display = 'inline-flex';
+  document.getElementById('mres-material').value = r.materialId;
+  document.getElementById('mres-prof').value = r.profId;
+  document.getElementById('mres-inicio').value = r.inicio;
+  document.getElementById('mres-fim').value = r.fim;
+  document.getElementById('mres-consultorio').value = r.consultorio;
+  document.getElementById('mres-status').value = matStatusNorm(r);
+  document.getElementById('mres-devolucao').value = r.statusDevolucao || 'Pendente';
+  document.getElementById('mres-obs').value = r.obs || '';
+  openModal('materiais-reserva');
+}
+
+async function salvarReservaMaterial() {
+  const g = id => document.getElementById(id).value;
+  const editId = g('mres-edit-id');
+  const materialId = g('mres-material'), profId = g('mres-prof'), inicio = g('mres-inicio'), fim = g('mres-fim'), consultorio = g('mres-consultorio');
+  const statusReserva = g('mres-status') === 'Cancelada' ? 'Cancelada' : MAT_RES;
+  const statusDevolucao = g('mres-devolucao'), obs = g('mres-obs').trim();
+  if(!materialId || !profId || !inicio || !fim || !consultorio) { showToast('Preencha material, profissional, período e consultório.','error'); return; }
+  if(fim <= inicio) { showToast('O término precisa ser depois do início.','error'); return; }
+  const mat = _matCache.find(m => m.id === materialId), prof = profissionaisCache.find(p => p.id === profId);
+  const antigo = editId ? _resMatCache.find(r => r.id === editId) : null;
+  if(editId && !antigo) { showToast('Reserva não encontrada. Recarregue a página.','error'); return; }
+
+  // Conflito de horário com outra reserva ativa do mesmo material
+  if(statusReserva === MAT_RES) {
+    const conf = matConflitos({id: editId || '__novo__', materialId, inicio, fim});
+    if(conf.length) {
+      const c = conf[0];
+      alert(`Conflito de horário: ${matNome(c)} já está reservado para ${c.profNome}, de ${matFmt(c.inicio)} até ${matFmt(c.fim)}.\n\nEscolha outro horário ou cancele a reserva existente.`);
+      return;
+    }
+    const nd = _resMatCache.find(o => o.id !== editId && o.materialId === materialId && matAtiva(o) && o.statusDevolucao !== 'Devolvido' && o.fim <= matAgora() && o.fim <= inicio);
+    if(nd && !confirm(`${matNome(nd)} consta como não devolvido por ${nd.profNome} (reserva encerrada em ${matFmt(nd.fim)}). Salvar mesmo assim?`)) return;
+  }
+
+  const FV = firebase.firestore.FieldValue;
+  const base = {materialId, materialNome: mat ? mat.nome : '', profId, profNome: prof ? prof.nome : '', inicio, fim, consultorio, statusReserva, statusDevolucao, obs, updatedAt: FV.serverTimestamp()};
+  try {
+    if(editId) {
+      const extra = {};
+      if(statusDevolucao === 'Devolvido') { if(!antigo.devolvidoEm) extra.devolvidoEm = FV.serverTimestamp(); } else extra.devolvidoEm = FV.delete();
+      if(statusReserva === 'Cancelada' && matAtiva(antigo)) extra.canceladoEm = FV.serverTimestamp();
+      await db.collection('reservasMateriais').doc(editId).update({...base, ...extra});
+    } else {
+      await db.collection('reservasMateriais').add({...base, createdAt: FV.serverTimestamp()});
+    }
+    closeModal('materiais-reserva');
+    showToast(editId ? 'Reserva atualizada!' : 'Reserva salva!', 'success');
+    await loadMateriais();
+  } catch(e) { console.error(e); showToast('Erro ao salvar reserva.','error'); }
+}
+
+async function excluirReservaMaterial() {
+  const id = document.getElementById('mres-edit-id').value;
+  const r = _resMatCache.find(x => x.id === id);
+  if(!r || !confirm('Excluir esta reserva do histórico? Esta ação não pode ser desfeita. Para manter o registro, use Cancelar.')) return;
+  try {
+    await db.collection('reservasMateriais').doc(id).delete();
+    closeModal('materiais-reserva'); showToast('Reserva excluída!','success'); await loadMateriais();
+  } catch(e) { console.error(e); showToast('Erro ao excluir.','error'); }
+}
+async function matCancelar(id) {
+  const r = _resMatCache.find(x => x.id === id); if(!r) return;
+  if(!confirm(`Cancelar a reserva de ${matNome(r)} para ${r.profNome}?`)) return;
+  try {
+    const FV = firebase.firestore.FieldValue;
+    await db.collection('reservasMateriais').doc(id).update({statusReserva:'Cancelada', canceladoEm: FV.serverTimestamp(), updatedAt: FV.serverTimestamp()});
+    showToast('Reserva cancelada.','success'); await loadMateriais();
+  } catch(e) { console.error(e); showToast('Erro ao cancelar.','error'); }
+}
+async function matDevolver(id) {
+  const r = _resMatCache.find(x => x.id === id); if(!r) return;
+  if(!confirm(`Registrar a devolução de ${matNome(r)} por ${r.profNome}?`)) return;
+  try {
+    await db.collection('reservasMateriais').doc(id).update({statusDevolucao:'Devolvido', devolvidoEm: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+    showToast('Devolução registrada!','success'); await loadMateriais();
+  } catch(e) { console.error(e); showToast('Erro ao registrar devolução.','error'); }
+}
+
+// ── Cadastro de materiais ──
+function abrirMateriaisCad() { renderMateriaisCad(); openModal('materiais-cad'); }
+function renderMateriaisCad() {
+  const el = document.getElementById('mcad-lista');
+  el.innerHTML = _matCache.length ? _matCache.map(m => `<div class="cfg-row"><div><div class="cfg-label"${m.ativo===false?' style="color:var(--text-lighter)"':''}>${escH(m.nome)}</div><div class="cfg-sub">${m.ativo===false?'Inativo':'Ativo'}</div></div><button class="btn btn-secondary btn-sm" onclick="toggleMaterialAtivo('${m.id}')">${m.ativo===false?'Reativar':'Inativar'}</button></div>`).join('')
+    : '<div style="font-size:.8rem;color:var(--text-lighter)">Nenhum material cadastrado.</div>';
+}
+async function adicionarMaterial() {
+  const inp = document.getElementById('mcad-nome'), nome = inp.value.trim();
+  if(!nome) { showToast('Informe o nome do material.','error'); return; }
+  if(_matCache.some(m => (m.nome||'').toLowerCase() === nome.toLowerCase())) { showToast('Esse material já está cadastrado.','error'); return; }
+  try {
+    await db.collection('materiais').add({nome, ativo:true, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+    inp.value = ''; await loadMateriais(); renderMateriaisCad(); showToast('Material cadastrado!','success');
+  } catch(e) { console.error(e); showToast('Erro ao cadastrar material.','error'); }
+}
+async function toggleMaterialAtivo(id) {
+  const m = _matCache.find(x => x.id === id); if(!m) return;
+  try {
+    await db.collection('materiais').doc(id).update({ativo: m.ativo === false});
+    await loadMateriais(); renderMateriaisCad();
+  } catch(e) { console.error(e); showToast('Erro ao atualizar material.','error'); }
+}
+
+// ── Exportação do histórico (respeita os filtros da tela) ──
+function exportarMateriaisCSV() {
+  const linhas = [['Material','Profissional','Início','Término','Consultório','Status da reserva','Status da devolução','Devolvido em','Observações']];
+  const v = id => document.getElementById(id)?.value || '';
+  let lista = _resMatCache.slice().sort((a,b) => (b.inicio||'').localeCompare(a.inicio||''));
+  if(v('mat-f-material')) lista = lista.filter(r => r.materialId === v('mat-f-material'));
+  if(v('mat-f-prof')) lista = lista.filter(r => r.profId === v('mat-f-prof'));
+  if(v('mat-f-cons')) lista = lista.filter(r => r.consultorio === v('mat-f-cons'));
+  if(v('mat-f-sres')) lista = lista.filter(r => matStatusNorm(r) === v('mat-f-sres'));
+  const sd = v('mat-f-sdev');
+  if(sd === 'NaoDevolvido') lista = lista.filter(matNaoDevolvida); else if(sd) lista = lista.filter(r => (r.statusDevolucao||'Pendente') === sd);
+  if(v('mat-f-ini')) lista = lista.filter(r => (r.fim||'').slice(0,10) >= v('mat-f-ini'));
+  if(v('mat-f-fim')) lista = lista.filter(r => (r.inicio||'').slice(0,10) <= v('mat-f-fim'));
+  if(!lista.length) { showToast('Nenhuma reserva para exportar com os filtros atuais.','error'); return; }
+  lista.forEach(r => linhas.push([matNome(r), r.profNome||'', matFmt(r.inicio), matFmt(r.fim), r.consultorio||'', matStatusNorm(r), matNaoDevolvida(r) ? 'Não devolvido' : (r.statusDevolucao||'Pendente'), matFmtTs(r.devolvidoEm), r.obs||'']));
+  baixarCSV(linhas, `materiais_${toDateStrLocal(new Date())}.csv`);
+  showToast('Exportação gerada!','success');
+}
+
+// ══════════════════════════════════════════
 // ══ HISTÓRICO DO PROFISSIONAL ══
 // ══════════════════════════════════════════
 async function verHistoricoProf(profId) {
@@ -8426,7 +8866,7 @@ async function verHistoricoProf(profId) {
       <div class="stat-card" style="min-width:130px"><div class="stat-label">Total Faturado</div><div style="font-size:1rem;font-weight:700;color:var(--gold)">${formatMoney(totalFat)}</div></div>
       <div class="stat-card" style="min-width:130px"><div class="stat-label">Total Recebido</div><div style="font-size:1rem;font-weight:700;color:var(--success)">${formatMoney(totalPago)}</div></div>
       <div class="stat-card" style="min-width:110px"><div class="stat-label">Locações Turno</div><div style="font-size:1rem;font-weight:700">${totalTurnos}</div></div>
-      <div class="stat-card" style="min-width:110px"><div class="stat-label">Horas Avulsas</div><div style="font-size:1rem;font-weight:700">${totalHoras}</div></div>
+      <div class="stat-card" style="min-width:110px"><div class="stat-label">Horas Athos Singular</div><div style="font-size:1rem;font-weight:700">${totalHoras}</div></div>
       <div class="stat-card" style="min-width:110px"><div class="stat-label">Alterações</div><div style="font-size:1rem;font-weight:700">${alteracoes.length}</div></div>
       <div class="stat-card" style="min-width:110px"><div class="stat-label">Meses em atraso</div><div style="font-size:1rem;font-weight:700;color:${mesesAtraso.length?'var(--danger)':'var(--success)'}">${mesesAtraso.length}</div></div>`;
 
@@ -8434,9 +8874,9 @@ async function verHistoricoProf(profId) {
     const eventos = [];
     locacoes.forEach(l=>{
       if(l.dataInicio) eventos.push({data:l.dataInicio, tipo:'locacao',
-        desc:`Locação — ${l.vinculo||'—'} | Sala ${l.sala||'?'} | ${l.inicio||''}–${l.fim||''}${l.recorrencia&&l.recorrencia!=='Apenas este horário'?' ('+l.recorrencia+')':''}`});
+        desc:`Locação — ${rotuloVinc(l.vinculo||'—')} | Sala ${l.sala||'?'} | ${l.inicio||''}–${l.fim||''}${l.recorrencia&&l.recorrencia!=='Apenas este horário'?' ('+l.recorrencia+')':''}`});
       if(l.dataFim && l.dataFim !== l.dataInicio) eventos.push({data:l.dataFim, tipo:'fim',
-        desc:`Encerramento — ${l.vinculo||'—'} | Sala ${l.sala||'?'}`});
+        desc:`Encerramento — ${rotuloVinc(l.vinculo||'—')} | Sala ${l.sala||'?'}`});
     });
     recAll.forEach(r=>{
       if(r.vencimento) {
