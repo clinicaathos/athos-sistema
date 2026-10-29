@@ -567,6 +567,23 @@ body.dark .tag{background:#111827;border-color:#374151;}
 /* ── WHATSAPP BTN ── */
 .wpp-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;background:#25d366;color:#fff;font-size:.72rem;font-weight:600;cursor:pointer;border:none;font-family:'Inter',sans-serif;transition:opacity .15s;text-decoration:none;white-space:nowrap;}
 .wpp-btn:hover{opacity:.85;}
+
+/* ── ESTOQUE E CONSUMO ── */
+.est-wrap{overflow-x:auto;}
+.est-table{width:100%;border-collapse:collapse;font-size:.8rem;}
+.est-table th{background:#f9fafb;text-align:left;padding:.55rem .75rem;font-size:.72rem;font-weight:600;color:var(--text-light);border-bottom:1px solid var(--border);white-space:nowrap;}
+.est-table td{padding:.6rem .75rem;border-bottom:1px solid var(--border);vertical-align:middle;}
+.est-table tr:last-child td{border-bottom:none;}
+.est-table tr:hover td{background:#fafafa;}
+.est-table .num{text-align:right;white-space:nowrap;}
+.est-alert{display:flex;gap:.6rem;align-items:flex-start;padding:.55rem .85rem;border-bottom:1px solid var(--border);font-size:.82rem;}
+.est-alert:last-child{border-bottom:none;}
+.est-dot{width:8px;height:8px;border-radius:50%;margin-top:.4rem;flex-shrink:0;}
+.est-chart{position:relative;height:230px;}
+.est-sub{font-size:.7rem;color:var(--text-lighter);margin-top:2px;}
+.est-hint{font-size:.74rem;color:var(--text-lighter);margin:-.25rem 0 .75rem;}
+body.dark .est-table th{background:#111827;}
+body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
 @media print {
   body { font-size: 11pt; color: #000; background: #fff; }
   /* Ocultar navegação, controles e elementos de interface */
@@ -652,6 +669,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <div class="nav-item" onclick="showPage('anotacoes',this)"><span class="nav-icon">📝</span>Anotações</div>
       <div class="nav-item" onclick="showPage('servicos',this)"><span class="nav-icon">⊗</span>Serviços</div>
       <div class="nav-item" onclick="showPage('materiais',this)"><span class="nav-icon">⚖</span>Materiais</div>
+      <div class="nav-item" onclick="showPage('estoque',this)"><span class="nav-icon">▤</span>Estoque</div>
       <div class="nav-item" onclick="showPage('levantamento',this)"><span class="nav-icon">◐</span>Levantamento Financeiro</div>
       <div class="sb-group">Sistema</div>
       <div class="nav-item" onclick="showPage('configuracoes',this)"><span class="nav-icon">⊕</span>Configurações</div>
@@ -1268,6 +1286,104 @@ body.dark .tag{background:#111827;border-color:#374151;}
         </div>
       </div>
 
+      <!-- ══ ESTOQUE E CONSUMO DE MATERIAIS ══ -->
+      <div class="page" id="page-estoque">
+        <div class="sec-header">
+          <span class="sec-title">Estoque e Consumo de Materiais</span>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn btn-secondary" onclick="estExportar('csv')">↓ CSV</button>
+            <button class="btn btn-secondary" onclick="estExportar('xlsx')">↓ Excel</button>
+            <button class="btn btn-secondary" onclick="estExportar('pdf')">↓ PDF</button>
+            <button class="btn btn-secondary" onclick="estAbrirCategorias()">Categorias</button>
+            <button class="btn btn-secondary" onclick="estNovaMov()">+ Movimentação</button>
+            <button class="btn btn-primary" onclick="estNovoItem()">+ Produto</button>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.6rem;align-items:center">
+          <select class="form-select" id="est-f-cat" style="max-width:190px" onchange="estCatChange()"></select>
+          <select class="form-select" id="est-f-item" style="max-width:210px" onchange="estRender()"></select>
+          <input class="form-input" type="date" id="est-f-ini" style="max-width:140px" onchange="estRender()" title="Período — de">
+          <input class="form-input" type="date" id="est-f-fim" style="max-width:140px" onchange="estRender()" title="Período — até">
+        </div>
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem">
+          <button class="qf-btn" onclick="estPeriodoRapido('mes')">Este mês</button>
+          <button class="qf-btn" onclick="estPeriodoRapido('3m')">Últimos 3 meses</button>
+          <button class="qf-btn" onclick="estPeriodoRapido('ano')">Este ano</button>
+          <button class="qf-btn" onclick="estPeriodoRapido('tudo')">Todo o período</button>
+        </div>
+
+        <!-- Abas -->
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem">
+          <button class="qf-btn est-tab-btn active" data-tab="painel" onclick="estTab('painel')">Painel</button>
+          <button class="qf-btn est-tab-btn" data-tab="produtos" onclick="estTab('produtos')">Produtos</button>
+          <button class="qf-btn est-tab-btn" data-tab="mov" onclick="estTab('mov')">Movimentações</button>
+          <button class="qf-btn est-tab-btn" data-tab="consumo" onclick="estTab('consumo')">Consumo</button>
+          <button class="qf-btn est-tab-btn" data-tab="compras" onclick="estTab('compras')">Compras e custos</button>
+        </div>
+
+        <!-- PAINEL -->
+        <div class="est-sec" id="est-sec-painel">
+          <div class="stats-grid" id="est-cards-1"></div>
+          <div class="stats-grid" id="est-cards-2"></div>
+          <div class="divider-label" style="margin-top:.25rem">Alertas</div>
+          <div class="card" style="padding:0;overflow:hidden" id="est-alertas"></div>
+          <div class="divider-label">Itens a comprar e previsão de reposição</div>
+          <div class="card" style="padding:0;overflow:hidden"><div class="est-wrap" id="est-comprar"></div></div>
+          <div class="divider-label">Consumo</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem">
+            <div class="card"><div class="cfg-title">Custo de consumo por categoria (período)</div><div class="est-chart"><canvas id="est-chart-cat"></canvas></div></div>
+            <div class="card"><div class="cfg-title">Histórico de custo de consumo (6 meses)</div><div class="est-chart"><canvas id="est-chart-hist"></canvas></div></div>
+          </div>
+          <div class="divider-label">Variação de custos de aquisição</div>
+          <div class="card" style="padding:0;overflow:hidden"><div class="est-wrap" id="est-variacao"></div></div>
+        </div>
+
+        <!-- PRODUTOS -->
+        <div class="est-sec" id="est-sec-produtos" style="display:none">
+          <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--text-light);margin-bottom:.75rem;cursor:pointer"><input type="checkbox" id="est-f-inativos" onchange="estRender()"> Mostrar produtos inativos</label>
+          <div class="card" style="padding:0;overflow:hidden"><div class="est-wrap" id="est-produtos"></div></div>
+        </div>
+
+        <!-- MOVIMENTAÇÕES -->
+        <div class="est-sec" id="est-sec-mov" style="display:none">
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem">
+            <select class="form-select" id="est-f-tipo" style="max-width:220px" onchange="estRender()">
+              <option value="">Todos os tipos</option>
+              <option value="compra">Entrada — compra/reposição</option>
+              <option value="consumo">Saída — consumo</option>
+              <option value="transferencia">Transferência de local</option>
+              <option value="ajuste">Ajuste de inventário</option>
+              <option value="perda">Perda, avaria ou descarte</option>
+            </select>
+          </div>
+          <div class="card" style="padding:0;overflow:hidden"><div class="est-wrap" id="est-mov"></div></div>
+        </div>
+
+        <!-- CONSUMO -->
+        <div class="est-sec" id="est-sec-consumo" style="display:none">
+          <div class="est-hint">Últimos 6 meses (incluindo o atual), de acordo com a categoria e o produto filtrados. O filtro de período não se aplica a esta aba. O consumo conta apenas saídas do tipo "consumo"; perdas aparecem à parte.</div>
+          <div class="divider-label" style="margin-top:.25rem">Por produto</div>
+          <div class="card" style="padding:0;overflow:hidden"><div class="est-wrap" id="est-consumo-prod"></div></div>
+          <div class="divider-label">Custo por categoria</div>
+          <div class="card" style="padding:0;overflow:hidden"><div class="est-wrap" id="est-consumo-cat"></div></div>
+        </div>
+
+        <!-- COMPRAS -->
+        <div class="est-sec" id="est-sec-compras" style="display:none">
+          <div class="stats-grid" id="est-cards-compras"></div>
+          <div class="divider-label" style="margin-top:.25rem">Compras no período</div>
+          <div class="card" style="padding:0;overflow:hidden"><div class="est-wrap" id="est-compras"></div></div>
+          <div class="divider-label">Resumo por produto</div>
+          <div class="card" style="padding:0;overflow:hidden"><div class="est-wrap" id="est-compras-resumo"></div></div>
+        </div>
+
+        <datalist id="est-dl-unid"></datalist>
+        <datalist id="est-dl-forn"></datalist>
+        <datalist id="est-dl-local"></datalist>
+      </div>
+
       <!-- ══ MATERIAIS — EMPRÉSTIMO E RESERVA ══ -->
       <div class="page" id="page-materiais">
         <div class="sec-header">
@@ -1358,8 +1474,8 @@ body.dark .tag{background:#111827;border-color:#374151;}
             <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .25rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Outros</div>
             <div class="cfg-sub" style="margin-bottom:.4rem">Preço de tabela para o que não é turno: Athos Singular e pacotes padrão. É o valor sugerido na locação quando não existe um plano cadastrado com o mesmo nome.</div>
             <div class="cfg-row"><div><div class="cfg-label">Athos Singular</div></div><input class="cfg-input" id="preco-avulsa" placeholder="R$ 0,00"></div>
-            <div class="cfg-row"><div><div class="cfg-label">Pacote 5h / mês</div></div><input class="cfg-input" id="preco-5h" placeholder="R$ 0,00"></div>
-            <div class="cfg-row"><div><div class="cfg-label">Pacote 10h / mês</div></div><input class="cfg-input" id="preco-10h" placeholder="R$ 0,00"></div>
+            <div class="cfg-row"><div><div class="cfg-label">Áthos Essencial</div><div class="cfg-sub">pacote de 5 horas / mês</div></div><input class="cfg-input" id="preco-5h" placeholder="R$ 0,00"></div>
+            <div class="cfg-row"><div><div class="cfg-label">Áthos Continuidade</div><div class="cfg-sub">pacote de 10 horas / mês</div></div><input class="cfg-input" id="preco-10h" placeholder="R$ 0,00"></div>
             <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .25rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Planos cadastrados (Planos e Pacotes)</div>
             <div class="cfg-sub" style="margin-bottom:.4rem">Somente consulta. Para criar ou alterar um plano, use a aba Planos e Pacotes. Se o nome do plano for igual ao de um item de "Outros", o valor do plano prevalece.</div>
             <div id="cfg-planos-lista" style="font-size:.8rem;color:var(--text-lighter)">Carregando...</div>
@@ -1491,7 +1607,7 @@ body.dark .tag{background:#111827;border-color:#374151;}
     <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="loc-prof" onchange="toggleSaldoPacote()"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
       <div class="form-group" id="loc-sala-group"><label class="form-label">Sala</label><select class="form-select" id="loc-sala" onchange="calcDescontoLocacao()"><option value="1" id="loc-s1-opt">Sala 1</option><option value="2" id="loc-s2-opt">Sala 2</option></select></div>
-      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista();toggleQtdAvulsa()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option>Pacote de 5 Horas</option><option>Pacote de 10 Horas</option><option value="Hora Avulsa">Athos Singular</option></select></div>
+      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista();toggleQtdAvulsa()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option value="Pacote de 5 Horas">Áthos Essencial</option><option value="Pacote de 10 Horas">Áthos Continuidade</option><option value="Hora Avulsa">Athos Singular</option></select></div>
     </div>
     <div class="form-group" id="loc-saldo-pacote-group" style="display:none">
       <div style="background:#f3f4f6;border-radius:8px;padding:.6rem .75rem;font-size:.78rem;color:var(--text-light)" id="loc-saldo-pacote-info">—</div>
@@ -1769,6 +1885,90 @@ body.dark .tag{background:#111827;border-color:#374151;}
       <button class="btn btn-secondary" id="lembrete-excluir-btn" style="display:none;color:var(--danger)" onclick="excluirLembrete()">Excluir</button>
       <button class="btn btn-secondary" onclick="closeModal('novo-lembrete')">Cancelar</button>
     </div>
+  </div>
+</div>
+
+
+<!-- Estoque: produto -->
+<div class="modal-overlay" id="modal-estoque-item" onclick="closeModalBg(event,'estoque-item')">
+  <div class="modal">
+    <div class="modal-title" id="eitem-title">Novo produto</div>
+    <input type="hidden" id="eitem-edit-id">
+    <div class="form-group"><label class="form-label">Nome do material</label><input class="form-input" id="eitem-nome" placeholder="Ex: Cápsula de café"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Categoria</label><select class="form-select" id="eitem-cat"></select></div>
+      <div class="form-group"><label class="form-label">Unidade de medida</label><input class="form-input" id="eitem-unid" list="est-dl-unid" placeholder="unidade"></div>
+    </div>
+    <div class="form-row" id="eitem-qtd-ini-row">
+      <div class="form-group"><label class="form-label">Quantidade inicial em estoque</label><input class="form-input" type="number" min="0" step="any" id="eitem-qtd-ini" placeholder="0"></div>
+      <div class="form-group"><label class="form-label">Custo unitário (R$)</label><input class="form-input" type="number" min="0" step="0.01" id="eitem-custo-novo" placeholder="0,00"></div>
+    </div>
+    <div class="form-row" id="eitem-custo-edit-row" style="display:none">
+      <div class="form-group"><label class="form-label">Custo unitário (R$)</label><input class="form-input" type="number" min="0" step="0.01" id="eitem-custo" placeholder="0,00"></div>
+      <div class="form-group"><label class="form-label">Situação</label><select class="form-select" id="eitem-ativo"><option value="1">Ativo</option><option value="0">Inativo</option></select></div>
+    </div>
+    <div class="est-hint" id="eitem-qtd-hint" style="display:none">Para alterar a quantidade em estoque, registre uma movimentação (entrada, saída ou ajuste de inventário).</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Estoque mínimo</label><input class="form-input" type="number" min="0" step="any" id="eitem-min" placeholder="0"></div>
+      <div class="form-group"><label class="form-label">Estoque ideal</label><input class="form-input" type="number" min="0" step="any" id="eitem-ideal" placeholder="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Fornecedor habitual</label><input class="form-input" id="eitem-forn" list="est-dl-forn" placeholder="Opcional"></div>
+      <div class="form-group"><label class="form-label">Prazo de entrega (dias)</label><input class="form-input" type="number" min="0" step="1" id="eitem-prazo" placeholder="0"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Local de armazenamento</label><input class="form-input" id="eitem-local" list="est-dl-local" placeholder="Ex: Copa, Armário da recepção"></div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem">
+      <button class="btn btn-primary" style="flex:1" onclick="estSalvarItem()">Salvar</button>
+      <button class="btn btn-secondary" id="eitem-excluir-btn" style="display:none;color:var(--danger)" onclick="estExcluirItem()">Excluir</button>
+      <button class="btn btn-secondary" onclick="closeModal('estoque-item')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Estoque: movimentação -->
+<div class="modal-overlay" id="modal-estoque-mov" onclick="closeModalBg(event,'estoque-mov')">
+  <div class="modal">
+    <div class="modal-title">Registrar movimentação</div>
+    <div class="form-group"><label class="form-label">Tipo de operação</label>
+      <select class="form-select" id="emov-tipo" onchange="estMovTipoChange()">
+        <option value="consumo">Saída — consumo</option>
+        <option value="compra">Entrada — compra/reposição</option>
+        <option value="perda">Perda, avaria ou descarte</option>
+        <option value="ajuste">Ajuste de inventário</option>
+        <option value="transferencia">Transferência de local</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Produto</label><select class="form-select" id="emov-item" onchange="estMovItemChange()"></select>
+      <div class="est-sub" id="emov-saldo"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Data</label><input class="form-input" type="date" id="emov-data"></div>
+      <div class="form-group" id="emov-qtd-grp"><label class="form-label" id="emov-qtd-lbl">Quantidade</label><input class="form-input" type="number" min="0" step="any" id="emov-qtd" oninput="estMovTotal()"></div>
+    </div>
+    <div class="form-row" id="emov-compra-grp" style="display:none">
+      <div class="form-group"><label class="form-label">Valor unitário (R$)</label><input class="form-input" type="number" min="0" step="0.01" id="emov-custo" oninput="estMovTotal()"></div>
+      <div class="form-group"><label class="form-label">Fornecedor</label><input class="form-input" id="emov-forn" list="est-dl-forn" placeholder="Opcional"></div>
+    </div>
+    <div class="est-sub" id="emov-total" style="margin:-.25rem 0 .75rem"></div>
+    <div class="form-group" id="emov-dest-grp" style="display:none"><label class="form-label">Local de destino</label><input class="form-input" id="emov-destino" list="est-dl-local" placeholder="Ex: Depósito"></div>
+    <div class="form-group"><label class="form-label">Responsável pelo lançamento</label><input class="form-input" id="emov-resp" placeholder="Nome"></div>
+    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-input" id="emov-obs" rows="2" style="resize:vertical"></textarea></div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem">
+      <button class="btn btn-primary" style="flex:1" onclick="estSalvarMov()">Registrar</button>
+      <button class="btn btn-secondary" onclick="closeModal('estoque-mov')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Estoque: categorias -->
+<div class="modal-overlay" id="modal-estoque-cats" onclick="closeModalBg(event,'estoque-cats')">
+  <div class="modal modal-sm">
+    <div class="modal-title">Categorias de materiais</div>
+    <div id="ecat-lista" style="margin-bottom:.75rem"></div>
+    <div class="form-group"><label class="form-label">Nova categoria</label>
+      <div style="display:flex;gap:.5rem"><input class="form-input" id="ecat-nome" placeholder="Ex: Cozinha" onkeydown="if(event.key==='Enter')estAddCategoria()"><button class="btn btn-primary" onclick="estAddCategoria()">Adicionar</button></div>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem"><button class="btn btn-secondary" style="flex:1" onclick="closeModal('estoque-cats')">Fechar</button></div>
   </div>
 </div>
 
@@ -5946,7 +6146,7 @@ function closeMobileSidebar() {
 }
 
 // ══ NAV ══
-const pageTitles={dashboard:'Dashboard',agenda:'Agenda',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',anotacoes:'Anotações',servicos:'Serviços',materiais:'Empréstimo e Reserva de Materiais',configuracoes:'Configurações',turnos:'Turnos',levantamento:'Levantamento Financeiro',analise:'Análise de Negócio'};
+const pageTitles={dashboard:'Dashboard',agenda:'Agenda',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',anotacoes:'Anotações',servicos:'Serviços',materiais:'Empréstimo e Reserva de Materiais',estoque:'Estoque e Consumo de Materiais',configuracoes:'Configurações',turnos:'Turnos',levantamento:'Levantamento Financeiro',analise:'Análise de Negócio'};
 
 function showPage(n,el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -5958,6 +6158,7 @@ function showPage(n,el) {
   if(n==='lembretes') loadLembretes();
   if(n==='anotacoes') loadAnotacoes();
   if(n==='materiais') loadMateriais();
+  if(n==='estoque') loadEstoque();
   if(n==='planos') preencherValoresTabela();
   if(n==='servicos') loadServicos();
   if(n==='turnos') loadDashCapacidade('turnos-capacidade-list','turnos-cap-mes-label');
@@ -6291,7 +6492,11 @@ function valorBaseLocacao(sala, vinculo) {
     return s === '2' ? num(config.precoTurno8hS2) : num(config.precoTurno8hS1);
   }
   const planoSel = _planoPorNome(vinculo);
-  if(planoSel) return num(planoSel.valor);
+  if(planoSel) {
+    const vp = num(planoSel.valor);
+    // Essencial/Continuidade sem valor no plano: segue para o preço de tabela das Configurações
+    if(vp > 0 || !['Áthos Essencial','Áthos Continuidade'].includes(rotuloVinc(vinculo))) return vp;
+  }
   if(vinculo === 'Pacote de 10 Horas' || vinculo === 'Pacote de Horas') {
     return num(config.preco10h);
   }
@@ -6723,9 +6928,13 @@ function toggleEscolhaPacote() {
 // Planos cadastrados em "Planos e Pacotes" (preenchido por loadPlanos)
 let _planosCache = [];
 const _NOMES_SINGULAR = ['Hora Avulsa','Athos Singular'];
+const _NOMES_PADRAO = ['Athos Singular','Áthos Essencial','Áthos Continuidade'];
+// Nomes antigos e novos do mesmo plano contam como o mesmo (Singular, Essencial 5h, Continuidade 10h)
+function _grupoPlano(nome) { const r = rotuloVinc(nome||''); return _NOMES_PADRAO.includes(r) ? r : null; }
 function _planoPorNome(nome) {
   if(!nome) return null;
-  if(_NOMES_SINGULAR.includes(nome)) return _planosCache.find(p => _NOMES_SINGULAR.includes(p.nome||'')) || null;
+  const g = _grupoPlano(nome);
+  if(g) return _planosCache.find(p => _grupoPlano(p.nome||'') === g) || null;
   return _planosCache.find(p => (p.nome||'') === nome) || null;
 }
 
@@ -6734,7 +6943,7 @@ function horasDoPacote(vinculo) {
   if(vinculo === 'Hora Avulsa' || vinculo === 'Athos Singular') return 0;
   // Pacotes cadastrados em "Planos e Pacotes": o vínculo é o próprio nome do plano
   const pl = _planoPorNome(vinculo);
-  if(pl) return parseFloat(String(pl.horas||'0').replace(',','.')) || 0;
+  if(pl) { const h = parseFloat(String(pl.horas||'0').replace(',','.')) || 0; if(h > 0) return h; }
   // Nomes antigos (locações já existentes)
   if(vinculo === 'Pacote de 5 Horas') return 5;
   if(vinculo === 'Pacote de 10 Horas' || vinculo === 'Pacote de Horas') return 10;
@@ -6749,8 +6958,14 @@ function ehReservaPorHorario(l) {
 // Nomenclatura: "Hora Avulsa" passou a se chamar "Athos Singular" SOMENTE na exibição.
 // O valor gravado nos registros (locações, profissionais, lançamentos) continua 'Hora Avulsa',
 // então nenhum dado existente nem configuração financeira é alterado.
-const VINC_ROTULOS = {'Hora Avulsa':'Athos Singular'};
-function rotuloVinc(v) { return VINC_ROTULOS[v] || v; }
+const VINC_ROTULOS = {'Hora Avulsa':'Athos Singular','Pacote de 5 Horas':'Áthos Essencial','Pacote de 10 Horas':'Áthos Continuidade'};
+// Pacotes de 5h e 10h também são reconhecidos por variações do nome (ex.: "Pacote 10 horas", "Pacote de 5h")
+function rotuloVinc(v) {
+  if(VINC_ROTULOS[v]) return VINC_ROTULOS[v];
+  const m = /^pacote(?:\s+de)?\s+(5|10)\s*h(?:oras?)?$/i.exec(String(v||'').trim());
+  if(m) return m[1] === '5' ? 'Áthos Essencial' : 'Áthos Continuidade';
+  return v;
+}
 function fmtHoraCurta(h) {
   if(!h) return '';
   const [hh,mm] = h.split(':');
@@ -8805,6 +9020,699 @@ function exportarMateriaisCSV() {
   lista.forEach(r => linhas.push([matNome(r), r.profNome||'', matFmt(r.inicio), matFmt(r.fim), r.consultorio||'', matStatusNorm(r), matNaoDevolvida(r) ? 'Não devolvido' : (r.statusDevolucao||'Pendente'), matFmtTs(r.devolvidoEm), r.obs||'']));
   baixarCSV(linhas, `materiais_${toDateStrLocal(new Date())}.csv`);
   showToast('Exportação gerada!','success');
+}
+
+// ══════════════════════════════════════════
+// ══ ESTOQUE E CONSUMO DE MATERIAIS ══
+// ══════════════════════════════════════════
+// Coleções novas (não alteram nenhum dado existente): estoqueItens, estoqueMov, estoqueCategorias.
+// O saldo (qtdAtual) de cada produto só muda por movimentação, gravada em lote (batch) junto com o saldo.
+const EST_CATS_PADRAO = ['Copa','Higiene','Limpeza','Escritório','Manutenção e uso geral'];
+const EST_UNIDADES = ['unidade','pacote','caixa','litro','quilo','rolo','frasco','galão','resma','par'];
+const EST_MARGEM_DIAS = 3; // folga de segurança sobre o prazo de entrega para sugerir a compra
+const EST_TIPOS = {
+  compra:{rot:'Entrada — compra/reposição', curto:'Compra'},
+  consumo:{rot:'Saída — consumo', curto:'Consumo'},
+  transferencia:{rot:'Transferência de local', curto:'Transferência'},
+  ajuste:{rot:'Ajuste de inventário', curto:'Ajuste'},
+  perda:{rot:'Perda, avaria ou descarte', curto:'Perda'}
+};
+let _estItens = [], _estMov = [], _estCats = [], _estIdx = {}, _estTab = 'painel', _estExp = {}, _estPeriodoInit = false;
+
+const _estNum = v => { const n = parseFloat(String(v==null?'':v).replace(',','.')); return isNaN(n) ? 0 : n; };
+const _estQ = n => (Math.round((n||0)*100)/100).toLocaleString('pt-BR',{maximumFractionDigits:2});
+const _estV = id => (document.getElementById(id)?.value || '').trim();
+const _estHoje = () => toDateStrLocal(new Date());
+function _estAddDias(str, n) { const d = new Date(str+'T12:00:00'); d.setDate(d.getDate()+n); return toDateStrLocal(d); }
+function _estDiff(a, b) { return Math.round((new Date(b+'T12:00:00') - new Date(a+'T12:00:00')) / 86400000); }
+const _estMes = s => (s||'').slice(0,7);
+function _estAddMes(ym, n) { const [y,m] = ym.split('-').map(Number); const d = new Date(y, m-1+n, 1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function _estMesLbl(ym) { const [y,m] = ym.split('-'); return ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][+m-1] + '/' + y.slice(2); }
+const _estItem = id => _estItens.find(i => i.id === id);
+const _estTs = t => (typeof matTsMs === 'function') ? matTsMs(t) : 0;
+
+async function loadEstoque() {
+  try {
+    const [i, m, c] = await Promise.all([db.collection('estoqueItens').get(), db.collection('estoqueMov').get(), db.collection('estoqueCategorias').get()]);
+    _estItens = i.docs.map(d => ({id:d.id, ...d.data()})).sort((a,b) => (a.nome||'').localeCompare(b.nome||'','pt'));
+    _estMov = m.docs.map(d => ({id:d.id, ...d.data()}));
+    _estCats = c.docs.map(d => ({id:d.id, ...d.data()}));
+    if(!_estPeriodoInit) { _estPeriodoInit = true; estPeriodoRapido('mes', true); }
+    estPopularFiltros();
+    estRender();
+  } catch(e) {
+    console.error('Estoque:', e);
+    const p = document.getElementById('est-cards-1');
+    if(p) p.innerHTML = '<div style="color:var(--danger);font-size:.83rem;padding:1rem;grid-column:1/-1">Erro ao carregar o estoque. Verifique a conexão e as regras de acesso do Firestore para as coleções estoqueItens, estoqueMov e estoqueCategorias.</div>';
+  }
+}
+
+function estCategorias() {
+  const extras = new Set();
+  _estCats.forEach(c => c.nome && extras.add(c.nome));
+  _estItens.forEach(i => i.categoria && extras.add(i.categoria));
+  EST_CATS_PADRAO.forEach(c => extras.delete(c));
+  return [...EST_CATS_PADRAO, ...[...extras].sort((a,b) => a.localeCompare(b,'pt'))];
+}
+function _estOpts(sel, itens, vazio) {
+  if(!sel) return;
+  const atual = sel.value;
+  sel.innerHTML = (vazio ? `<option value="">${vazio}</option>` : '') + itens.map(([v,l]) => `<option value="${escH(v)}">${escH(l)}</option>`).join('');
+  if(atual && [...sel.options].some(o => o.value === atual)) sel.value = atual;
+}
+function estPopularFiltros() {
+  _estOpts(document.getElementById('est-f-cat'), estCategorias().map(c => [c,c]), 'Todas as categorias');
+  const cat = _estV('est-f-cat');
+  _estOpts(document.getElementById('est-f-item'), _estItens.filter(i => !cat || i.categoria === cat).map(i => [i.id, i.nome]), 'Todos os produtos');
+  const dl = (id, arr) => { const el = document.getElementById(id); if(el) el.innerHTML = [...new Set(arr.filter(Boolean))].map(v => `<option value="${escH(v)}">`).join(''); };
+  dl('est-dl-unid', [...EST_UNIDADES, ..._estItens.map(i => i.unidade)]);
+  dl('est-dl-forn', [..._estItens.map(i => i.fornecedor), ..._estMov.map(m => m.fornecedor)]);
+  dl('est-dl-local', [..._estItens.map(i => i.local), ..._estMov.map(m => m.localDestino)]);
+}
+function estCatChange() { estPopularFiltros(); estRender(); }
+
+function estPeriodoRapido(k, semRender) {
+  const hoje = new Date(), y = hoje.getFullYear(), m = hoje.getMonth();
+  const f = d => toDateStrLocal(d);
+  let ini = '', fim = '';
+  if(k === 'mes') { ini = f(new Date(y, m, 1)); fim = f(new Date(y, m+1, 0)); }
+  else if(k === '3m') { ini = f(new Date(y, m-2, 1)); fim = f(new Date(y, m+1, 0)); }
+  else if(k === 'ano') { ini = f(new Date(y, 0, 1)); fim = f(new Date(y, 11, 31)); }
+  document.getElementById('est-f-ini').value = ini;
+  document.getElementById('est-f-fim').value = fim;
+  if(!semRender) estRender();
+}
+function estTab(t) {
+  _estTab = t;
+  document.querySelectorAll('.est-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  document.querySelectorAll('.est-sec').forEach(s => s.style.display = (s.id === 'est-sec-'+t) ? '' : 'none');
+  estRender();
+}
+
+// ── Cálculos ──
+function estIndexar() {
+  const idx = {};
+  _estMov.forEach(m => {
+    const o = idx[m.itemId] || (idx[m.itemId] = {cons:[], compras:[], todas:[]});
+    o.todas.push(m);
+    if(m.tipo === 'consumo') o.cons.push(m);
+    if(m.tipo === 'compra') o.compras.push(m);
+  });
+  _estIdx = idx;
+}
+function estCalc(it) {
+  const hoje = _estHoje();
+  const o = _estIdx[it.id] || {cons:[], compras:[], todas:[]};
+  const qtd = _estNum(it.qtdAtual), min = _estNum(it.estoqueMin), ideal = _estNum(it.estoqueIdeal), prazo = _estNum(it.prazoEntrega);
+  const r = {qtd, min, ideal, prazo, avgDia:0, dias:null, esgotaEm:'', comprarAte:'', consMes:0, mediaMes:0, projMes:0, atipico:false};
+  const datas = o.cons.map(c => c.data).filter(Boolean).sort();
+  const primeira = datas[0] || '';
+  if(primeira) {
+    const ini90 = _estAddDias(hoje, -90);
+    const tot = o.cons.filter(c => c.data >= ini90 && c.data <= hoje).reduce((s,c) => s + _estNum(c.qtd), 0);
+    const base = Math.min(90, Math.max(14, _estDiff(primeira, hoje) + 1));
+    r.avgDia = tot / base;
+  }
+  if(r.avgDia > 0) {
+    r.dias = qtd > 0 ? qtd / r.avgDia : 0;
+    r.esgotaEm = _estAddDias(hoje, Math.floor(r.dias));
+    r.comprarAte = _estAddDias(r.esgotaEm, -prazo);
+  }
+  // consumo atípico: projeção do mês atual contra a média dos até 3 meses anteriores com histórico
+  const dNow = new Date(), dia = dNow.getDate(), dim = new Date(dNow.getFullYear(), dNow.getMonth()+1, 0).getDate();
+  const porMes = {};
+  o.cons.forEach(c => { const k = _estMes(c.data); porMes[k] = (porMes[k]||0) + _estNum(c.qtd); });
+  const curKey = _estMes(hoje);
+  r.consMes = porMes[curKey] || 0;
+  const prev = [1,2,3].map(n => _estAddMes(curKey, -n)).filter(k => primeira && k >= _estMes(primeira));
+  r.mediaMes = prev.length ? prev.reduce((s,k) => s + (porMes[k]||0), 0) / prev.length : 0;
+  r.projMes = dia >= 7 ? r.consMes / dia * dim : r.consMes;
+  r.atipico = dia >= 7 && r.mediaMes > 0 && r.projMes >= 1.5 * r.mediaMes && (r.projMes - r.mediaMes) >= 1;
+  r.zerado = qtd <= 0;
+  r.abaixo = !r.zerado && min > 0 && qtd < min;
+  r.proximo = !r.zerado && r.dias != null && r.dias <= 7;
+  r.comprar = r.zerado || r.abaixo || (r.dias != null && r.dias <= prazo + EST_MARGEM_DIAS);
+  const alvo = ideal > 0 ? ideal : (min > 0 ? min*2 : r.avgDia*30);
+  r.sugerido = r.comprar ? Math.max(0, Math.ceil(alvo - qtd)) : 0;
+  return r;
+}
+function estStatus(r) {
+  if(r.zerado) return ['Zerado','badge-danger'];
+  if(r.abaixo) return ['Abaixo do mínimo','badge-danger'];
+  if(r.comprar) return ['Comprar','badge-warning'];
+  if(r.proximo) return ['Acabando','badge-warning'];
+  if(r.atipico) return ['Consumo atípico','badge-info'];
+  return ['OK','badge-success'];
+}
+const _estCustoMov = m => _estNum(m.custoUnit != null ? m.custoUnit : (_estItem(m.itemId)?.custoUnit));
+const _estCatMov = m => (_estItem(m.itemId)?.categoria) || m.categoria || 'Sem categoria';
+const _estFmtD = s => s ? formatDate(s) : '—';
+
+function estFiltros() { return {cat:_estV('est-f-cat'), item:_estV('est-f-item'), ini:_estV('est-f-ini'), fim:_estV('est-f-fim')}; }
+function estItensFiltrados(inativos) {
+  const f = estFiltros();
+  return _estItens.filter(i => (!f.cat || i.categoria === f.cat) && (!f.item || i.id === f.item) && (inativos || i.ativo !== false));
+}
+function estMovFiltrados(usarPeriodo = true) {
+  const f = estFiltros();
+  return _estMov.filter(m => (!f.cat || _estCatMov(m) === f.cat) && (!f.item || m.itemId === f.item)
+      && (!usarPeriodo || ((!f.ini || m.data >= f.ini) && (!f.fim || m.data <= f.fim))))
+    .sort((a,b) => (b.data||'').localeCompare(a.data||'') || (_estTs(b.createdAt) - _estTs(a.createdAt)));
+}
+
+// ── Renderização ──
+function estRender() {
+  estIndexar();
+  estRenderPainel();
+  estRenderProdutos();
+  estRenderMov();
+  estRenderConsumo();
+  estRenderCompras();
+}
+function _estTabela(cab, linhasHtml, vazio) {
+  if(!linhasHtml.length) return `<div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">${vazio}</div>`;
+  return `<table class="est-table"><thead><tr>${cab.map(c => `<th class="${c.num?'num':''}">${escH(c.t)}</th>`).join('')}</tr></thead><tbody>${linhasHtml.join('')}</tbody></table>`;
+}
+function _estCard(label, valor, sub, cor) {
+  return `<div class="stat-card"><div class="stat-label">${label}</div><div class="stat-value" style="${cor?'color:'+cor:''}">${valor}</div>${sub?`<div class="est-sub">${sub}</div>`:''}</div>`;
+}
+function _estPrimeiroUso() {
+  return !_estItens.length;
+}
+
+function estRenderPainel() {
+  const itens = estItensFiltrados();
+  const calcs = itens.map(it => ({it, r: estCalc(it)}));
+  const hoje = _estHoje();
+  const movs = estMovFiltrados();
+  const cons = movs.filter(m => m.tipo === 'consumo');
+  const perdas = movs.filter(m => m.tipo === 'perda');
+  const custoCons = cons.reduce((s,m) => s + _estNum(m.qtd) * _estCustoMov(m), 0);
+  const custoPerda = perdas.reduce((s,m) => s + _estNum(m.qtd) * _estCustoMov(m), 0);
+  const valorEst = calcs.reduce((s,{it,r}) => s + r.qtd * _estNum(it.custoUnit), 0);
+  const abaixo = calcs.filter(({r}) => r.zerado || r.abaixo);
+  const comprar = calcs.filter(({r}) => r.comprar);
+  const custoRep = comprar.reduce((s,{it,r}) => s + r.sugerido * _estNum(it.custoUnit), 0);
+  const risco = calcs.filter(({r}) => r.proximo);
+  const atip = calcs.filter(({r}) => r.atipico);
+  const f = estFiltros();
+  const per = (f.ini || f.fim) ? `${f.ini?formatDate(f.ini):'…'} a ${f.fim?formatDate(f.fim):'…'}` : 'todo o histórico';
+  document.getElementById('est-cards-1').innerHTML =
+    _estCard('Valor em estoque', formatMoney(valorEst), `${itens.length} produto(s) ativo(s)`) +
+    _estCard('Custo de consumo (período)', formatMoney(custoCons), per) +
+    _estCard('Abaixo do mínimo', abaixo.length, abaixo.length ? 'precisam de atenção imediata' : 'nenhum item', abaixo.length ? 'var(--danger)' : '') +
+    _estCard('Itens a comprar', comprar.length, comprar.length ? `reposição estimada: ${formatMoney(custoRep)}` : 'nenhum item', comprar.length ? 'var(--warning)' : '');
+  document.getElementById('est-cards-2').innerHTML =
+    _estCard('Esgotam em até 7 dias', risco.length, 'pela média de consumo', risco.length ? 'var(--warning)' : '') +
+    _estCard('Consumo atípico', atip.length, 'projeção do mês ≥ 1,5× a média', atip.length ? 'var(--info)' : '') +
+    _estCard('Perdas e descartes (período)', formatMoney(custoPerda), `${perdas.length} lançamento(s)`) +
+    _estCard('Movimentações (período)', movs.length, 'entradas, saídas e ajustes');
+
+  // Alertas
+  const al = [];
+  const cor = {d:'var(--danger)', w:'var(--warning)', i:'var(--info)'};
+  calcs.forEach(({it, r}) => {
+    const u = it.unidade || 'un.';
+    if(r.zerado) al.push([0, 'd', `<b>${escH(it.nome)}</b> — estoque zerado.`]);
+    else if(r.abaixo) al.push([1, 'd', `<b>${escH(it.nome)}</b> — abaixo do mínimo: ${_estQ(r.qtd)} de ${_estQ(r.min)} ${escH(u)}.`]);
+    if(!r.zerado && r.dias != null && r.comprar && !r.abaixo) al.push([2, 'w', `<b>${escH(it.nome)}</b> — comprar até ${_estFmtD(r.comprarAte)} (esgota por volta de ${_estFmtD(r.esgotaEm)}; prazo de entrega: ${r.prazo} dia(s)).`]);
+    else if(r.proximo && !r.comprar) al.push([3, 'w', `<b>${escH(it.nome)}</b> — previsão de esgotar em ${Math.floor(r.dias)} dia(s), por volta de ${_estFmtD(r.esgotaEm)}.`]);
+    if(r.atipico) al.push([4, 'i', `<b>${escH(it.nome)}</b> — consumo atípico: projeção de ${_estQ(r.projMes)} ${escH(u)} no mês contra média de ${_estQ(r.mediaMes)} (${r.mediaMes ? '+' + Math.round((r.projMes/r.mediaMes-1)*100) + '%' : ''}).`]);
+  });
+  al.sort((a,b) => a[0]-b[0]);
+  document.getElementById('est-alertas').innerHTML = _estPrimeiroUso()
+    ? `<div style="padding:1.25rem;font-size:.82rem;color:var(--text-lighter);text-align:center">Nenhum produto cadastrado. Comece em “+ Produto”.</div>`
+    : (al.length ? al.map(([,n,t]) => `<div class="est-alert"><span class="est-dot" style="background:${cor[n]}"></span><div>${t}</div></div>`).join('')
+    : `<div style="padding:1rem;font-size:.82rem;color:var(--success)">Tudo em ordem: nenhum alerta no momento.</div>`);
+
+  // Itens a comprar
+  const linhas = comprar.sort((a,b) => (a.r.dias ?? -1) - (b.r.dias ?? -1)).map(({it,r}) => {
+    const [st, cl] = estStatus(r);
+    return `<tr><td><b>${escH(it.nome)}</b><div class="est-sub">${escH(it.categoria||'')}</div></td>
+      <td class="num">${_estQ(r.qtd)} ${escH(it.unidade||'')}</td><td class="num">${_estQ(r.min)} / ${_estQ(r.ideal)}</td>
+      <td class="num"><b>${_estQ(r.sugerido)}</b></td><td class="num">${formatMoney(r.sugerido * _estNum(it.custoUnit))}</td>
+      <td>${r.dias != null ? _estFmtD(r.esgotaEm) : '—'}</td><td>${r.dias != null ? _estFmtD(r.comprarAte) : '—'}</td>
+      <td>${escH(it.fornecedor||'—')}</td><td><span class="badge ${cl}">${st}</span></td></tr>`;
+  });
+  document.getElementById('est-comprar').innerHTML = _estTabela(
+    [{t:'Produto'},{t:'Estoque',num:1},{t:'Mín. / Ideal',num:1},{t:'Sugestão de compra',num:1},{t:'Custo estimado',num:1},{t:'Esgota em'},{t:'Comprar até'},{t:'Fornecedor'},{t:'Situação'}],
+    linhas, 'Nenhum item precisa ser comprado agora.');
+  _estExp.painel = {
+    titulo: 'Itens a comprar',
+    cab: ['Produto','Categoria','Unidade','Estoque','Mínimo','Ideal','Sugestão de compra','Custo estimado (R$)','Esgota em','Comprar até','Fornecedor'],
+    linhas: comprar.map(({it,r}) => [it.nome, it.categoria||'', it.unidade||'', r.qtd, r.min, r.ideal, r.sugerido, Math.round(r.sugerido*_estNum(it.custoUnit)*100)/100, r.dias!=null?_estFmtD(r.esgotaEm):'', r.dias!=null?_estFmtD(r.comprarAte):'', it.fornecedor||''])
+  };
+
+  // Variação de custos (última compra x anterior)
+  const vars = [];
+  itens.forEach(it => {
+    const c = ((_estIdx[it.id]||{}).compras||[]).filter(x => _estNum(x.custoUnit) > 0).sort(_estOrdCompra);
+    if(c.length >= 2) {
+      const a = _estNum(c[c.length-2].custoUnit), b = _estNum(c[c.length-1].custoUnit);
+      vars.push({it, a, b, pct: (b/a-1)*100, forn: c[c.length-1].fornecedor || ''});
+    }
+  });
+  vars.sort((x,y) => Math.abs(y.pct) - Math.abs(x.pct));
+  document.getElementById('est-variacao').innerHTML = _estTabela(
+    [{t:'Produto'},{t:'Compra anterior',num:1},{t:'Última compra',num:1},{t:'Variação',num:1},{t:'Fornecedor (última)'}],
+    vars.slice(0,8).map(v => `<tr><td><b>${escH(v.it.nome)}</b></td><td class="num">${formatMoney(v.a)}</td><td class="num">${formatMoney(v.b)}</td>
+      <td class="num" style="color:${v.pct>0?'var(--danger)':(v.pct<0?'var(--success)':'inherit')}">${v.pct>0?'+':''}${v.pct.toFixed(1).replace('.',',')}%</td><td>${escH(v.forn||'—')}</td></tr>`),
+    'São necessárias ao menos duas compras com valor informado para comparar preços.');
+
+  if(_estTab === 'painel') estGraficos(cons);
+}
+function _estOrdCompra(a, b) { return (a.data||'').localeCompare(b.data||'') || (_estTs(a.createdAt) - _estTs(b.createdAt)); }
+
+function estGraficos(consPeriodo) {
+  if(typeof Chart === 'undefined') return;
+  const porCat = {};
+  consPeriodo.forEach(m => { const c = _estCatMov(m); porCat[c] = (porCat[c]||0) + _estNum(m.qtd) * _estCustoMov(m); });
+  const cats = Object.keys(porCat).sort((a,b) => porCat[b]-porCat[a]);
+  destroyChart('est-chart-cat');
+  const c1 = document.getElementById('est-chart-cat');
+  if(c1) chartInstances['est-chart-cat'] = new Chart(c1, {type:'bar',
+    data:{labels:cats.length?cats:['Sem consumo'], datasets:[{label:'Custo (R$)', data:cats.length?cats.map(c=>Math.round(porCat[c]*100)/100):[0], backgroundColor:'#b08d57'}]},
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}});
+  const cur = _estMes(_estHoje());
+  const meses = [5,4,3,2,1,0].map(n => _estAddMes(cur, -n));
+  const tot = {}; meses.forEach(k => tot[k] = 0);
+  estMovFiltrados(false).filter(m => m.tipo === 'consumo').forEach(m => { const k = _estMes(m.data); if(k in tot) tot[k] += _estNum(m.qtd) * _estCustoMov(m); });
+  destroyChart('est-chart-hist');
+  const c2 = document.getElementById('est-chart-hist');
+  if(c2) chartInstances['est-chart-hist'] = new Chart(c2, {type:'line',
+    data:{labels:meses.map(_estMesLbl), datasets:[{label:'Custo de consumo (R$)', data:meses.map(k=>Math.round(tot[k]*100)/100), borderColor:'#b08d57', backgroundColor:'rgba(176,141,87,.15)', fill:true, tension:.25}]},
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}});
+}
+
+function estRenderProdutos() {
+  const mostrarInativos = document.getElementById('est-f-inativos')?.checked;
+  const itens = estItensFiltrados(mostrarInativos);
+  const linhas = itens.map(it => {
+    const r = estCalc(it), [st, cl] = estStatus(r);
+    const inativo = it.ativo === false;
+    return `<tr style="${inativo?'opacity:.55':''}"><td><b>${escH(it.nome)}</b>${inativo?' <span class="badge badge-neutral">inativo</span>':''}<div class="est-sub">${escH(it.fornecedor||'')}</div></td>
+      <td>${escH(it.categoria||'—')}</td><td class="num"><b>${_estQ(r.qtd)}</b> ${escH(it.unidade||'')}</td>
+      <td class="num">${_estQ(r.min)} / ${_estQ(r.ideal)}</td><td class="num">${formatMoney(_estNum(it.custoUnit))}</td>
+      <td class="num">${formatMoney(r.qtd*_estNum(it.custoUnit))}</td><td>${escH(it.local||'—')}</td><td>${_estFmtD(it.ultimaCompra)}</td>
+      <td>${r.dias != null ? 'esgota em ~' + Math.floor(r.dias) + ' d' : '—'}</td><td><span class="badge ${cl}">${st}</span></td>
+      <td style="white-space:nowrap"><button class="btn btn-secondary btn-sm" onclick="estEditarItem('${it.id}')">Editar</button> <button class="btn btn-secondary btn-sm" onclick="estNovaMov('${it.id}')">Movimentar</button></td></tr>`;
+  });
+  document.getElementById('est-produtos').innerHTML = _estTabela(
+    [{t:'Produto'},{t:'Categoria'},{t:'Estoque',num:1},{t:'Mín. / Ideal',num:1},{t:'Custo unit.',num:1},{t:'Valor em estoque',num:1},{t:'Local'},{t:'Última compra'},{t:'Previsão'},{t:'Situação'},{t:''}],
+    linhas, _estItens.length ? 'Nenhum produto com esses filtros.' : 'Nenhum produto cadastrado. Use “+ Produto” para começar.');
+  _estExp.produtos = {
+    titulo: 'Produtos em estoque',
+    cab: ['Produto','Categoria','Unidade','Estoque','Mínimo','Ideal','Custo unitário (R$)','Valor em estoque (R$)','Fornecedor','Prazo de entrega (dias)','Local','Última compra','Situação'],
+    linhas: itens.map(it => { const r = estCalc(it); return [it.nome, it.categoria||'', it.unidade||'', r.qtd, r.min, r.ideal, _estNum(it.custoUnit), Math.round(r.qtd*_estNum(it.custoUnit)*100)/100, it.fornecedor||'', _estNum(it.prazoEntrega), it.local||'', _estFmtD(it.ultimaCompra), (it.ativo===false?'Inativo':estStatus(r)[0])]; })
+  };
+}
+
+function _estQtdMov(m) {
+  const u = escH(m.unidade || _estItem(m.itemId)?.unidade || '');
+  if(m.tipo === 'transferencia') return `<span class="est-sub">${escH(m.localOrigem||'—')} → ${escH(m.localDestino||'—')}</span>`;
+  const d = m.delta != null ? _estNum(m.delta) : (m.tipo === 'compra' ? _estNum(m.qtd) : -_estNum(m.qtd));
+  return `<b style="color:${d>=0?'var(--success)':'var(--danger)'}">${d>0?'+':(d<0?'−':'')}${_estQ(Math.abs(d))}</b> ${u}`;
+}
+function estRenderMov() {
+  const tipo = _estV('est-f-tipo');
+  const lista = estMovFiltrados().filter(m => !tipo || m.tipo === tipo);
+  const linhas = lista.map(m => `<tr><td>${_estFmtD(m.data)}</td><td><span class="badge badge-neutral">${EST_TIPOS[m.tipo]?.curto || m.tipo}</span></td>
+    <td><b>${escH(m.itemNome || _estItem(m.itemId)?.nome || '—')}</b><div class="est-sub">${escH(_estCatMov(m))}</div></td><td class="num">${_estQtdMov(m)}</td>
+    <td class="num">${(m.tipo==='compra'||m.tipo==='consumo'||m.tipo==='perda') && _estCustoMov(m) ? formatMoney(_estCustoMov(m)) : '—'}</td>
+    <td>${escH(m.responsavel||'—')}</td><td style="max-width:240px">${escH(m.obs||'')}${m.tipo==='ajuste'&&m.qtdContada!=null?`<div class="est-sub">contado: ${_estQ(m.qtdContada)}</div>`:''}${m.fornecedor?`<div class="est-sub">${escH(m.fornecedor)}</div>`:''}</td>
+    <td><button class="btn btn-secondary btn-sm" style="color:var(--danger)" onclick="estExcluirMov('${m.id}')">Excluir</button></td></tr>`);
+  document.getElementById('est-mov').innerHTML = _estTabela(
+    [{t:'Data'},{t:'Tipo'},{t:'Produto'},{t:'Quantidade',num:1},{t:'Custo unit.',num:1},{t:'Responsável'},{t:'Observações'},{t:''}],
+    linhas, 'Nenhuma movimentação no período e filtros selecionados.');
+  _estExp.mov = {
+    titulo: 'Movimentações de estoque',
+    cab: ['Data','Tipo','Produto','Categoria','Quantidade (efeito no saldo)','Unidade','Custo unitário (R$)','Fornecedor','Local origem','Local destino','Responsável','Observações'],
+    linhas: lista.map(m => [_estFmtD(m.data), EST_TIPOS[m.tipo]?.curto||m.tipo, m.itemNome||'', _estCatMov(m), m.tipo==='transferencia'?0:(m.delta!=null?_estNum(m.delta):(m.tipo==='compra'?_estNum(m.qtd):-_estNum(m.qtd))), m.unidade||'', _estCustoMov(m)||'', m.fornecedor||'', m.localOrigem||'', m.localDestino||'', m.responsavel||'', m.obs||''])
+  };
+}
+
+function estRenderConsumo() {
+  const cur = _estMes(_estHoje());
+  const meses = [5,4,3,2,1,0].map(n => _estAddMes(cur, -n));
+  const itens = estItensFiltrados(true);
+  const movs = estMovFiltrados(false);
+  const qtdPorItem = {}, custoPorCat = {}, perdaPorItem = {};
+  movs.forEach(m => {
+    const k = _estMes(m.data); if(!meses.includes(k)) return;
+    if(m.tipo === 'consumo') {
+      (qtdPorItem[m.itemId] = qtdPorItem[m.itemId] || {})[k] = ((qtdPorItem[m.itemId]||{})[k]||0) + _estNum(m.qtd);
+      const c = _estCatMov(m); (custoPorCat[c] = custoPorCat[c] || {})[k] = ((custoPorCat[c]||{})[k]||0) + _estNum(m.qtd) * _estCustoMov(m);
+    } else if(m.tipo === 'perda') perdaPorItem[m.itemId] = (perdaPorItem[m.itemId]||0) + _estNum(m.qtd);
+  });
+  const lista = itens.map(it => ({it, r: estCalc(it), q: qtdPorItem[it.id] || {}, perda: perdaPorItem[it.id] || 0}))
+    .filter(x => Object.keys(x.q).length || x.perda)
+    .sort((a,b) => Object.values(b.q).reduce((s,v)=>s+v,0) - Object.values(a.q).reduce((s,v)=>s+v,0));
+  const linhas = lista.map(({it,r,q,perda}) => {
+    const delta = r.mediaMes > 0 ? (r.projMes/r.mediaMes - 1) * 100 : null;
+    return `<tr><td><b>${escH(it.nome)}</b><div class="est-sub">${escH(it.categoria||'')} · ${escH(it.unidade||'')}</div></td>
+      ${meses.map(k => `<td class="num">${q[k] ? _estQ(q[k]) : '—'}</td>`).join('')}
+      <td class="num">${r.mediaMes ? _estQ(r.mediaMes) : '—'}</td>
+      <td class="num" style="color:${delta!=null&&delta>=50?'var(--danger)':'inherit'}">${delta!=null ? (delta>0?'+':'') + Math.round(delta) + '%' : '—'}</td>
+      <td class="num">${formatMoney(r.consMes * _estNum(it.custoUnit))}</td><td class="num">${perda ? _estQ(perda) : '—'}</td>
+      <td>${r.atipico ? '<span class="badge badge-info">Acima do esperado</span>' : ''}</td></tr>`;
+  });
+  document.getElementById('est-consumo-prod').innerHTML = _estTabela(
+    [{t:'Produto'}, ...meses.map(k => ({t:_estMesLbl(k), num:1})), {t:'Média (3 meses ant.)',num:1},{t:'Mês atual (proj.) x média',num:1},{t:'Custo do mês atual',num:1},{t:'Perdas (6m)',num:1},{t:''}],
+    linhas, 'Sem consumo registrado nos últimos 6 meses. Registre saídas do tipo “consumo”.');
+  _estExp.consumo = {
+    titulo: 'Consumo por produto',
+    cab: ['Produto','Categoria','Unidade', ...meses.map(_estMesLbl), 'Média 3 meses anteriores','Projeção do mês atual','Custo do mês atual (R$)','Perdas 6 meses','Acima do esperado'],
+    linhas: lista.map(({it,r,q,perda}) => [it.nome, it.categoria||'', it.unidade||'', ...meses.map(k => q[k]||0), Math.round(r.mediaMes*100)/100, Math.round(r.projMes*100)/100, Math.round(r.consMes*_estNum(it.custoUnit)*100)/100, perda, r.atipico?'Sim':'Não'])
+  };
+  const cats = Object.keys(custoPorCat).sort((a,b) => Object.values(custoPorCat[b]).reduce((s,v)=>s+v,0) - Object.values(custoPorCat[a]).reduce((s,v)=>s+v,0));
+  document.getElementById('est-consumo-cat').innerHTML = _estTabela(
+    [{t:'Categoria'}, ...meses.map(k => ({t:_estMesLbl(k), num:1})), {t:'Total 6 meses',num:1},{t:'Média mensal',num:1}],
+    cats.map(c => { const v = custoPorCat[c], tot = meses.reduce((s,k)=>s+(v[k]||0),0);
+      return `<tr><td><b>${escH(c)}</b></td>${meses.map(k => `<td class="num">${v[k] ? formatMoney(v[k]) : '—'}</td>`).join('')}<td class="num"><b>${formatMoney(tot)}</b></td><td class="num">${formatMoney(tot/6)}</td></tr>`; }),
+    'Sem custo de consumo nos últimos 6 meses.');
+}
+
+function estRenderCompras() {
+  const itensFiltro = new Set(estItensFiltrados(true).map(i => i.id));
+  const todas = _estMov.filter(m => m.tipo === 'compra').sort(_estOrdCompra);
+  // variação e intervalo em relação à compra anterior do mesmo produto (sobre o histórico completo)
+  const ant = {}, info = {};
+  todas.forEach(m => {
+    const p = ant[m.itemId];
+    info[m.id] = {pct: (p && _estNum(p.custoUnit) > 0 && _estNum(m.custoUnit) > 0) ? (_estNum(m.custoUnit)/_estNum(p.custoUnit) - 1) * 100 : null,
+                  dias: p && p.data && m.data ? _estDiff(p.data, m.data) : null};
+    ant[m.itemId] = m;
+  });
+  const f = estFiltros();
+  const lista = todas.filter(m => itensFiltro.has(m.itemId) && (!f.ini || m.data >= f.ini) && (!f.fim || m.data <= f.fim)).sort((a,b) => _estOrdCompra(b,a));
+  const total = lista.reduce((s,m) => s + _estNum(m.qtd) * _estNum(m.custoUnit), 0);
+  document.getElementById('est-cards-compras').innerHTML =
+    _estCard('Gasto com compras (período)', formatMoney(total), `${lista.length} compra(s)`) +
+    _estCard('Fornecedores no período', new Set(lista.map(m => m.fornecedor).filter(Boolean)).size, '') +
+    _estCard('Produtos comprados', new Set(lista.map(m => m.itemId)).size, '') +
+    _estCard('Ticket médio por compra', formatMoney(lista.length ? total/lista.length : 0), '');
+  const linhas = lista.map(m => { const i = info[m.id];
+    return `<tr><td>${_estFmtD(m.data)}</td><td><b>${escH(m.itemNome||_estItem(m.itemId)?.nome||'—')}</b></td><td class="num">${_estQ(m.qtd)} ${escH(m.unidade||'')}</td>
+      <td class="num">${formatMoney(_estNum(m.custoUnit))}</td><td class="num">${formatMoney(_estNum(m.qtd)*_estNum(m.custoUnit))}</td><td>${escH(m.fornecedor||'—')}</td>
+      <td class="num" style="color:${i.pct>0?'var(--danger)':(i.pct<0?'var(--success)':'inherit')}">${i.pct==null?'—':(i.pct>0?'+':'')+i.pct.toFixed(1).replace('.',',')+'%'}</td>
+      <td class="num">${i.dias==null?'—':i.dias+' d'}</td></tr>`; });
+  document.getElementById('est-compras').innerHTML = _estTabela(
+    [{t:'Data'},{t:'Produto'},{t:'Quantidade',num:1},{t:'Valor unit.',num:1},{t:'Valor total',num:1},{t:'Fornecedor'},{t:'Variação de preço',num:1},{t:'Intervalo da anterior',num:1}],
+    linhas, 'Nenhuma compra no período. Registre entradas do tipo “compra/reposição”.');
+  // resumo por produto (histórico completo dos produtos filtrados)
+  const resumo = [];
+  estItensFiltrados(true).forEach(it => {
+    const c = todas.filter(m => m.itemId === it.id);
+    if(!c.length) return;
+    const dts = c.map(m => m.data).filter(Boolean).sort();
+    const freq = dts.length >= 2 ? _estDiff(dts[0], dts[dts.length-1]) / (dts.length-1) : null;
+    const comCusto = c.filter(m => _estNum(m.custoUnit) > 0);
+    const pf = {};
+    comCusto.forEach(m => { const k = m.fornecedor || '—'; (pf[k] = pf[k] || []).push(_estNum(m.custoUnit)); });
+    const medias = Object.entries(pf).map(([k,v]) => [k, v.reduce((s,x)=>s+x,0)/v.length]).sort((a,b) => a[1]-b[1]);
+    resumo.push({it, n:c.length, freq, ult: comCusto.length ? _estNum(comCusto[comCusto.length-1].custoUnit) : 0,
+      pri: comCusto.length ? _estNum(comCusto[0].custoUnit) : 0, melhor: medias.length > 1 ? medias[0] : null, nForn: medias.length});
+  });
+  document.getElementById('est-compras-resumo').innerHTML = _estTabela(
+    [{t:'Produto'},{t:'Compras',num:1},{t:'Frequência média',num:1},{t:'Primeiro preço',num:1},{t:'Último preço',num:1},{t:'Variação total',num:1},{t:'Fornecedor mais barato (média)'}],
+    resumo.map(x => { const p = x.pri > 0 ? (x.ult/x.pri - 1)*100 : null;
+      return `<tr><td><b>${escH(x.it.nome)}</b></td><td class="num">${x.n}</td><td class="num">${x.freq==null?'—':'a cada ' + Math.round(x.freq) + ' d'}</td>
+        <td class="num">${x.pri?formatMoney(x.pri):'—'}</td><td class="num">${x.ult?formatMoney(x.ult):'—'}</td>
+        <td class="num" style="color:${p>0?'var(--danger)':(p<0?'var(--success)':'inherit')}">${p==null?'—':(p>0?'+':'')+p.toFixed(1).replace('.',',')+'%'}</td>
+        <td>${x.melhor ? escH(x.melhor[0]) + ' (' + formatMoney(x.melhor[1]) + ')' : (x.nForn===1?'só 1 fornecedor':'—')}</td></tr>`; }),
+    'Sem compras registradas para os produtos filtrados.');
+  _estExp.compras = {
+    titulo: 'Histórico de compras',
+    cab: ['Data','Produto','Categoria','Quantidade','Unidade','Valor unitário (R$)','Valor total (R$)','Fornecedor','Variação de preço (%)','Intervalo da compra anterior (dias)'],
+    linhas: lista.map(m => [_estFmtD(m.data), m.itemNome||'', _estCatMov(m), _estNum(m.qtd), m.unidade||'', _estNum(m.custoUnit), Math.round(_estNum(m.qtd)*_estNum(m.custoUnit)*100)/100, m.fornecedor||'', info[m.id].pct==null?'':Math.round(info[m.id].pct*10)/10, info[m.id].dias==null?'':info[m.id].dias])
+  };
+}
+
+// ── Produto ──
+function _estPopularCatSel(sel, atual) {
+  const cats = estCategorias(); if(atual && !cats.includes(atual)) cats.push(atual);
+  sel.innerHTML = cats.map(c => `<option value="${escH(c)}">${escH(c)}</option>`).join('');
+  if(atual) sel.value = atual;
+}
+function estNovoItem() {
+  document.getElementById('eitem-edit-id').value = '';
+  document.getElementById('eitem-title').textContent = 'Novo produto';
+  ['eitem-nome','eitem-unid','eitem-qtd-ini','eitem-custo-novo','eitem-min','eitem-ideal','eitem-forn','eitem-prazo','eitem-local'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('eitem-unid').value = 'unidade';
+  const f = _estV('est-f-cat');
+  _estPopularCatSel(document.getElementById('eitem-cat'), f || EST_CATS_PADRAO[0]);
+  document.getElementById('eitem-qtd-ini-row').style.display = '';
+  document.getElementById('eitem-custo-edit-row').style.display = 'none';
+  document.getElementById('eitem-qtd-hint').style.display = 'none';
+  document.getElementById('eitem-excluir-btn').style.display = 'none';
+  openModal('estoque-item');
+}
+function estEditarItem(id) {
+  const it = _estItem(id); if(!it) return;
+  document.getElementById('eitem-edit-id').value = id;
+  document.getElementById('eitem-title').textContent = 'Editar produto';
+  document.getElementById('eitem-nome').value = it.nome || '';
+  _estPopularCatSel(document.getElementById('eitem-cat'), it.categoria);
+  document.getElementById('eitem-unid').value = it.unidade || '';
+  document.getElementById('eitem-custo').value = it.custoUnit != null ? it.custoUnit : '';
+  document.getElementById('eitem-ativo').value = it.ativo === false ? '0' : '1';
+  document.getElementById('eitem-min').value = it.estoqueMin != null ? it.estoqueMin : '';
+  document.getElementById('eitem-ideal').value = it.estoqueIdeal != null ? it.estoqueIdeal : '';
+  document.getElementById('eitem-forn').value = it.fornecedor || '';
+  document.getElementById('eitem-prazo').value = it.prazoEntrega != null ? it.prazoEntrega : '';
+  document.getElementById('eitem-local').value = it.local || '';
+  document.getElementById('eitem-qtd-ini-row').style.display = 'none';
+  document.getElementById('eitem-custo-edit-row').style.display = '';
+  document.getElementById('eitem-qtd-hint').style.display = '';
+  document.getElementById('eitem-excluir-btn').style.display = '';
+  openModal('estoque-item');
+}
+async function estSalvarItem() {
+  const FV = firebase.firestore.FieldValue;
+  const editId = _estV('eitem-edit-id');
+  const nome = _estV('eitem-nome');
+  if(!nome) { showToast('Informe o nome do material.','error'); return; }
+  if(_estItens.some(i => i.id !== editId && (i.nome||'').toLowerCase() === nome.toLowerCase())) { showToast('Já existe um produto com esse nome.','error'); return; }
+  const data = {
+    nome, categoria: _estV('eitem-cat'), unidade: _estV('eitem-unid') || 'unidade',
+    estoqueMin: _estNum(_estV('eitem-min')), estoqueIdeal: _estNum(_estV('eitem-ideal')),
+    fornecedor: _estV('eitem-forn'), prazoEntrega: Math.max(0, Math.round(_estNum(_estV('eitem-prazo')))), local: _estV('eitem-local'),
+    updatedAt: FV.serverTimestamp()
+  };
+  try {
+    if(editId) {
+      data.custoUnit = _estNum(_estV('eitem-custo'));
+      data.ativo = _estV('eitem-ativo') !== '0';
+      await db.collection('estoqueItens').doc(editId).update(data);
+      showToast('Produto atualizado!','success');
+    } else {
+      const qtd0 = Math.max(0, _estNum(_estV('eitem-qtd-ini')));
+      data.custoUnit = _estNum(_estV('eitem-custo-novo'));
+      data.ativo = true; data.qtdAtual = qtd0; data.createdAt = FV.serverTimestamp();
+      const batch = db.batch();
+      const ref = db.collection('estoqueItens').doc();
+      batch.set(ref, data);
+      if(qtd0 > 0) batch.set(db.collection('estoqueMov').doc(), {itemId:ref.id, itemNome:nome, categoria:data.categoria, unidade:data.unidade, tipo:'ajuste', data:_estHoje(), qtd:qtd0, delta:qtd0, qtdContada:qtd0, responsavel:_estV('user-name') || (document.getElementById('user-name')?.textContent||''), obs:'Saldo inicial', inicial:true, createdAt:FV.serverTimestamp()});
+      await batch.commit();
+      showToast('Produto cadastrado!','success');
+    }
+    closeModal('estoque-item');
+    loadEstoque();
+  } catch(e) { console.error(e); showToast('Erro ao salvar o produto.','error'); }
+}
+async function estExcluirItem() {
+  const id = _estV('eitem-edit-id'); const it = _estItem(id); if(!it) return;
+  const movs = _estMov.filter(m => m.itemId === id);
+  if(movs.some(m => !m.inicial)) { showToast('Este produto já tem movimentações. Para tirá-lo de uso, marque como Inativo.','error'); return; }
+  if(!confirm(`Excluir o produto "${it.nome}"? Esta ação não pode ser desfeita.`)) return;
+  try {
+    const batch = db.batch();
+    movs.forEach(m => batch.delete(db.collection('estoqueMov').doc(m.id)));
+    batch.delete(db.collection('estoqueItens').doc(id));
+    await batch.commit();
+    showToast('Produto excluído.','success');
+    closeModal('estoque-item');
+    loadEstoque();
+  } catch(e) { console.error(e); showToast('Erro ao excluir o produto.','error'); }
+}
+
+// ── Movimentações ──
+function estNovaMov(itemId) {
+  const ativos = _estItens.filter(i => i.ativo !== false);
+  if(!ativos.length) { showToast('Cadastre um produto antes de registrar movimentações.','error'); return; }
+  _estOpts(document.getElementById('emov-item'), ativos.map(i => [i.id, `${i.nome} (${i.categoria||'—'})`]));
+  const f = _estV('est-f-item');
+  const sel = document.getElementById('emov-item');
+  sel.value = itemId || (f && ativos.some(i => i.id === f) ? f : ativos[0].id);
+  document.getElementById('emov-tipo').value = 'consumo';
+  document.getElementById('emov-data').value = _estHoje();
+  ['emov-qtd','emov-custo','emov-forn','emov-destino','emov-obs'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('emov-resp').value = (document.getElementById('user-name')?.textContent || '').trim();
+  estMovTipoChange();
+  openModal('estoque-mov');
+}
+function estMovTipoChange() {
+  const t = _estV('emov-tipo');
+  document.getElementById('emov-compra-grp').style.display = t === 'compra' ? '' : 'none';
+  document.getElementById('emov-dest-grp').style.display = t === 'transferencia' ? '' : 'none';
+  document.getElementById('emov-qtd-grp').style.display = t === 'transferencia' ? 'none' : '';
+  document.getElementById('emov-qtd-lbl').textContent = t === 'ajuste' ? 'Quantidade contada (saldo real)' : 'Quantidade';
+  estMovItemChange();
+}
+function estMovItemChange() {
+  const it = _estItem(_estV('emov-item')); const t = _estV('emov-tipo');
+  document.getElementById('emov-saldo').textContent = it ? `Saldo atual: ${_estQ(_estNum(it.qtdAtual))} ${it.unidade||''}${it.local?' · '+it.local:''}` : '';
+  if(it && t === 'compra') {
+    if(!_estV('emov-custo') && it.custoUnit) document.getElementById('emov-custo').value = it.custoUnit;
+    if(!_estV('emov-forn') && it.fornecedor) document.getElementById('emov-forn').value = it.fornecedor;
+  }
+  estMovTotal();
+}
+function estMovTotal() {
+  const el = document.getElementById('emov-total');
+  if(_estV('emov-tipo') !== 'compra') { el.textContent = ''; return; }
+  const q = _estNum(_estV('emov-qtd')), c = _estNum(_estV('emov-custo'));
+  el.textContent = q && c ? `Valor total da compra: ${formatMoney(q*c)}` : '';
+}
+async function estSalvarMov() {
+  const FV = firebase.firestore.FieldValue;
+  const tipo = _estV('emov-tipo'), it = _estItem(_estV('emov-item'));
+  if(!it) { showToast('Selecione o produto.','error'); return; }
+  const data = _estV('emov-data') || _estHoje();
+  const saldo = _estNum(it.qtdAtual);
+  const bruto = _estV('emov-qtd'), qtdIn = _estNum(bruto);
+  const mov = {itemId:it.id, itemNome:it.nome, categoria:it.categoria||'', unidade:it.unidade||'', tipo, data,
+    responsavel:_estV('emov-resp'), obs:_estV('emov-obs'), createdAt:FV.serverTimestamp()};
+  const upd = {updatedAt: FV.serverTimestamp()};
+  let delta = 0;
+  if(tipo === 'ajuste') {
+    if(bruto === '' || qtdIn < 0) { showToast('Informe a quantidade contada.','error'); return; }
+    delta = qtdIn - saldo;
+    if(Math.abs(delta) < 1e-9) { showToast('A quantidade contada é igual ao saldo atual. Nada a ajustar.','error'); return; }
+    mov.qtdContada = qtdIn; mov.qtd = Math.abs(delta);
+  } else if(tipo === 'transferencia') {
+    const dest = _estV('emov-destino');
+    if(!dest) { showToast('Informe o local de destino.','error'); return; }
+    if(dest === (it.local||'')) { showToast('O destino é igual ao local atual do produto.','error'); return; }
+    mov.localOrigem = it.local || ''; mov.localDestino = dest; mov.qtd = saldo; upd.local = dest;
+  } else {
+    if(!(qtdIn > 0)) { showToast('Informe uma quantidade maior que zero.','error'); return; }
+    mov.qtd = qtdIn;
+    if(tipo === 'compra') {
+      delta = qtdIn;
+      const custo = _estNum(_estV('emov-custo')) || _estNum(it.custoUnit);
+      mov.custoUnit = custo; mov.fornecedor = _estV('emov-forn');
+      if(!it.ultimaCompra || data >= it.ultimaCompra) { upd.ultimaCompra = data; if(custo > 0) upd.custoUnit = custo; if(mov.fornecedor) upd.fornecedor = mov.fornecedor; }
+    } else {
+      delta = -qtdIn; mov.custoUnit = _estNum(it.custoUnit);
+      if(qtdIn > saldo && !confirm(`A saída (${_estQ(qtdIn)}) é maior que o saldo atual (${_estQ(saldo)}). Registrar mesmo assim? O saldo ficará negativo.`)) return;
+    }
+  }
+  mov.delta = delta;
+  if(delta) upd.qtdAtual = FV.increment(delta);
+  try {
+    const batch = db.batch();
+    batch.set(db.collection('estoqueMov').doc(), mov);
+    batch.update(db.collection('estoqueItens').doc(it.id), upd);
+    await batch.commit();
+    showToast('Movimentação registrada!','success');
+    closeModal('estoque-mov');
+    loadEstoque();
+  } catch(e) { console.error(e); showToast('Erro ao registrar a movimentação.','error'); }
+}
+async function estExcluirMov(id) {
+  const FV = firebase.firestore.FieldValue;
+  const m = _estMov.find(x => x.id === id); if(!m) return;
+  const it = _estItem(m.itemId);
+  const delta = m.tipo === 'transferencia' ? 0 : (m.delta != null ? _estNum(m.delta) : (m.tipo === 'compra' ? _estNum(m.qtd) : -_estNum(m.qtd)));
+  const efeito = delta ? ` O saldo de "${m.itemNome}" será corrigido em ${delta>0?'−':'+'}${_estQ(Math.abs(delta))}.` : '';
+  if(!confirm(`Excluir esta movimentação (${EST_TIPOS[m.tipo]?.curto||m.tipo}, ${_estFmtD(m.data)})?${efeito}`)) return;
+  try {
+    const batch = db.batch();
+    batch.delete(db.collection('estoqueMov').doc(id));
+    if(it) {
+      const upd = {updatedAt: FV.serverTimestamp()};
+      if(delta) upd.qtdAtual = FV.increment(-delta);
+      if(m.tipo === 'transferencia' && (it.local||'') === (m.localDestino||'')) upd.local = m.localOrigem || '';
+      if(m.tipo === 'compra') {
+        const restantes = _estMov.filter(x => x.id !== id && x.itemId === it.id && x.tipo === 'compra').sort(_estOrdCompra);
+        const ult = restantes[restantes.length-1];
+        if(ult) { upd.ultimaCompra = ult.data || ''; if(_estNum(ult.custoUnit) > 0) upd.custoUnit = _estNum(ult.custoUnit); }
+        else upd.ultimaCompra = FV.delete();
+      }
+      batch.update(db.collection('estoqueItens').doc(it.id), upd);
+    }
+    await batch.commit();
+    showToast('Movimentação excluída.','success');
+    loadEstoque();
+  } catch(e) { console.error(e); showToast('Erro ao excluir a movimentação.','error'); }
+}
+
+// ── Categorias ──
+function estAbrirCategorias() { estRenderCategorias(); openModal('estoque-cats'); }
+function estRenderCategorias() {
+  const el = document.getElementById('ecat-lista');
+  el.innerHTML = estCategorias().map(c => {
+    const padrao = EST_CATS_PADRAO.includes(c);
+    const emUso = _estItens.filter(i => i.categoria === c).length;
+    return `<div class="cfg-row"><div><div class="cfg-label">${escH(c)}</div><div class="cfg-sub">${padrao ? 'padrão · ' : ''}${emUso} produto(s)</div></div>${padrao ? '' : `<button class="btn btn-secondary btn-sm" style="color:var(--danger)" onclick="estDelCategoria('${escH(c).replace(/'/g,"&#39;")}')">Remover</button>`}</div>`;
+  }).join('');
+}
+async function estAddCategoria() {
+  const nome = _estV('ecat-nome');
+  if(!nome) return;
+  if(estCategorias().some(c => c.toLowerCase() === nome.toLowerCase())) { showToast('Essa categoria já existe.','error'); return; }
+  try {
+    await db.collection('estoqueCategorias').add({nome, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+    document.getElementById('ecat-nome').value = '';
+    await loadEstoque(); estRenderCategorias();
+    showToast('Categoria adicionada!','success');
+  } catch(e) { console.error(e); showToast('Erro ao adicionar a categoria.','error'); }
+}
+async function estDelCategoria(nome) {
+  if(_estItens.some(i => i.categoria === nome)) { showToast('Há produtos nessa categoria. Mude a categoria deles antes de remover.','error'); return; }
+  try {
+    const regs = _estCats.filter(c => c.nome === nome);
+    const batch = db.batch(); regs.forEach(c => batch.delete(db.collection('estoqueCategorias').doc(c.id)));
+    await batch.commit();
+    await loadEstoque(); estRenderCategorias();
+    showToast('Categoria removida.','success');
+  } catch(e) { console.error(e); showToast('Erro ao remover a categoria.','error'); }
+}
+
+// ── Exportação (da aba aberta, respeitando os filtros) ──
+function estExportar(fmt) {
+  const e = _estExp[_estTab];
+  if(!e || !e.linhas.length) { showToast('Não há dados para exportar com os filtros atuais.','error'); return; }
+  const nome = `estoque_${_estTab}_${_estHoje()}`;
+  if(fmt === 'csv') {
+    const fmtN = x => typeof x === 'number' ? String(x).replace('.',',') : (x == null ? '' : x);
+    baixarCSV([e.cab, ...e.linhas.map(l => l.map(fmtN))], nome + '.csv');
+  } else if(fmt === 'xlsx') {
+    if(typeof XLSX === 'undefined') { showToast('Biblioteca de Excel indisponível.','error'); return; }
+    const ws = XLSX.utils.aoa_to_sheet([e.cab, ...e.linhas]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, e.titulo.replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31));
+    XLSX.writeFile(wb, nome + '.xlsx');
+  } else {
+    estImprimir(e);
+  }
+  showToast('Exportação gerada!','success');
+}
+function estImprimir(e) {
+  const f = estFiltros();
+  const per = (f.ini || f.fim) ? `Período: ${f.ini?formatDate(f.ini):'…'} a ${f.fim?formatDate(f.fim):'…'} · ` : '';
+  const cel = x => typeof x === 'number' ? x.toLocaleString('pt-BR',{maximumFractionDigits:2}) : escH(x == null ? '' : x);
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escH(e.titulo)}</title><style>
+    body{font-family:Arial,sans-serif;font-size:10pt;color:#111;margin:0}h1{font-size:14pt;margin:0 0 4px}p{margin:0 0 10px;color:#555;font-size:9pt}
+    table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:4px 6px;text-align:left;font-size:8.5pt}th{background:#f3f4f6}
+    @page{size:A4 landscape;margin:12mm}</style></head><body><h1>Áthos — ${escH(e.titulo)}</h1><p>${escH(per)}Gerado em ${new Date().toLocaleString('pt-BR')}</p>
+    <table><thead><tr>${e.cab.map(c => `<th>${escH(c)}</th>`).join('')}</tr></thead><tbody>${e.linhas.map(l => `<tr>${l.map(x => `<td>${cel(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`;
+  const fr = document.createElement('iframe');
+  fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  document.body.appendChild(fr);
+  fr.contentDocument.open(); fr.contentDocument.write(html); fr.contentDocument.close();
+  setTimeout(() => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch(_) {} setTimeout(() => fr.remove(), 2000); }, 300);
 }
 
 // ══════════════════════════════════════════
