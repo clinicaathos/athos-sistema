@@ -658,7 +658,9 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
     <nav class="sb-nav">
       <div class="sb-group">Principal</div>
       <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">⊞</span>Dashboard</div>
-      <div class="nav-item" onclick="showPage('agenda',this)"><span class="nav-icon">⊡</span>Agenda</div>
+      <div class="nav-item" onclick="showPage('agenda',this)"><span class="nav-icon">⊡</span>Mapa de Consultórios</div>
+      <div class="nav-item" onclick="showPage('agpac',this)"><span class="nav-icon">◧</span>Agenda de Pacientes</div>
+      <div class="nav-item" onclick="showPage('pacientes',this)"><span class="nav-icon">☺</span>Cadastro de Pacientes</div>
       <div class="nav-item" onclick="showPage('turnos',this)"><span class="nav-icon">◴</span>Turnos</div>
       <div class="sb-group">Gestão</div>
       <div class="nav-item" onclick="showPage('profissionais',this)"><span class="nav-icon">⊙</span>Profissionais</div>
@@ -819,7 +821,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
           <div class="agenda-legend">
             <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Turno Fixo</div>
             <div class="legend-item"><div class="legend-dot" style="background:#3d8a7a"></div>Pacote de Horas</div>
-            <div class="legend-item"><div class="legend-dot" style="background:#6d5aac"></div>Athos Singular</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#6d5aac"></div>Áthos Singular</div>
             <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div>Último dia</div>
             <div class="legend-item"><div class="legend-dot" style="border:1.5px dashed #d1d5db;background:transparent"></div>Disponível</div>
             <div class="legend-item"><div class="legend-dot" style="background:repeating-linear-gradient(45deg,#9ca3af,#9ca3af 3px,#d1d5db 3px,#d1d5db 6px)"></div>Bloqueado</div>
@@ -848,7 +850,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
           <div class="agenda-legend" style="margin-top:.75rem">
             <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Turno Fixo</div>
             <div class="legend-item"><div class="legend-dot" style="background:#3d8a7a"></div>Pacote de Horas</div>
-            <div class="legend-item"><div class="legend-dot" style="background:#6d5aac"></div>Athos Singular</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#6d5aac"></div>Áthos Singular</div>
             <div class="legend-item"><div class="legend-dot" style="border:1.5px dashed #d1d5db;background:transparent"></div>Disponível</div>
             <div class="legend-item"><div class="legend-dot" style="background:repeating-linear-gradient(45deg,#9ca3af,#9ca3af 3px,#d1d5db 3px,#d1d5db 6px)"></div>Bloqueado</div>
           </div>
@@ -866,7 +868,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
           <div class="agenda-legend" style="margin-top:.75rem">
             <div class="legend-item"><div class="legend-dot" style="background:rgba(160,120,80,.3)"></div>Turno Fixo</div>
             <div class="legend-item"><div class="legend-dot" style="background:rgba(61,138,122,.3)"></div>Pacote de Horas</div>
-            <div class="legend-item"><div class="legend-dot" style="background:rgba(109,90,172,.3)"></div>Athos Singular</div>
+            <div class="legend-item"><div class="legend-dot" style="background:rgba(109,90,172,.3)"></div>Áthos Singular</div>
           </div>
         </div>
       </div>
@@ -1105,7 +1107,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
               <div style="display:flex;gap:4px">
                 <button class="qf-btn relat-loc-tipo-btn active" data-tipo="todos" onclick="setRelatTipoLoc('todos')" style="font-size:.72rem;padding:3px 9px">Todos</button>
                 <button class="qf-btn relat-loc-tipo-btn" data-tipo="turno" onclick="setRelatTipoLoc('turno')" style="font-size:.72rem;padding:3px 9px">Turnos</button>
-                <button class="qf-btn relat-loc-tipo-btn" data-tipo="avulsa" onclick="setRelatTipoLoc('avulsa')" style="font-size:.72rem;padding:3px 9px">Athos Singular</button>
+                <button class="qf-btn relat-loc-tipo-btn" data-tipo="avulsa" onclick="setRelatTipoLoc('avulsa')" style="font-size:.72rem;padding:3px 9px">Áthos Singular</button>
               </div>
             </div>
             <canvas id="chart-ocupacao" height="100"></canvas>
@@ -1284,6 +1286,33 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
           <div class="data-table fin-table-desktop" id="anot-table"></div>
           <div class="fin-cards-mobile" id="anot-cards-mobile"></div>
         </div>
+      </div>
+
+      <!-- ══ CADASTRO DE PACIENTES ══ -->
+      <div class="page" id="page-pacientes">
+        <div class="sec-header"><span class="sec-title">Cadastro de Pacientes</span><button class="btn btn-primary" onclick="pacNovo()">+ Novo paciente</button></div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+          <input class="form-input" id="pac-q" placeholder="Buscar por nome, CPF ou telefone" oninput="pacRender()" style="flex:2;min-width:200px">
+          <select class="form-select" id="pac-f-st" onchange="pacRender()" style="flex:1;min-width:120px"><option value="">Todas as situações</option><option value="1">Ativos</option><option value="0">Inativos</option></select>
+          <select class="form-select" id="pac-f-mod" onchange="pacRender()" style="flex:1;min-width:130px"><option value="">Todas as modalidades</option><option>Particular</option><option>Parceria</option></select>
+        </div>
+        <div id="pac-lista"></div>
+      </div>
+
+      <!-- ══ AGENDA DE PACIENTES ══ -->
+      <div class="page" id="page-agpac">
+        <div class="sec-header"><span class="sec-title">Agenda de Pacientes</span><button class="btn btn-primary" onclick="agpAbrir()">+ Novo agendamento</button></div>
+        <div class="agenda-controls">
+          <div style="display:flex;align-items:center;gap:.5rem"><button class="arr-btn" onclick="agpNav(-1)">←</button><span class="week-label" id="agp-label">—</span><button class="arr-btn" onclick="agpNav(1)">→</button><button class="btn btn-secondary" style="padding:4px 10px;font-size:.78rem" onclick="agpHoje()">Hoje</button></div>
+          <div style="display:flex;gap:.35rem"><button class="qf-btn agp-vbtn" data-v="dia" onclick="agpView('dia')">Dia</button><button class="qf-btn agp-vbtn" data-v="semana" onclick="agpView('semana')">Semana</button><button class="qf-btn agp-vbtn" data-v="mes" onclick="agpView('mes')">Mês</button></div>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+          <input class="form-input" id="agp-f-pac" placeholder="Filtrar por paciente" oninput="agpRender()" style="flex:2;min-width:160px">
+          <select class="form-select" id="agp-f-prof" onchange="agpRender()" style="flex:1;min-width:130px"></select>
+          <select class="form-select" id="agp-f-cons" onchange="agpRender()" style="flex:1;min-width:120px"></select>
+          <select class="form-select" id="agp-f-st" onchange="agpRender()" style="flex:1;min-width:130px"></select>
+        </div>
+        <div id="agp-body"></div>
       </div>
 
       <!-- ══ ESTOQUE E CONSUMO DE MATERIAIS ══ -->
@@ -1472,8 +1501,8 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
             <div class="cfg-row"><div><div class="cfg-label">Áthos II — Turno 8h</div><div class="cfg-sub">equivalente a 2 turnos</div></div><input class="cfg-input" id="preco-turno8h-s2" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Sala Mista — Turno 8h</div><div class="cfg-sub">valor independente, não usa Áthos I nem Áthos II</div></div><input class="cfg-input" id="preco-turno8h-mista" placeholder="R$ 0,00"></div>
             <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .25rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Outros</div>
-            <div class="cfg-sub" style="margin-bottom:.4rem">Preço de tabela para o que não é turno: Athos Singular e pacotes padrão. É o valor sugerido na locação quando não existe um plano cadastrado com o mesmo nome.</div>
-            <div class="cfg-row"><div><div class="cfg-label">Athos Singular</div></div><input class="cfg-input" id="preco-avulsa" placeholder="R$ 0,00"></div>
+            <div class="cfg-sub" style="margin-bottom:.4rem">Preço de tabela para o que não é turno: Áthos Singular e pacotes padrão. É o valor sugerido na locação quando não existe um plano cadastrado com o mesmo nome.</div>
+            <div class="cfg-row"><div><div class="cfg-label">Áthos Singular</div></div><input class="cfg-input" id="preco-avulsa" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Áthos Essencial</div><div class="cfg-sub">pacote de 5 horas / mês</div></div><input class="cfg-input" id="preco-5h" placeholder="R$ 0,00"></div>
             <div class="cfg-row"><div><div class="cfg-label">Áthos Continuidade</div><div class="cfg-sub">pacote de 10 horas / mês</div></div><input class="cfg-input" id="preco-10h" placeholder="R$ 0,00"></div>
             <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;margin:1rem 0 .25rem;padding-bottom:.25rem;border-bottom:1px solid var(--border)">Planos cadastrados (Planos e Pacotes)</div>
@@ -1607,7 +1636,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
     <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="loc-prof" onchange="toggleSaldoPacote()"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
       <div class="form-group" id="loc-sala-group"><label class="form-label">Sala</label><select class="form-select" id="loc-sala" onchange="calcDescontoLocacao()"><option value="1" id="loc-s1-opt">Sala 1</option><option value="2" id="loc-s2-opt">Sala 2</option></select></div>
-      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista();toggleQtdAvulsa()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option value="Pacote de 5 Horas">Áthos Essencial</option><option value="Pacote de 10 Horas">Áthos Continuidade</option><option value="Hora Avulsa">Athos Singular</option></select></div>
+      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista();toggleQtdAvulsa()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option value="Pacote de 5 Horas">Áthos Essencial</option><option value="Pacote de 10 Horas">Áthos Continuidade</option><option value="Hora Avulsa">Áthos Singular</option></select></div>
     </div>
     <div class="form-group" id="loc-saldo-pacote-group" style="display:none">
       <div style="background:#f3f4f6;border-radius:8px;padding:.6rem .75rem;font-size:.78rem;color:var(--text-light)" id="loc-saldo-pacote-info">—</div>
@@ -1763,7 +1792,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
       <div class="form-group"><label class="form-label">Cidade / UF</label><input class="form-input" id="prof-cidade" placeholder="São Paulo / SP"></div>
     </div>
     <div style="font-size:.78rem;font-weight:600;color:var(--text-light);margin:.75rem 0 .5rem;text-transform:uppercase;letter-spacing:.05em">Contrato</div>
-    <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="prof-vinculo" onchange="updateVinculoAuto()"><option value="Hora Avulsa">Athos Singular</option><option>Pacote de Horas</option><option>Turno Fixo</option></select></div>
+    <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="prof-vinculo" onchange="updateVinculoAuto()"><option value="Hora Avulsa">Áthos Singular</option><option>Pacote de Horas</option><option>Turno Fixo</option></select></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="prof-status"><option>Ativo</option><option>Inativo</option></select></div>
       <div class="form-group"><label class="form-label">Vínculo Formal</label><input class="form-input" id="prof-vinculo-formal" readonly value="Sem vínculo" style="background:#f9fafb;color:var(--text-light)"></div>
@@ -1889,6 +1918,88 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
 </div>
 
 
+<!-- Paciente -->
+<div class="modal-overlay" id="modal-paciente" onclick="closeModalBg(event,'paciente')">
+  <div class="modal">
+    <div class="modal-title" id="pac-title">Novo paciente</div>
+    <input type="hidden" id="pac-id">
+    <div class="form-group"><label class="form-label">Nome completo</label><input class="form-input" id="pac-nome"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">CPF</label><input class="form-input" id="pac-cpf" inputmode="numeric" placeholder="000.000.000-00" oninput="this.value=pacCpfFmt(this.value)"></div>
+      <div class="form-group"><label class="form-label">Data de nascimento</label><input class="form-input" type="date" id="pac-nasc"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Telefone principal</label><input class="form-input" id="pac-tel" inputmode="tel" placeholder="(85) 90000-0000"></div>
+      <div class="form-group"><label class="form-label">Telefone de emergência</label><input class="form-input" id="pac-tel2" inputmode="tel"></div>
+    </div>
+    <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" type="email" id="pac-email"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">CEP</label><div style="display:flex;gap:.35rem"><input class="form-input" id="pac-cep" inputmode="numeric" placeholder="00000-000" style="flex:1"><button type="button" class="btn btn-secondary" title="Buscar endereço" onclick="pacCep()">🔍</button></div><div class="est-sub" id="pac-cep-msg"></div></div>
+      <div class="form-group"><label class="form-label">Número</label><input class="form-input" id="pac-num"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Endereço</label><input class="form-input" id="pac-end"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Complemento</label><input class="form-input" id="pac-comp"></div>
+      <div class="form-group"><label class="form-label">Bairro</label><input class="form-input" id="pac-bairro"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Cidade</label><input class="form-input" id="pac-cidade"></div>
+      <div class="form-group"><label class="form-label">UF</label><input class="form-input" id="pac-uf" maxlength="2"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Modalidade de atendimento</label><select class="form-select" id="pac-mod"><option>Particular</option><option>Parceria</option></select></div>
+      <div class="form-group"><label class="form-label">Valor informado ao paciente (R$)</label><input class="form-input" type="number" min="0" step="0.01" id="pac-valor"></div>
+    </div>
+    <div class="est-sub" style="margin:-.25rem 0 .75rem">Valor de consulta e referência. Não entra no financeiro da clínica.</div>
+    <div class="form-group"><label class="form-label">Situação do cadastro</label><select class="form-select" id="pac-ativo"><option value="1">Ativo</option><option value="0">Inativo</option></select></div>
+    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-input" id="pac-obs" rows="2" style="resize:vertical"></textarea></div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap">
+      <button class="btn btn-primary" style="flex:1" onclick="pacSalvar()">Salvar</button>
+      <button class="btn btn-secondary" id="pac-hist-btn" style="display:none" onclick="pacHistorico(document.getElementById('pac-id').value)">Histórico</button>
+      <button class="btn btn-secondary" onclick="closeModal('paciente')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Histórico do paciente -->
+<div class="modal-overlay" id="modal-pac-hist" onclick="closeModalBg(event,'pac-hist')">
+  <div class="modal">
+    <div class="modal-title" id="pac-hist-title">Histórico</div>
+    <div id="pac-hist-body" style="max-height:60vh;overflow:auto"></div>
+    <div style="margin-top:.75rem"><button class="btn btn-secondary" onclick="closeModal('pac-hist')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- Agendamento de paciente -->
+<div class="modal-overlay" id="modal-agp" onclick="closeModalBg(event,'agp')">
+  <div class="modal">
+    <div class="modal-title" id="agp-title">Novo agendamento</div>
+    <input type="hidden" id="agp-edit-id">
+    <div class="form-group"><label class="form-label">Paciente</label><select class="form-select" id="agp-pac" onchange="agpPacChange()"></select></div>
+    <div class="form-group"><label class="form-label">Profissional responsável</label><select class="form-select" id="agp-prof" onchange="document.getElementById('agp-prof-outro').style.display=this.value==='__outro'?'':'none'"></select>
+      <input class="form-input" id="agp-prof-outro" placeholder="Nome do profissional" style="display:none;margin-top:.4rem"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Data</label><input class="form-input" type="date" id="agp-data"></div>
+      <div class="form-group"><label class="form-label">Consultório</label><select class="form-select" id="agp-cons"></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Início</label><input class="form-input" type="time" id="agp-ini"></div>
+      <div class="form-group"><label class="form-label">Término</label><input class="form-input" type="time" id="agp-fim"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Valor informado (R$)</label><input class="form-input" type="number" min="0" step="0.01" id="agp-valor"></div>
+      <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="agp-st"></select></div>
+    </div>
+    <div class="form-group"><label class="form-label">Observações administrativas</label><textarea class="form-input" id="agp-obs" rows="2" style="resize:vertical"></textarea></div>
+    <div id="agp-hist" class="est-sub" style="margin-bottom:.5rem"></div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap">
+      <button class="btn btn-primary" style="flex:1" onclick="agpSalvar()">Salvar</button>
+      <button class="btn btn-secondary" id="agp-ver-pac" style="display:none" onclick="agpVerPac()">Ver paciente</button>
+      <button class="btn btn-secondary" onclick="closeModal('agp')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Estoque: produto -->
 <div class="modal-overlay" id="modal-estoque-item" onclick="closeModalBg(event,'estoque-item')">
   <div class="modal">
@@ -1914,8 +2025,13 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Fornecedor habitual</label><input class="form-input" id="eitem-forn" list="est-dl-forn" placeholder="Opcional"></div>
-      <div class="form-group"><label class="form-label">Prazo de entrega (dias)</label><input class="form-input" type="number" min="0" step="1" id="eitem-prazo" placeholder="0"></div>
+      <div class="form-group"><label class="form-label">Prazo (dias)</label><input class="form-input" type="number" min="0" step="1" id="eitem-prazo" placeholder="0"></div>
     </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Sabor / variedade</label><input class="form-input" id="eitem-sabor" placeholder="Ex: Intenso (opcional)"></div>
+      <div class="form-group"><label class="form-label">Unidades por caixa/pacote</label><input class="form-input" type="number" min="0" step="1" id="eitem-embal" placeholder="Ex: 10"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Como o material chega</label><select class="form-select" id="eitem-modo"><option value="fornecedor">Entrega pelo fornecedor</option><option value="retirada">Retirada pela clínica</option></select></div>
     <div class="form-group"><label class="form-label">Local de armazenamento</label><input class="form-input" id="eitem-local" list="est-dl-local" placeholder="Ex: Copa, Armário da recepção"></div>
     <div style="display:flex;gap:.5rem;margin-top:.5rem">
       <button class="btn btn-primary" style="flex:1" onclick="estSalvarItem()">Salvar</button>
@@ -1930,7 +2046,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
   <div class="modal">
     <div class="modal-title">Registrar movimentação</div>
     <div class="form-group"><label class="form-label">Tipo de operação</label>
-      <select class="form-select" id="emov-tipo" onchange="estMovTipoChange()">
+      <select class="form-select" id="emov-tipo" onchange="estMovTipoChange();estEmbAtualizar()">
         <option value="consumo">Saída — consumo</option>
         <option value="compra">Entrada — compra/reposição</option>
         <option value="perda">Perda, avaria ou descarte</option>
@@ -1938,9 +2054,10 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
         <option value="transferencia">Transferência de local</option>
       </select>
     </div>
-    <div class="form-group"><label class="form-label">Produto</label><select class="form-select" id="emov-item" onchange="estMovItemChange()"></select>
+    <div class="form-group"><label class="form-label">Produto</label><select class="form-select" id="emov-item" onchange="estMovItemChange();estEmbAtualizar()"></select>
       <div class="est-sub" id="emov-saldo"></div>
     </div>
+    <div class="form-group" id="emov-emb-grp" style="display:none"><label class="form-label" id="emov-emb-lbl">Caixas/pacotes comprados</label><input class="form-input" type="number" min="0" step="any" id="emov-emb" oninput="estEmbConverter()"><div class="est-sub" id="emov-emb-hint"></div></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Data</label><input class="form-input" type="date" id="emov-data"></div>
       <div class="form-group" id="emov-qtd-grp"><label class="form-label" id="emov-qtd-lbl">Quantidade</label><input class="form-input" type="number" min="0" step="any" id="emov-qtd" oninput="estMovTotal()"></div>
@@ -2139,7 +2256,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
           <option>Extra</option>
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="receita-tipo"><option>Turno Fixo</option><option>Pacote de Horas</option><option value="Hora Avulsa">Athos Singular</option><option>Não se aplica</option></select></div>
+      <div class="form-group"><label class="form-label">Tipo</label><select class="form-select" id="receita-tipo"><option>Turno Fixo</option><option>Pacote de Horas</option><option value="Hora Avulsa">Áthos Singular</option><option>Não se aplica</option></select></div>
     </div>
     <div class="form-group"><label class="form-label">Subcategoria</label><select class="form-select" id="receita-subcat"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
@@ -4525,9 +4642,10 @@ function renderAgendaDia() {
   // Buscar locações e bloqueios do dia no Firebase
   Promise.all([
     db.collection('locacoes').get(),
-    db.collection('bloqueios').where('data','==',dataStr).get()
-  ]).then(([snap, snapBloq]) => {
-    const locacoesDia = snap.docs.map(d=>({id:d.id,...d.data()})).filter(l => locAtivaEmDia(l, dataStr));
+    db.collection('bloqueios').where('data','==',dataStr).get(),
+    agpLocsPeriodo(dataStr, dataStr)
+  ]).then(([snap, snapBloq, apLocs]) => {
+    const locacoesDia = [...snap.docs.map(d=>({id:d.id,...d.data()})).filter(l => locAtivaEmDia(l, dataStr)), ...apLocs];
     const bloqueiosDia = snapBloq.docs.map(d=>({id:d.id,...d.data()}));
 
     // Montar mapa: turno+sala → locação
@@ -4615,7 +4733,7 @@ function renderAgendaDia() {
         }
         let span = 1;
         while(i+span < cells.length && cells[i+span] && cells[i+span].id === loc.id) span++;
-        const prof = profissionaisCache.find(p=>p.id===loc.profId)?.nome || loc.profId || '?';
+        const prof = loc._ap ? loc._rotulo : (profissionaisCache.find(p=>p.id===loc.profId)?.nome || loc.profId || '?');
         const cor = loc.cor||corDefault;
         for(let k=0;k<span;k++) {
           const isFirst = k===0, isLast = k===span-1;
@@ -4685,6 +4803,7 @@ function renderAgendaDia() {
 }
 
 function editarLocacao(id, dataClicada) {
+  if(String(id).startsWith('ap_')) { agpAbrir(String(id).slice(3)); return; }
   // Carregar dados e preencher modal
   db.collection('locacoes').doc(id).get().then(doc=>{
     if(!doc.exists) return;
@@ -5088,7 +5207,7 @@ async function salvarLocacao() {
         const ref = await db.collection('locacoes').add({...slot, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
         await gerarLancamentoLocacao({...slot, id: ref.id});
       }
-      showToast(`${qtdAvulsa} locações de Athos Singular criadas (${geradas[0].inicio}–${geradas[geradas.length-1].fim})!`, 'success');
+      showToast(`${qtdAvulsa} locações de Áthos Singular criadas (${geradas[0].inicio}–${geradas[geradas.length-1].fim})!`, 'success');
     } else {
       data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
       const ref = await db.collection('locacoes').add(data);
@@ -5341,9 +5460,10 @@ function renderAgendaSemana() {
 
   Promise.all([
     db.collection('locacoes').get(),
-    db.collection('bloqueios').where('data','in', diasStr.length<=10?diasStr:diasStr.slice(0,10)).get().catch(()=>({docs:[]}))
-  ]).then(([snap, snapBloq])=>{
-    const all = snap.docs.map(d=>({id:d.id,...d.data()}));
+    db.collection('bloqueios').where('data','in', diasStr.length<=10?diasStr:diasStr.slice(0,10)).get().catch(()=>({docs:[]})),
+    agpLocsPeriodo(diasStr[0], diasStr[5])
+  ]).then(([snap, snapBloq, apLocs])=>{
+    const all = [...snap.docs.map(d=>({id:d.id,...d.data()})), ...apLocs];
     // Filtrar locações que sobrepõem a semana (filtro grosseiro, refinado abaixo por dia)
     const semLocacoes = all.filter(l=>{
       if(!l.dataInicio) return false;
@@ -5406,7 +5526,7 @@ function renderAgendaSemana() {
               const [tIni,tFimMin] = LIM_TURNO[t.key];
               const dur = tFimMin - tIni;
               const blocos = locs.map(loc=>{
-                const prof=profissionaisCache.find(p=>p.id===loc.profId)?.nome||loc.profId||'?';
+                const prof=loc._ap ? loc._rotulo : (profissionaisCache.find(p=>p.id===loc.profId)?.nome||loc.profId||'?');
                 const parcial = ehReservaPorHorario(loc) && loc.inicio && loc.fim;
                 let a=tIni, b=tFimMin;
                 if(parcial) {
@@ -6146,7 +6266,7 @@ function closeMobileSidebar() {
 }
 
 // ══ NAV ══
-const pageTitles={dashboard:'Dashboard',agenda:'Agenda',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',anotacoes:'Anotações',servicos:'Serviços',materiais:'Empréstimo e Reserva de Materiais',estoque:'Estoque e Consumo de Materiais',configuracoes:'Configurações',turnos:'Turnos',levantamento:'Levantamento Financeiro',analise:'Análise de Negócio'};
+const pageTitles={dashboard:'Dashboard',agenda:'Mapa de Consultórios',pacientes:'Cadastro de Pacientes',agpac:'Agenda de Pacientes',profissionais:'Profissionais',planos:'Planos e Pacotes',financeiro:'Financeiro',relatorios:'Relatórios',lembretes:'Lembretes',anotacoes:'Anotações',servicos:'Serviços',materiais:'Empréstimo e Reserva de Materiais',estoque:'Estoque e Consumo de Materiais',configuracoes:'Configurações',turnos:'Turnos',levantamento:'Levantamento Financeiro',analise:'Análise de Negócio'};
 
 function showPage(n,el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -6159,6 +6279,8 @@ function showPage(n,el) {
   if(n==='anotacoes') loadAnotacoes();
   if(n==='materiais') loadMateriais();
   if(n==='estoque') loadEstoque();
+  if(n==='pacientes') loadPacientes();
+  if(n==='agpac') loadAgPac();
   if(n==='planos') preencherValoresTabela();
   if(n==='servicos') loadServicos();
   if(n==='turnos') loadDashCapacidade('turnos-capacidade-list','turnos-cap-mes-label');
@@ -6927,7 +7049,7 @@ function toggleEscolhaPacote() {
 
 // Planos cadastrados em "Planos e Pacotes" (preenchido por loadPlanos)
 let _planosCache = [];
-const _NOMES_SINGULAR = ['Hora Avulsa','Athos Singular'];
+const _NOMES_SINGULAR = ['Hora Avulsa','Athos Singular','Áthos Singular'];
 const _NOMES_PADRAO = ['Athos Singular','Áthos Essencial','Áthos Continuidade'];
 // Nomes antigos e novos do mesmo plano contam como o mesmo (Singular, Essencial 5h, Continuidade 10h)
 function _grupoPlano(nome) { const r = rotuloVinc(nome||''); return _NOMES_PADRAO.includes(r) ? r : null; }
@@ -6940,7 +7062,7 @@ function _planoPorNome(nome) {
 
 function horasDoPacote(vinculo) {
   // Athos Singular (Hora Avulsa) é cobrado por hora e não gera pacote, mesmo que o plano tenha "horas" preenchidas
-  if(vinculo === 'Hora Avulsa' || vinculo === 'Athos Singular') return 0;
+  if(vinculo === 'Hora Avulsa' || vinculo === 'Athos Singular' || vinculo === 'Áthos Singular') return 0;
   // Pacotes cadastrados em "Planos e Pacotes": o vínculo é o próprio nome do plano
   const pl = _planoPorNome(vinculo);
   if(pl) { const h = parseFloat(String(pl.horas||'0').replace(',','.')) || 0; if(h > 0) return h; }
@@ -6958,7 +7080,7 @@ function ehReservaPorHorario(l) {
 // Nomenclatura: "Hora Avulsa" passou a se chamar "Athos Singular" SOMENTE na exibição.
 // O valor gravado nos registros (locações, profissionais, lançamentos) continua 'Hora Avulsa',
 // então nenhum dado existente nem configuração financeira é alterado.
-const VINC_ROTULOS = {'Hora Avulsa':'Athos Singular','Pacote de 5 Horas':'Áthos Essencial','Pacote de 10 Horas':'Áthos Continuidade'};
+const VINC_ROTULOS = {'Hora Avulsa':'Áthos Singular','Pacote de 5 Horas':'Áthos Essencial','Pacote de 10 Horas':'Áthos Continuidade'};
 // Pacotes de 5h e 10h também são reconhecidos por variações do nome (ex.: "Pacote 10 horas", "Pacote de 5h")
 function rotuloVinc(v) {
   if(VINC_ROTULOS[v]) return VINC_ROTULOS[v];
@@ -9457,8 +9579,9 @@ function _estPopularCatSel(sel, atual) {
 function estNovoItem() {
   document.getElementById('eitem-edit-id').value = '';
   document.getElementById('eitem-title').textContent = 'Novo produto';
-  ['eitem-nome','eitem-unid','eitem-qtd-ini','eitem-custo-novo','eitem-min','eitem-ideal','eitem-forn','eitem-prazo','eitem-local'].forEach(id => document.getElementById(id).value = '');
+  ['eitem-nome','eitem-unid','eitem-qtd-ini','eitem-custo-novo','eitem-min','eitem-ideal','eitem-forn','eitem-prazo','eitem-local','eitem-sabor','eitem-embal'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('eitem-unid').value = 'unidade';
+  document.getElementById('eitem-modo').value = 'fornecedor';
   const f = _estV('est-f-cat');
   _estPopularCatSel(document.getElementById('eitem-cat'), f || EST_CATS_PADRAO[0]);
   document.getElementById('eitem-qtd-ini-row').style.display = '';
@@ -9471,7 +9594,10 @@ function estEditarItem(id) {
   const it = _estItem(id); if(!it) return;
   document.getElementById('eitem-edit-id').value = id;
   document.getElementById('eitem-title').textContent = 'Editar produto';
-  document.getElementById('eitem-nome').value = it.nome || '';
+  document.getElementById('eitem-nome').value = it.produtoBase || it.nome || '';
+  document.getElementById('eitem-sabor').value = it.sabor || '';
+  document.getElementById('eitem-embal').value = it.qtdEmbalagem || '';
+  document.getElementById('eitem-modo').value = it.modoPrazo || 'fornecedor';
   _estPopularCatSel(document.getElementById('eitem-cat'), it.categoria);
   document.getElementById('eitem-unid').value = it.unidade || '';
   document.getElementById('eitem-custo').value = it.custoUnit != null ? it.custoUnit : '';
@@ -9490,11 +9616,12 @@ function estEditarItem(id) {
 async function estSalvarItem() {
   const FV = firebase.firestore.FieldValue;
   const editId = _estV('eitem-edit-id');
-  const nome = _estV('eitem-nome');
-  if(!nome) { showToast('Informe o nome do material.','error'); return; }
+  const produtoBase = _estV('eitem-nome'), sabor = _estV('eitem-sabor');
+  const nome = sabor ? `${produtoBase} — ${sabor}` : produtoBase;
+  if(!produtoBase) { showToast('Informe o nome do material.','error'); return; }
   if(_estItens.some(i => i.id !== editId && (i.nome||'').toLowerCase() === nome.toLowerCase())) { showToast('Já existe um produto com esse nome.','error'); return; }
   const data = {
-    nome, categoria: _estV('eitem-cat'), unidade: _estV('eitem-unid') || 'unidade',
+    nome, produtoBase, sabor, qtdEmbalagem: Math.max(0, Math.round(_estNum(_estV('eitem-embal')))), modoPrazo: _estV('eitem-modo') || 'fornecedor', categoria: _estV('eitem-cat'), unidade: _estV('eitem-unid') || 'unidade',
     estoqueMin: _estNum(_estV('eitem-min')), estoqueIdeal: _estNum(_estV('eitem-ideal')),
     fornecedor: _estV('eitem-forn'), prazoEntrega: Math.max(0, Math.round(_estNum(_estV('eitem-prazo')))), local: _estV('eitem-local'),
     updatedAt: FV.serverTimestamp()
@@ -9774,7 +9901,7 @@ async function verHistoricoProf(profId) {
       <div class="stat-card" style="min-width:130px"><div class="stat-label">Total Faturado</div><div style="font-size:1rem;font-weight:700;color:var(--gold)">${formatMoney(totalFat)}</div></div>
       <div class="stat-card" style="min-width:130px"><div class="stat-label">Total Recebido</div><div style="font-size:1rem;font-weight:700;color:var(--success)">${formatMoney(totalPago)}</div></div>
       <div class="stat-card" style="min-width:110px"><div class="stat-label">Locações Turno</div><div style="font-size:1rem;font-weight:700">${totalTurnos}</div></div>
-      <div class="stat-card" style="min-width:110px"><div class="stat-label">Horas Athos Singular</div><div style="font-size:1rem;font-weight:700">${totalHoras}</div></div>
+      <div class="stat-card" style="min-width:110px"><div class="stat-label">Horas Áthos Singular</div><div style="font-size:1rem;font-weight:700">${totalHoras}</div></div>
       <div class="stat-card" style="min-width:110px"><div class="stat-label">Alterações</div><div style="font-size:1rem;font-weight:700">${alteracoes.length}</div></div>
       <div class="stat-card" style="min-width:110px"><div class="stat-label">Meses em atraso</div><div style="font-size:1rem;font-weight:700;color:${mesesAtraso.length?'var(--danger)':'var(--success)'}">${mesesAtraso.length}</div></div>`;
 
@@ -10731,6 +10858,281 @@ async function verHistoricoProf(profId) {
         };
 })();
 
+
+// ══ PACIENTES, AGENDA DE PACIENTES E INTEGRAÇÃO COM O MAPA ══
+const AGP_STATUS = ['Aguardando confirmação','Confirmado','Realizado','Cancelado','Reagendado'];
+const AGP_COR = {'Aguardando confirmação':'#d97706','Confirmado':'#16a34a','Realizado':'#2563eb','Cancelado':'#9ca3af','Reagendado':'#7c3aed'};
+let _pacs = [], _agps = [], _agpProfs = [], _agpV = 'dia', _agpD = new Date();
+const _pv = id => (document.getElementById(id)?.value || '').trim();
+const _brD = d => d ? d.split('-').reverse().join('/') : '';
+const _brMoeda = v => (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const _quem = () => document.getElementById('user-name')?.textContent || '';
+
+function pacCpfFmt(v) {
+  const d = String(v||'').replace(/\D/g,'').slice(0,11);
+  return d.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+}
+function pacCpfValido(c) {
+  c = String(c||'').replace(/\D/g,'');
+  if(c.length !== 11 || /^(\d)\1+$/.test(c)) return false;
+  for(let t=9; t<=10; t++) {
+    let sum = 0; for(let i=0; i<t; i++) sum += Number(c[i]) * (t+1-i);
+    if(((sum*10)%11)%10 !== Number(c[t])) return false;
+  }
+  return true;
+}
+function pacIdade(d) { return d ? new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : ''; }
+
+async function loadPacientes() {
+  try {
+    const snap = await db.collection('pacientes').get();
+    _pacs = snap.docs.map(d => ({id:d.id, ...d.data()})).sort((a,b) => (a.nome||'').localeCompare(b.nome||'','pt'));
+    pacRender();
+  } catch(e) {
+    console.error(e);
+    document.getElementById('pac-lista').innerHTML = '<div style="color:var(--danger);font-size:.83rem;padding:1rem">Erro ao carregar. Verifique as regras do Firestore para a coleção pacientes.</div>';
+  }
+}
+function pacRender() {
+  const q = _pv('pac-q').toLowerCase(), qd = q.replace(/\D/g,''), st = _pv('pac-f-st'), mod = _pv('pac-f-mod');
+  const lista = _pacs.filter(p => {
+    if(st !== '' && (p.ativo !== false) !== (st === '1')) return false;
+    if(mod && p.modalidade !== mod) return false;
+    if(!q) return true;
+    return (p.nome||'').toLowerCase().includes(q) || (qd && ((p.cpf||'').includes(qd) || (p.telefone||'').replace(/\D/g,'').includes(qd)));
+  });
+  const el = document.getElementById('pac-lista');
+  if(!lista.length) { el.innerHTML = '<div style="padding:1.5rem;color:var(--text-light);font-size:.85rem">Nenhum paciente encontrado.</div>'; return; }
+  el.innerHTML = lista.map(p => {
+    const ativo = p.ativo !== false;
+    return `<div class="card" style="padding:.8rem 1rem;margin-bottom:.5rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;opacity:${ativo?1:.65}">
+      <div style="flex:1;min-width:180px;cursor:pointer" onclick="pacEditar('${p.id}')">
+        <div style="font-weight:600">${escH(p.nome)}</div>
+        <div style="font-size:.76rem;color:var(--text-light)">${escH(p.telefone||'Sem telefone')}${p.cpf?' · CPF '+escH(pacCpfFmt(p.cpf)):''}${p.nascimento?' · 🎂 '+pacIdade(p.nascimento):''}</div>
+      </div>
+      <span class="badge badge-neutral">${escH(p.modalidade||'—')}</span>
+      <span class="badge ${ativo?'badge-success':'badge-neutral'}" style="cursor:pointer" title="Clique para ${ativo?'inativar':'reativar'}" onclick="pacToggle('${p.id}')">${ativo?'Ativo':'Inativo'}</span>
+      <button class="btn btn-secondary" style="padding:4px 10px;font-size:.76rem" onclick="pacHistorico('${p.id}')">Histórico</button>
+    </div>`;
+  }).join('');
+}
+function pacNovo() {
+  ['pac-id','pac-nome','pac-cpf','pac-nasc','pac-tel','pac-tel2','pac-email','pac-cep','pac-num','pac-end','pac-comp','pac-bairro','pac-cidade','pac-uf','pac-valor','pac-obs'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('pac-mod').value = 'Particular'; document.getElementById('pac-ativo').value = '1';
+  document.getElementById('pac-title').textContent = 'Novo paciente'; document.getElementById('pac-hist-btn').style.display = 'none';
+  document.getElementById('pac-cep-msg').textContent = '';
+  openModal('paciente');
+}
+function pacEditar(id) {
+  const p = _pacs.find(x => x.id === id); if(!p) return;
+  pacNovo();
+  document.getElementById('pac-title').textContent = 'Editar paciente'; document.getElementById('pac-hist-btn').style.display = '';
+  const set = (i,v) => document.getElementById(i).value = v == null ? '' : v;
+  set('pac-id',p.id); set('pac-nome',p.nome); set('pac-cpf',pacCpfFmt(p.cpf)); set('pac-nasc',p.nascimento); set('pac-tel',p.telefone); set('pac-tel2',p.telefoneEmergencia);
+  set('pac-email',p.email); set('pac-cep',p.cep); set('pac-num',p.numero); set('pac-end',p.endereco); set('pac-comp',p.complemento); set('pac-bairro',p.bairro);
+  set('pac-cidade',p.cidade); set('pac-uf',p.uf); set('pac-mod',p.modalidade||'Particular'); set('pac-valor',p.valorInformado); set('pac-obs',p.obs);
+  set('pac-ativo', p.ativo === false ? '0' : '1');
+  openModal('paciente');
+}
+async function pacCep() {
+  const cep = _pv('pac-cep').replace(/\D/g,''), msg = document.getElementById('pac-cep-msg');
+  msg.style.color = '';
+  if(cep.length !== 8) { msg.textContent = 'CEP inválido. Digite os 8 números.'; msg.style.color = 'var(--danger)'; return; }
+  msg.textContent = 'Buscando...';
+  try {
+    const d = await (await fetch(`https://viacep.com.br/ws/${cep}/json/`)).json();
+    if(d.erro) { msg.textContent = 'CEP não encontrado. Preencha o endereço manualmente.'; msg.style.color = 'var(--danger)'; return; }
+    document.getElementById('pac-end').value = d.logradouro || ''; document.getElementById('pac-bairro').value = d.bairro || '';
+    document.getElementById('pac-cidade').value = d.localidade || ''; document.getElementById('pac-uf').value = d.uf || '';
+    msg.textContent = 'Endereço preenchido. Complete número e complemento.';
+  } catch(e) { msg.textContent = 'Não foi possível consultar o CEP agora.'; msg.style.color = 'var(--danger)'; }
+}
+async function pacSalvar() {
+  const id = _pv('pac-id'), nome = _pv('pac-nome'), cpf = _pv('pac-cpf').replace(/\D/g,''), tel = _pv('pac-tel');
+  if(!nome) { showToast('Informe o nome completo.','error'); return; }
+  if(cpf && !pacCpfValido(cpf) && !confirm('O CPF informado parece inválido. Salvar mesmo assim?')) return;
+  const telD = tel.replace(/\D/g,'');
+  const dup = _pacs.find(p => p.id !== id && ((cpf && p.cpf === cpf) || (!cpf && telD && (p.telefone||'').replace(/\D/g,'') === telD)));
+  if(dup && !confirm(`Já existe um cadastro com ${cpf?'este CPF':'este telefone'}: ${dup.nome}. Deseja salvar mesmo assim?`)) return;
+  const FV = firebase.firestore.FieldValue;
+  const data = {nome, cpf, nascimento:_pv('pac-nasc'), telefone:tel, telefoneEmergencia:_pv('pac-tel2'), email:_pv('pac-email'),
+    cep:_pv('pac-cep'), endereco:_pv('pac-end'), numero:_pv('pac-num'), complemento:_pv('pac-comp'), bairro:_pv('pac-bairro'), cidade:_pv('pac-cidade'), uf:_pv('pac-uf').toUpperCase(),
+    modalidade:_pv('pac-mod'), valorInformado: parseFloat(_pv('pac-valor')) || 0, obs:_pv('pac-obs'), ativo:_pv('pac-ativo') !== '0', updatedAt:FV.serverTimestamp()};
+  try {
+    if(id) await db.collection('pacientes').doc(id).update(data);
+    else { data.createdAt = FV.serverTimestamp(); await db.collection('pacientes').add(data); }
+    showToast('Paciente salvo!','success'); closeModal('paciente'); loadPacientes();
+  } catch(e) { console.error(e); showToast('Erro ao salvar o paciente.','error'); }
+}
+async function pacToggle(id) {
+  const p = _pacs.find(x => x.id === id); if(!p) return;
+  const novo = p.ativo === false;
+  if(!confirm(novo ? `Reativar ${p.nome}?` : `Inativar ${p.nome}? Os dados e o histórico continuam salvos, mas não será possível criar novos agendamentos.`)) return;
+  try { await db.collection('pacientes').doc(id).update({ativo:novo, updatedAt:firebase.firestore.FieldValue.serverTimestamp()}); loadPacientes(); }
+  catch(e) { console.error(e); showToast('Erro ao atualizar o cadastro.','error'); }
+}
+async function pacHistorico(id) {
+  const p = _pacs.find(x => x.id === id); if(!p) return;
+  document.getElementById('pac-hist-title').textContent = 'Histórico — ' + p.nome;
+  const body = document.getElementById('pac-hist-body'); body.innerHTML = 'Carregando...'; openModal('pac-hist');
+  try {
+    const snap = await db.collection('agendamentosPacientes').where('pacienteId','==',id).get();
+    const l = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => (b.data+b.inicio).localeCompare(a.data+a.inicio));
+    body.innerHTML = l.length ? l.map(a => `<div style="padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.82rem"><b>${_brD(a.data)}</b> · ${escH(a.inicio)}–${escH(a.fim)} · ${escH(a.profNome||'—')} · ${escH(a.consultorio||'sem consultório')}<br><span style="color:${AGP_COR[a.status]||'#666'};font-weight:600">${escH(a.status)}</span>${a.valorInformado?' · '+_brMoeda(a.valorInformado):''}${(a.historico||[]).length>1?` · ${(a.historico||[]).length-1} alteração(ões)`:''}</div>`).join('') : '<div style="color:var(--text-light);font-size:.85rem">Nenhum atendimento registrado.</div>';
+  } catch(e) { body.innerHTML = 'Erro ao carregar o histórico.'; }
+}
+
+// ── Agenda de Pacientes ──
+async function loadAgPac() {
+  try {
+    const [a, p, pr] = await Promise.all([db.collection('agendamentosPacientes').get(), db.collection('pacientes').get(), db.collection('profissionais').get()]);
+    _agps = a.docs.map(d => ({id:d.id,...d.data()}));
+    _pacs = p.docs.map(d => ({id:d.id,...d.data()})).sort((x,y) => (x.nome||'').localeCompare(y.nome||'','pt'));
+    _agpProfs = pr.docs.map(d => ({id:d.id,...d.data()})).filter(x => x.status !== 'Inativo').sort((x,y) => (x.nome||'').localeCompare(y.nome||'','pt'));
+  } catch(e) { console.error(e); document.getElementById('agp-body').innerHTML = '<div style="color:var(--danger);padding:1rem;font-size:.83rem">Erro ao carregar. Verifique as regras do Firestore para as coleções agendamentosPacientes e pacientes.</div>'; return; }
+  const sala = [appConfig.sala1||'Áthos I', appConfig.sala2||'Áthos II'];
+  const opt = (arr, vazio) => `<option value="">${vazio}</option>` + arr.map(([v,l]) => `<option value="${escH(v)}">${escH(l)}</option>`).join('');
+  document.getElementById('agp-f-prof').innerHTML = opt(_agpProfs.map(x => [x.id, x.nome]), 'Todos os profissionais');
+  document.getElementById('agp-f-cons').innerHTML = opt(sala.map(x => [x,x]), 'Todos os consultórios');
+  document.getElementById('agp-f-st').innerHTML = opt(AGP_STATUS.map(x => [x,x]), 'Todos os status');
+  agpView(_agpV);
+}
+function agpRange() {
+  const d = new Date(_agpD); d.setHours(12,0,0,0);
+  if(_agpV === 'dia') return [toDateStrLocal(d), toDateStrLocal(d)];
+  if(_agpV === 'semana') { const m = new Date(d); m.setDate(d.getDate() - ((d.getDay()+6)%7)); const f = new Date(m); f.setDate(m.getDate()+6); return [toDateStrLocal(m), toDateStrLocal(f)]; }
+  return [toDateStrLocal(new Date(d.getFullYear(), d.getMonth(), 1)), toDateStrLocal(new Date(d.getFullYear(), d.getMonth()+1, 0))];
+}
+function agpView(v) { _agpV = v; document.querySelectorAll('.agp-vbtn').forEach(b => b.classList.toggle('active', b.dataset.v === v)); agpRender(); }
+function agpNav(dir) { if(_agpV === 'dia') _agpD.setDate(_agpD.getDate()+dir); else if(_agpV === 'semana') _agpD.setDate(_agpD.getDate()+7*dir); else _agpD.setMonth(_agpD.getMonth()+dir, 1); agpRender(); }
+function agpHoje() { _agpD = new Date(); agpRender(); }
+function agpRender() {
+  const [ini, fim] = agpRange();
+  document.getElementById('agp-label').textContent = _agpV === 'dia' ? new Date(ini+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : _agpV === 'semana' ? `${_brD(ini)} a ${_brD(fim)}` : new Date(ini+'T12:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const fp = _pv('agp-f-pac').toLowerCase(), fprof = _pv('agp-f-prof'), fcons = _pv('agp-f-cons'), fst = _pv('agp-f-st');
+  const lista = _agps.filter(a => a.data >= ini && a.data <= fim && (!fp || (a.pacienteNome||'').toLowerCase().includes(fp)) && (!fprof || a.profId === fprof) && (!fcons || a.consultorio === fcons) && (!fst || a.status === fst))
+    .sort((a,b) => (a.data+a.inicio).localeCompare(b.data+b.inicio));
+  const body = document.getElementById('agp-body');
+  if(_agpV === 'mes') { body.innerHTML = agpMesHtml(ini, lista); return; }
+  if(!lista.length) { body.innerHTML = '<div style="padding:1.5rem;color:var(--text-light);font-size:.85rem">Nenhum atendimento neste período.</div>'; return; }
+  const dias = [...new Set(lista.map(a => a.data))];
+  body.innerHTML = dias.map(d => `<div style="margin-bottom:1rem"><div style="font-weight:700;font-size:.82rem;color:var(--text-light);margin-bottom:.35rem;text-transform:capitalize">${new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'})}</div>`
+    + lista.filter(a => a.data === d).map(agpCard).join('') + '</div>').join('');
+}
+function agpCard(a) {
+  const cor = AGP_COR[a.status] || '#666';
+  return `<div class="card" style="padding:.7rem .9rem;margin-bottom:.4rem;border-left:4px solid ${cor};display:flex;gap:.75rem;align-items:center;flex-wrap:wrap${a.status==='Cancelado'?';opacity:.6':''}">
+    <div style="flex:1;min-width:170px;cursor:pointer" onclick="agpAbrir('${a.id}')"><div style="font-weight:600">${escH(a.inicio)}–${escH(a.fim)} · ${escH(a.pacienteNome)}</div>
+    <div style="font-size:.76rem;color:var(--text-light)">${escH(a.profNome||'—')} · ${escH(a.consultorio||'sem consultório')}</div></div>
+    <select class="form-select" style="width:auto;font-size:.76rem;padding:3px 6px;color:${cor};font-weight:600" onchange="agpStatus('${a.id}',this.value)">${AGP_STATUS.map(s => `<option ${s===a.status?'selected':''}>${s}</option>`).join('')}</select></div>`;
+}
+function agpMesHtml(ini, lista) {
+  const d0 = new Date(ini+'T12:00:00'), dias = new Date(d0.getFullYear(), d0.getMonth()+1, 0).getDate(), off = (d0.getDay()+6)%7;
+  let h = '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;font-size:.7rem">' + ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map(x => `<div style="text-align:center;font-weight:700;color:var(--text-light)">${x}</div>`).join('');
+  for(let i=0;i<off;i++) h += '<div></div>';
+  for(let d=1; d<=dias; d++) {
+    const ds = `${ini.slice(0,8)}${String(d).padStart(2,'0')}`, it = lista.filter(a => a.data === ds);
+    h += `<div style="background:var(--white);border:1px solid var(--border);border-radius:6px;min-height:68px;padding:3px;cursor:pointer;overflow:hidden" onclick="_agpD=new Date('${ds}T12:00:00');agpView('dia')"><div style="font-weight:700">${d}</div>`
+      + it.slice(0,3).map(a => `<div style="background:${AGP_COR[a.status]};color:#fff;border-radius:3px;padding:0 3px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(a.inicio)} ${escH((a.pacienteNome||'').split(' ')[0])}</div>`).join('')
+      + (it.length > 3 ? `<div style="color:var(--text-light)">+${it.length-3}</div>` : '') + '</div>';
+  }
+  return h + '</div>';
+}
+function agpAbrir(id) {
+  const run = () => {
+    const a = id ? _agps.find(x => x.id === id) : null;
+    if(id && !a) { showToast('Agendamento não encontrado.','error'); return; }
+    const pacs = _pacs.filter(p => p.ativo !== false || (a && a.pacienteId === p.id));
+    document.getElementById('agp-pac').innerHTML = '<option value="">Selecione o paciente</option>' + pacs.map(p => `<option value="${p.id}">${escH(p.nome)}</option>`).join('');
+    document.getElementById('agp-prof').innerHTML = '<option value="">Selecione o profissional</option>' + _agpProfs.map(x => `<option value="${x.id}">${escH(x.nome)}</option>`).join('') + '<option value="__outro">Outro (informar nome)</option>';
+    document.getElementById('agp-cons').innerHTML = '<option value="">Sem consultório definido</option>' + [appConfig.sala1||'Áthos I', appConfig.sala2||'Áthos II'].map(x => `<option>${escH(x)}</option>`).join('');
+    document.getElementById('agp-st').innerHTML = AGP_STATUS.map(s => `<option>${s}</option>`).join('');
+    const set = (i,v) => document.getElementById(i).value = v == null ? '' : v;
+    set('agp-edit-id', id||''); set('agp-obs', a?.obs); set('agp-valor', a?.valorInformado); set('agp-data', a?.data || toDateStrLocal(new Date())); set('agp-ini', a?.inicio); set('agp-fim', a?.fim);
+    set('agp-pac', a?.pacienteId); set('agp-cons', a?.consultorio); set('agp-st', a?.status || 'Aguardando confirmação');
+    const known = a && _agpProfs.some(x => x.id === a.profId);
+    set('agp-prof', a ? (known ? a.profId : '__outro') : ''); set('agp-prof-outro', a && !known ? a.profNome : '');
+    document.getElementById('agp-prof-outro').style.display = a && !known ? '' : 'none';
+    document.getElementById('agp-title').textContent = a ? 'Editar agendamento' : 'Novo agendamento';
+    document.getElementById('agp-ver-pac').style.display = a ? '' : 'none';
+    const h = (a?.historico || []).slice(-4).reverse().map(x => `${new Date(x.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} — ${escH(x.acao)}`).join('<br>');
+    document.getElementById('agp-hist').innerHTML = h ? '<b>Alterações recentes</b><br>' + h : '';
+    openModal('agp');
+  };
+  if(!_pacs.length || !_agpProfs.length) loadAgPac().then(run); else run();
+}
+function agpPacChange() { const p = _pacs.find(x => x.id === _pv('agp-pac')); if(p && !_pv('agp-valor')) document.getElementById('agp-valor').value = p.valorInformado || ''; }
+function agpVerPac() { const id = _pv('agp-pac'); closeModal('agp'); showPage('pacientes', document.querySelector("[onclick*=\"'pacientes'\"]")); setTimeout(() => pacEditar(id), 400); }
+async function agpSalvar() {
+  const id = _pv('agp-edit-id'), pacId = _pv('agp-pac'), data = _pv('agp-data'), ini = _pv('agp-ini'), fim = _pv('agp-fim'), cons = _pv('agp-cons'), st = _pv('agp-st');
+  const pac = _pacs.find(x => x.id === pacId), profSel = _pv('agp-prof');
+  if(!pac) { showToast('Selecione o paciente.','error'); return; }
+  if(!profSel || (profSel === '__outro' && !_pv('agp-prof-outro'))) { showToast('Informe o profissional.','error'); return; }
+  if(!data || !ini || !fim) { showToast('Informe data, início e término.','error'); return; }
+  if(fim <= ini) { showToast('O término deve ser depois do início.','error'); return; }
+  const antigo = id ? _agps.find(x => x.id === id) : null;
+  if(pac.ativo === false && (!antigo || antigo.pacienteId !== pacId)) { showToast('Paciente inativo. Reative o cadastro para agendar.','error'); return; }
+  const profNome = profSel === '__outro' ? _pv('agp-prof-outro') : (_agpProfs.find(x => x.id === profSel)?.nome || '');
+  const profId = profSel === '__outro' ? '' : profSel;
+  if(st !== 'Cancelado') {
+    const sobrep = a => a.id !== id && a.data === data && a.status !== 'Cancelado' && a.inicio < fim && a.fim > ini;
+    const cC = cons && _agps.find(a => sobrep(a) && a.consultorio === cons);
+    const cP = _agps.find(a => sobrep(a) && ((profId && a.profId === profId) || (!profId && a.profNome === profNome)));
+    const av = [cC && `${cons} já tem atendimento nesse horário (${cC.pacienteNome}, ${cC.inicio}–${cC.fim})`, cP && `${profNome} já tem atendimento nesse horário (${cP.pacienteNome}, ${cP.inicio}–${cP.fim})`].filter(Boolean);
+    if(av.length && !confirm('Conflito de horário:\n• ' + av.join('\n• ') + '\n\nDeseja agendar mesmo assim?')) return;
+  }
+  const FV = firebase.firestore.FieldValue, agora = new Date().toISOString();
+  const dados = {pacienteId:pacId, pacienteNome:pac.nome, profId, profNome, data, inicio:ini, fim, consultorio:cons, valorInformado:parseFloat(_pv('agp-valor'))||0, status:st, obs:_pv('agp-obs'), updatedAt:FV.serverTimestamp()};
+  try {
+    if(antigo) {
+      const mud = [];
+      if(antigo.data !== data || antigo.inicio !== ini || antigo.fim !== fim) mud.push(`Data/horário: ${_brD(antigo.data)} ${antigo.inicio} → ${_brD(data)} ${ini}`);
+      if(antigo.profNome !== profNome) mud.push(`Profissional: ${antigo.profNome||'—'} → ${profNome}`);
+      if((antigo.consultorio||'') !== cons) mud.push(`Consultório: ${antigo.consultorio||'—'} → ${cons||'—'}`);
+      if(antigo.status !== st) mud.push(`Status: ${antigo.status} → ${st}`);
+      if(mud.length) dados.historico = FV.arrayUnion({em:agora, acao:mud.join('; '), por:_quem()});
+      await db.collection('agendamentosPacientes').doc(id).update(dados);
+    } else {
+      dados.createdAt = FV.serverTimestamp(); dados.historico = [{em:agora, acao:'Agendamento criado', por:_quem()}];
+      await db.collection('agendamentosPacientes').add(dados);
+    }
+    showToast('Agendamento salvo!','success'); closeModal('agp');
+    if(data) _agpD = new Date(data+'T12:00:00');
+    await loadAgPac();
+    if(document.getElementById('page-agenda').classList.contains('active')) renderAgendaDia();
+  } catch(e) { console.error(e); showToast('Erro ao salvar o agendamento.','error'); }
+}
+async function agpStatus(id, novo) {
+  const a = _agps.find(x => x.id === id); if(!a || a.status === novo) return;
+  try {
+    await db.collection('agendamentosPacientes').doc(id).update({status:novo, updatedAt:firebase.firestore.FieldValue.serverTimestamp(), historico:firebase.firestore.FieldValue.arrayUnion({em:new Date().toISOString(), acao:`Status: ${a.status} → ${novo}`, por:_quem()})});
+    a.status = novo; agpRender();
+  } catch(e) { console.error(e); showToast('Erro ao atualizar o status.','error'); agpRender(); }
+}
+// Agendamentos de pacientes viram "locações" só para exibição no Mapa (sem financeiro, sem turno fixo)
+async function agpLocsPeriodo(ini, fim) {
+  try {
+    const snap = await db.collection('agendamentosPacientes').where('data','>=',ini).where('data','<=',fim).get();
+    return snap.docs.map(d => ({id:d.id,...d.data()})).filter(a => a.status !== 'Cancelado' && a.consultorio).map(a => ({
+      id:'ap_'+a.id, _ap:true, _rotulo:`${a.pacienteNome} · ${a.profNome||'—'}`, profId:a.profId||'', sala:a.consultorio, vinculo:'Hora Avulsa',
+      inicio:a.inicio, fim:a.fim, dataInicio:a.data, dataFim:a.data, recorrencia:'', cor:'#4a6fa5'}));
+  } catch(e) { console.error('Agenda de pacientes no Mapa:', e); return []; }
+}
+
+// Estoque: conversão de caixas/pacotes em unidades
+function estEmbAtualizar() {
+  const it = _estItem(_estV('emov-item')), q = it ? _estNum(it.qtdEmbalagem) : 0, g = document.getElementById('emov-emb-grp');
+  const mostra = _estV('emov-tipo') === 'compra' && q > 0;
+  g.style.display = mostra ? '' : 'none';
+  if(mostra) { document.getElementById('emov-emb-lbl').textContent = `Caixas/pacotes comprados (${q} un. cada)`; document.getElementById('emov-emb').value = ''; document.getElementById('emov-emb-hint').textContent = ''; }
+}
+function estEmbConverter() {
+  const it = _estItem(_estV('emov-item')), q = it ? _estNum(it.qtdEmbalagem) : 0, e = _estNum(_estV('emov-emb'));
+  if(!(q > 0)) return;
+  document.getElementById('emov-qtd').value = e > 0 ? e * q : '';
+  document.getElementById('emov-emb-hint').textContent = e > 0 ? `${e} × ${q} = ${e*q} unidades` : '';
+  if(typeof estMovTotal === 'function') estMovTotal();
+}
 </script>
 
 </body>
