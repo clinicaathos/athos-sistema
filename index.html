@@ -1306,9 +1306,9 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
           <div style="display:flex;align-items:center;gap:.5rem"><button class="arr-btn" onclick="agpNav(-1)">←</button><span class="week-label" id="agp-label">—</span><button class="arr-btn" onclick="agpNav(1)">→</button><button class="btn btn-secondary" style="padding:4px 10px;font-size:.78rem" onclick="agpHoje()">Hoje</button></div>
           <div style="display:flex;gap:.35rem"><button class="qf-btn agp-vbtn" data-v="dia" onclick="agpView('dia')">Dia</button><button class="qf-btn agp-vbtn" data-v="semana" onclick="agpView('semana')">Semana</button><button class="qf-btn agp-vbtn" data-v="mes" onclick="agpView('mes')">Mês</button></div>
         </div>
+        <div id="agp-chips" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.75rem"></div>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
           <input class="form-input" id="agp-f-pac" placeholder="Filtrar por paciente" oninput="agpRender()" style="flex:2;min-width:160px">
-          <select class="form-select" id="agp-f-prof" onchange="agpRender()" style="flex:1;min-width:130px"></select>
           <select class="form-select" id="agp-f-cons" onchange="agpRender()" style="flex:1;min-width:120px"></select>
           <select class="form-select" id="agp-f-st" onchange="agpRender()" style="flex:1;min-width:130px"></select>
         </div>
@@ -1974,7 +1974,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
 <div class="modal-overlay" id="modal-agp" onclick="closeModalBg(event,'agp')">
   <div class="modal">
     <div class="modal-title" id="agp-title">Novo agendamento</div>
-    <input type="hidden" id="agp-edit-id">
+    <input type="hidden" id="agp-edit-id"><input type="hidden" id="agp-occ">
     <div class="form-group"><label class="form-label">Paciente</label><select class="form-select" id="agp-pac" onchange="agpPacChange()"></select></div>
     <div class="form-group"><label class="form-label">Profissional responsável</label><select class="form-select" id="agp-prof" onchange="document.getElementById('agp-prof-outro').style.display=this.value==='__outro'?'':'none'"></select>
       <input class="form-input" id="agp-prof-outro" placeholder="Nome do profissional" style="display:none;margin-top:.4rem"></div>
@@ -1982,6 +1982,11 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
       <div class="form-group"><label class="form-label">Data</label><input class="form-input" type="date" id="agp-data"></div>
       <div class="form-group"><label class="form-label">Consultório</label><select class="form-select" id="agp-cons"></select></div>
     </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Repetição</label><select class="form-select" id="agp-rec" onchange="document.getElementById('agp-rec-row').style.display=this.value==='semanal'?'':'none'"><option value="">Não repete</option><option value="semanal">Toda semana (mesmo dia e horário)</option></select></div>
+      <div class="form-group" id="agp-rec-row" style="display:none"><label class="form-label">Repetir até (opcional)</label><input class="form-input" type="date" id="agp-rec-ate"></div>
+    </div>
+    <div class="est-sub" id="agp-rec-note" style="display:none;margin:-.25rem 0 .75rem">Atendimento semanal: dia, horário, profissional e consultório valem para toda a série. O status vale só para a data aberta. Para cancelar apenas esta data, marque Cancelado.</div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Início</label><input class="form-input" type="time" id="agp-ini"></div>
       <div class="form-group"><label class="form-label">Término</label><input class="form-input" type="time" id="agp-fim"></div>
@@ -1991,7 +1996,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
       <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="agp-st"></select></div>
     </div>
     <div class="form-group"><label class="form-label">Observações administrativas</label><textarea class="form-input" id="agp-obs" rows="2" style="resize:vertical"></textarea></div>
-    <div id="agp-hist" class="est-sub" style="margin-bottom:.5rem"></div>
+    <div id="agp-hist" class="est-sub" style="margin-bottom:.5rem;max-height:120px;overflow:auto"></div>
     <div style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap">
       <button class="btn btn-primary" style="flex:1" onclick="agpSalvar()">Salvar</button>
       <button class="btn btn-secondary" id="agp-ver-pac" style="display:none" onclick="agpVerPac()">Ver paciente</button>
@@ -4465,11 +4470,13 @@ function toggleTipoPessoa() {
 async function exportarBackupExcel() {
   showToast('Gerando backup... aguarde.', 'success');
   try {
-    const [recSnap, despSnap, locSnap, profSnap] = await Promise.all([
+    const [recSnap, despSnap, locSnap, profSnap, pacSnap, agSnap] = await Promise.all([
       db.collection('receitas').get(),
       db.collection('despesas').get(),
       db.collection('locacoes').get(),
-      db.collection('profissionais').get()
+      db.collection('profissionais').get(),
+      db.collection('pacientes').get().catch(()=>({docs:[]})),
+      db.collection('agendamentosPacientes').get().catch(()=>({docs:[]}))
     ]);
 
     const wb = XLSX.utils.book_new();
@@ -4517,6 +4524,10 @@ async function exportarBackupExcel() {
 
     const hoje = new Date();
     const dataStr = `${hoje.getFullYear()}${String(hoje.getMonth()+1).padStart(2,'0')}${String(hoje.getDate()).padStart(2,'0')}`;
+    const pacientesX = pacSnap.docs.map(d => { const p = d.data(); return {Nome:p.nome||'', CPF:p.cpf||'', Nascimento:p.nascimento||'', Telefone:p.telefone||'', 'Telefone emergência':p.telefoneEmergencia||'', Email:p.email||'', CEP:p.cep||'', Endereço:p.endereco||'', Número:p.numero||'', Complemento:p.complemento||'', Bairro:p.bairro||'', Cidade:p.cidade||'', UF:p.uf||'', Modalidade:p.modalidade||'', 'Valor informado':p.valorInformado||0, Situação:p.ativo===false?'Inativo':'Ativo', Observações:p.obs||''}; });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pacientesX.length ? pacientesX : [{}]), 'Pacientes');
+    const agendaX = agSnap.docs.map(d => { const a = d.data(); return {Paciente:a.pacienteNome||'', Data:a.data||'', Início:a.inicio||'', Término:a.fim||'', Profissional:a.profNome||'', Consultório:a.consultorio||'', Status:a.status||'', 'Valor informado':a.valorInformado||0, Repetição:a.recorrencia==='semanal'?'Semanal':'', 'Repetir até':a.recorrenteAte||'', Observações:a.obs||''}; });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(agendaX.length ? agendaX : [{}]), 'Agenda de Pacientes');
     XLSX.writeFile(wb, `Backup_Athos_${dataStr}.xlsx`);
     showToast('Backup Excel gerado com sucesso!', 'success');
   } catch(e) {
@@ -10862,7 +10873,7 @@ async function verHistoricoProf(profId) {
 // ══ PACIENTES, AGENDA DE PACIENTES E INTEGRAÇÃO COM O MAPA ══
 const AGP_STATUS = ['Aguardando confirmação','Confirmado','Realizado','Cancelado','Reagendado'];
 const AGP_COR = {'Aguardando confirmação':'#d97706','Confirmado':'#16a34a','Realizado':'#2563eb','Cancelado':'#9ca3af','Reagendado':'#7c3aed'};
-let _pacs = [], _agps = [], _agpProfs = [], _agpV = 'dia', _agpD = new Date();
+let _pacs = [], _agps = [], _agpProfs = [], _agpV = 'semana', _agpD = new Date();
 const _pv = id => (document.getElementById(id)?.value || '').trim();
 const _brD = d => d ? d.split('-').reverse().join('/') : '';
 const _brMoeda = v => (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -10977,12 +10988,37 @@ async function pacHistorico(id) {
   const body = document.getElementById('pac-hist-body'); body.innerHTML = 'Carregando...'; openModal('pac-hist');
   try {
     const snap = await db.collection('agendamentosPacientes').where('pacienteId','==',id).get();
-    const l = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => (b.data+b.inicio).localeCompare(a.data+a.inicio));
+    const _lim = toDateStrLocal(new Date(Date.now()+60*864e5));
+    const l = snap.docs.map(d => ({id:d.id,...d.data()})).flatMap(a => agpExpandir(a, a.data, a.recorrenteAte && a.recorrenteAte < _lim ? a.recorrenteAte : _lim)).sort((a,b) => (b.data+b.inicio).localeCompare(a.data+a.inicio));
     body.innerHTML = l.length ? l.map(a => `<div style="padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.82rem"><b>${_brD(a.data)}</b> · ${escH(a.inicio)}–${escH(a.fim)} · ${escH(a.profNome||'—')} · ${escH(a.consultorio||'sem consultório')}<br><span style="color:${AGP_COR[a.status]||'#666'};font-weight:600">${escH(a.status)}</span>${a.valorInformado?' · '+_brMoeda(a.valorInformado):''}${(a.historico||[]).length>1?` · ${(a.historico||[]).length-1} alteração(ões)`:''}</div>`).join('') : '<div style="color:var(--text-light);font-size:.85rem">Nenhum atendimento registrado.</div>';
   } catch(e) { body.innerHTML = 'Erro ao carregar o histórico.'; }
 }
 
 // ── Agenda de Pacientes ──
+let _agpSel = new Set();
+const AGP_PALETA = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#14b8a6','#ec4899','#6366f1','#84cc16','#f97316'];
+const agpKey = d => 'd' + String(d).replace(/-/g,'');
+const agpProfKey = a => a.profId || ('n:' + (a.profNome||''));
+const agpMin = t => { const [h,m] = String(t||'0:0').split(':').map(Number); return h*60 + (m||0); };
+function agpTodasProfs() {
+  const m = new Map(); _agpProfs.forEach(p => m.set(p.id, p.nome));
+  _agps.forEach(a => { const k = agpProfKey(a); if(!m.has(k)) m.set(k, a.profNome || '—'); });
+  return [...m].map(([key,nome]) => ({key,nome})).sort((x,y) => x.nome.localeCompare(y.nome,'pt'));
+}
+function agpCorProf(k) { const i = agpTodasProfs().findIndex(x => x.key === k); return AGP_PALETA[(i < 0 ? 0 : i) % AGP_PALETA.length]; }
+// Expande atendimentos semanais em ocorrências dentro do período
+function agpExpandir(a, ini, fim) {
+  if(a.recorrencia !== 'semanal') return (a.data >= ini && a.data <= fim) ? [{...a, _occ:a.data}] : [];
+  const out = [], base = new Date(a.data+'T12:00:00'), lim = a.recorrenteAte || '9999-12-31';
+  const d = new Date(Math.max(base, new Date(ini+'T12:00:00')));
+  const resto = (((Math.round((d-base)/864e5)) % 7) + 7) % 7; if(resto) d.setDate(d.getDate() + 7 - resto);
+  for(; ; d.setDate(d.getDate()+7)) {
+    const ds = toDateStrLocal(d); if(ds > fim || ds > lim) break;
+    const o = a.ocorrencias && a.ocorrencias[agpKey(ds)];
+    out.push({...a, data:ds, _occ:ds, status:(o && o.status) || (ds === a.data ? a.status : 'Aguardando confirmação')});
+  }
+  return out;
+}
 async function loadAgPac() {
   try {
     const [a, p, pr] = await Promise.all([db.collection('agendamentosPacientes').get(), db.collection('pacientes').get(), db.collection('profissionais').get()]);
@@ -10990,11 +11026,9 @@ async function loadAgPac() {
     _pacs = p.docs.map(d => ({id:d.id,...d.data()})).sort((x,y) => (x.nome||'').localeCompare(y.nome||'','pt'));
     _agpProfs = pr.docs.map(d => ({id:d.id,...d.data()})).filter(x => x.status !== 'Inativo').sort((x,y) => (x.nome||'').localeCompare(y.nome||'','pt'));
   } catch(e) { console.error(e); document.getElementById('agp-body').innerHTML = '<div style="color:var(--danger);padding:1rem;font-size:.83rem">Erro ao carregar. Verifique as regras do Firestore para as coleções agendamentosPacientes e pacientes.</div>'; return; }
-  const sala = [appConfig.sala1||'Áthos I', appConfig.sala2||'Áthos II'];
-  const opt = (arr, vazio) => `<option value="">${vazio}</option>` + arr.map(([v,l]) => `<option value="${escH(v)}">${escH(l)}</option>`).join('');
-  document.getElementById('agp-f-prof').innerHTML = opt(_agpProfs.map(x => [x.id, x.nome]), 'Todos os profissionais');
-  document.getElementById('agp-f-cons').innerHTML = opt(sala.map(x => [x,x]), 'Todos os consultórios');
-  document.getElementById('agp-f-st').innerHTML = opt(AGP_STATUS.map(x => [x,x]), 'Todos os status');
+  const opt = (arr, vazio) => `<option value="">${vazio}</option>` + arr.map(x => `<option>${escH(x)}</option>`).join('');
+  document.getElementById('agp-f-cons').innerHTML = opt([appConfig.sala1||'Áthos I', appConfig.sala2||'Áthos II','Online'], 'Todos os consultórios');
+  document.getElementById('agp-f-st').innerHTML = opt(AGP_STATUS, 'Todos os status');
   agpView(_agpV);
 }
 function agpRange() {
@@ -11006,57 +11040,105 @@ function agpRange() {
 function agpView(v) { _agpV = v; document.querySelectorAll('.agp-vbtn').forEach(b => b.classList.toggle('active', b.dataset.v === v)); agpRender(); }
 function agpNav(dir) { if(_agpV === 'dia') _agpD.setDate(_agpD.getDate()+dir); else if(_agpV === 'semana') _agpD.setDate(_agpD.getDate()+7*dir); else _agpD.setMonth(_agpD.getMonth()+dir, 1); agpRender(); }
 function agpHoje() { _agpD = new Date(); agpRender(); }
+function agpToggleProf(k) { if(_agpSel.has(k)) _agpSel.delete(k); else _agpSel.add(k); agpRender(); }
+function agpLimparProfs() { _agpSel.clear(); agpRender(); }
+function agpChips() {
+  const ps = agpTodasProfs();
+  document.getElementById('agp-chips').innerHTML = '<span style="font-size:.74rem;color:var(--text-light);align-self:center">Profissionais:</span>'
+    + ps.map(x => { const on = _agpSel.has(x.key), c = agpCorProf(x.key); return `<button type="button" data-k="${escH(x.key)}" onclick="agpToggleProf(this.dataset.k)" style="border:1.5px solid ${c};background:${on?c:'transparent'};color:${on?'#fff':c};border-radius:999px;padding:3px 12px;font-size:.76rem;font-weight:600;cursor:pointer">${escH(x.nome)}</button>`; }).join('')
+    + (_agpSel.size ? '<button type="button" onclick="agpLimparProfs()" style="border:none;background:none;color:var(--text-light);font-size:.76rem;cursor:pointer;text-decoration:underline">Mostrar todos</button>' : '');
+}
+let _agpMapa = {};
 function agpRender() {
   const [ini, fim] = agpRange();
   document.getElementById('agp-label').textContent = _agpV === 'dia' ? new Date(ini+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : _agpV === 'semana' ? `${_brD(ini)} a ${_brD(fim)}` : new Date(ini+'T12:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-  const fp = _pv('agp-f-pac').toLowerCase(), fprof = _pv('agp-f-prof'), fcons = _pv('agp-f-cons'), fst = _pv('agp-f-st');
-  const lista = _agps.filter(a => a.data >= ini && a.data <= fim && (!fp || (a.pacienteNome||'').toLowerCase().includes(fp)) && (!fprof || a.profId === fprof) && (!fcons || a.consultorio === fcons) && (!fst || a.status === fst))
-    .sort((a,b) => (a.data+a.inicio).localeCompare(b.data+b.inicio));
+  agpChips();
+  const fp = _pv('agp-f-pac').toLowerCase(), fcons = _pv('agp-f-cons'), fst = _pv('agp-f-st');
+  const lista = _agps.flatMap(a => agpExpandir(a, ini, fim)).filter(a => (!fp || (a.pacienteNome||'').toLowerCase().includes(fp)) && (!_agpSel.size || _agpSel.has(agpProfKey(a))) && (!fcons || a.consultorio === fcons) && (!fst || a.status === fst));
+  _agpMapa = {}; lista.forEach(a => _agpMapa[a.id+'|'+a._occ] = a);
   const body = document.getElementById('agp-body');
-  if(_agpV === 'mes') { body.innerHTML = agpMesHtml(ini, lista); return; }
-  if(!lista.length) { body.innerHTML = '<div style="padding:1.5rem;color:var(--text-light);font-size:.85rem">Nenhum atendimento neste período.</div>'; return; }
-  const dias = [...new Set(lista.map(a => a.data))];
-  body.innerHTML = dias.map(d => `<div style="margin-bottom:1rem"><div style="font-weight:700;font-size:.82rem;color:var(--text-light);margin-bottom:.35rem;text-transform:capitalize">${new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'})}</div>`
-    + lista.filter(a => a.data === d).map(agpCard).join('') + '</div>').join('');
+  if(_agpV === 'mes') body.innerHTML = agpMesHtml(ini, lista);
+  else {
+    const dias = []; const n = _agpV === 'dia' ? 1 : 7;
+    for(let i=0;i<n;i++) { const d = new Date(ini+'T12:00:00'); d.setDate(d.getDate()+i); dias.push(toDateStrLocal(d)); }
+    if(n === 7 && !lista.some(a => a.data === dias[6])) dias.pop();
+    body.innerHTML = agpGradeHtml(dias, lista);
+  }
+  body.onclick = e => { const t = e.target.closest('.agp-ev'); if(t) { agpTip(null); agpAbrir(t.dataset.id+'|'+t.dataset.occ); return; } const c = e.target.closest('.agp-day'); if(c) { _agpD = new Date(c.dataset.d+'T12:00:00'); agpView('dia'); } };
+  body.onmousemove = e => { const t = e.target.closest('.agp-ev'); agpTip(t ? _agpMapa[t.dataset.id+'|'+t.dataset.occ] : null, e); };
+  body.onmouseleave = () => agpTip(null);
 }
-function agpCard(a) {
-  const cor = AGP_COR[a.status] || '#666';
-  return `<div class="card" style="padding:.7rem .9rem;margin-bottom:.4rem;border-left:4px solid ${cor};display:flex;gap:.75rem;align-items:center;flex-wrap:wrap${a.status==='Cancelado'?';opacity:.6':''}">
-    <div style="flex:1;min-width:170px;cursor:pointer" onclick="agpAbrir('${a.id}')"><div style="font-weight:600">${escH(a.inicio)}–${escH(a.fim)} · ${escH(a.pacienteNome)}</div>
-    <div style="font-size:.76rem;color:var(--text-light)">${escH(a.profNome||'—')} · ${escH(a.consultorio||'sem consultório')}</div></div>
-    <select class="form-select" style="width:auto;font-size:.76rem;padding:3px 6px;color:${cor};font-weight:600" onchange="agpStatus('${a.id}',this.value)">${AGP_STATUS.map(s => `<option ${s===a.status?'selected':''}>${s}</option>`).join('')}</select></div>`;
+function agpTip(a, e) {
+  let t = document.getElementById('agp-tip');
+  if(!t) { t = document.createElement('div'); t.id = 'agp-tip'; t.style.cssText = 'position:fixed;z-index:9999;background:#1f2937;color:#fff;border-radius:8px;padding:8px 11px;font-size:.76rem;line-height:1.45;max-width:260px;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.25);display:none'; document.body.appendChild(t); }
+  if(!a) { t.style.display = 'none'; return; }
+  t.innerHTML = `<b>${escH(a.pacienteNome)}</b><br>${new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})} · ${escH(a.inicio)}–${escH(a.fim)}<br>${escH(a.profNome||'—')} · ${escH(a.consultorio||'sem consultório')}<br><span style="color:${AGP_COR[a.status]||'#fff'};filter:brightness(1.4)">● ${escH(a.status)}</span>${a.valorInformado?' · '+_brMoeda(a.valorInformado):''}${a.recorrencia==='semanal'?'<br>↻ Toda semana':''}${a.obs?'<br><i>'+escH(a.obs.slice(0,90))+'</i>':''}`;
+  t.style.display = 'block';
+  const x = Math.min((e?.clientX||0)+14, innerWidth - t.offsetWidth - 8), y = Math.min((e?.clientY||0)+14, innerHeight - t.offsetHeight - 8);
+  t.style.left = Math.max(4,x)+'px'; t.style.top = Math.max(4,y)+'px';
+}
+function agpLanes(ev) {
+  ev = [...ev].sort((x,y) => agpMin(x.inicio)-agpMin(y.inicio) || agpMin(x.fim)-agpMin(y.fim));
+  let cl = [], cEnd = -1;
+  const flush = () => { const ends = []; cl.forEach(e => { let l = ends.findIndex(x => x <= agpMin(e.inicio)); if(l < 0) { l = ends.length; ends.push(0); } ends[l] = agpMin(e.fim); e._lane = l; }); cl.forEach(e => e._lanes = ends.length); cl = []; };
+  ev.forEach(e => { if(cl.length && agpMin(e.inicio) >= cEnd) { flush(); cEnd = -1; } cl.push(e); cEnd = Math.max(cEnd, agpMin(e.fim)); });
+  if(cl.length) flush();
+  return ev;
+}
+function agpGradeHtml(dias, lista) {
+  const H = 46; let h0 = 7, h1 = 20;
+  lista.forEach(a => { h0 = Math.min(h0, Math.floor(agpMin(a.inicio)/60)); h1 = Math.max(h1, Math.ceil(agpMin(a.fim)/60)); });
+  const alt = (h1-h0)*H, hoje = toDateStrLocal(new Date()), nd = dias.length;
+  let h = `<div style="overflow-x:auto"><div style="min-width:${nd===1?300:Math.max(560,nd*95)}px"><div style="display:grid;grid-template-columns:42px repeat(${nd},minmax(0,1fr));gap:0">`;
+  h += '<div></div>' + dias.map(d => { const dt = new Date(d+'T12:00:00'); return `<div class="agp-day" data-d="${d}" style="cursor:pointer;text-align:center;padding:5px 2px;font-size:.75rem;font-weight:700;border-bottom:2px solid ${d===hoje?'var(--primary,#2563eb)':'var(--border)'};color:${d===hoje?'var(--primary,#2563eb)':'inherit'}">${dt.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','')}<br><span style="font-weight:500">${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}</span></div>`; }).join('');
+  h += `<div style="position:relative;height:${alt}px">` + Array.from({length:h1-h0},(_,i) => `<div style="position:absolute;top:${i*H-6}px;right:5px;font-size:.66rem;color:var(--text-light)">${String(h0+i).padStart(2,'0')}:00</div>`).join('') + '</div>';
+  dias.forEach(d => {
+    const ev = agpLanes(lista.filter(a => a.data === d));
+    h += `<div style="position:relative;height:${alt}px;border-left:1px solid var(--border);background-image:linear-gradient(var(--border) 1px,transparent 1px);background-size:100% ${H}px">` + ev.map(a => {
+      const top = (agpMin(a.inicio)-h0*60)/60*H, hg = Math.max(18,(agpMin(a.fim)-agpMin(a.inicio))/60*H-2), cor = agpCorProf(agpProfKey(a)), cancel = a.status === 'Cancelado';
+      return `<div class="agp-ev" data-id="${a.id}" data-occ="${a._occ}" style="position:absolute;top:${top}px;height:${hg}px;left:calc(${a._lane}*100%/${a._lanes} + 1px);width:calc(100%/${a._lanes} - 2px);background:${cor};border-left:5px solid ${AGP_COR[a.status]||'#666'};color:#fff;border-radius:5px;padding:2px 4px;font-size:.72rem;font-weight:600;line-height:1.2;overflow:hidden;cursor:pointer;box-sizing:border-box;${cancel?'opacity:.45;text-decoration:line-through;':''}">${a.recorrencia==='semanal'?'↻ ':''}${escH(a.pacienteNome)}</div>`;
+    }).join('') + '</div>';
+  });
+  return h + '</div></div></div>';
 }
 function agpMesHtml(ini, lista) {
   const d0 = new Date(ini+'T12:00:00'), dias = new Date(d0.getFullYear(), d0.getMonth()+1, 0).getDate(), off = (d0.getDay()+6)%7;
   let h = '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;font-size:.7rem">' + ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map(x => `<div style="text-align:center;font-weight:700;color:var(--text-light)">${x}</div>`).join('');
   for(let i=0;i<off;i++) h += '<div></div>';
   for(let d=1; d<=dias; d++) {
-    const ds = `${ini.slice(0,8)}${String(d).padStart(2,'0')}`, it = lista.filter(a => a.data === ds);
-    h += `<div style="background:var(--white);border:1px solid var(--border);border-radius:6px;min-height:68px;padding:3px;cursor:pointer;overflow:hidden" onclick="_agpD=new Date('${ds}T12:00:00');agpView('dia')"><div style="font-weight:700">${d}</div>`
-      + it.slice(0,3).map(a => `<div style="background:${AGP_COR[a.status]};color:#fff;border-radius:3px;padding:0 3px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(a.inicio)} ${escH((a.pacienteNome||'').split(' ')[0])}</div>`).join('')
+    const ds = `${ini.slice(0,8)}${String(d).padStart(2,'0')}`, it = lista.filter(a => a.data === ds).sort((x,y) => x.inicio.localeCompare(y.inicio));
+    h += `<div class="agp-day" data-d="${ds}" style="background:var(--white);border:1px solid var(--border);border-radius:6px;min-height:72px;padding:3px;cursor:pointer;overflow:hidden"><div style="font-weight:700">${d}</div>`
+      + it.slice(0,3).map(a => `<div class="agp-ev" data-id="${a.id}" data-occ="${a._occ}" style="background:${agpCorProf(agpProfKey(a))};color:#fff;border-radius:3px;padding:0 3px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH((a.pacienteNome||'').split(' ')[0])}</div>`).join('')
       + (it.length > 3 ? `<div style="color:var(--text-light)">+${it.length-3}</div>` : '') + '</div>';
   }
   return h + '</div>';
 }
-function agpAbrir(id) {
+function agpAbrir(idOcc) {
+  const [id, occ] = String(idOcc||'').split('|');
   const run = () => {
     const a = id ? _agps.find(x => x.id === id) : null;
     if(id && !a) { showToast('Agendamento não encontrado.','error'); return; }
+    const serie = !!(a && a.recorrencia === 'semanal'), dOcc = serie ? (occ || a.data) : '';
+    const ef = serie ? (agpExpandir(a, dOcc, dOcc)[0] || a) : a;
     const pacs = _pacs.filter(p => p.ativo !== false || (a && a.pacienteId === p.id));
     document.getElementById('agp-pac').innerHTML = '<option value="">Selecione o paciente</option>' + pacs.map(p => `<option value="${p.id}">${escH(p.nome)}</option>`).join('');
     document.getElementById('agp-prof').innerHTML = '<option value="">Selecione o profissional</option>' + _agpProfs.map(x => `<option value="${x.id}">${escH(x.nome)}</option>`).join('') + '<option value="__outro">Outro (informar nome)</option>';
-    document.getElementById('agp-cons').innerHTML = '<option value="">Sem consultório definido</option>' + [appConfig.sala1||'Áthos I', appConfig.sala2||'Áthos II'].map(x => `<option>${escH(x)}</option>`).join('');
+    document.getElementById('agp-cons').innerHTML = '<option value="">Sem consultório definido</option>' + [appConfig.sala1||'Áthos I', appConfig.sala2||'Áthos II','Online'].map(x => `<option>${escH(x)}</option>`).join('');
     document.getElementById('agp-st').innerHTML = AGP_STATUS.map(s => `<option>${s}</option>`).join('');
     const set = (i,v) => document.getElementById(i).value = v == null ? '' : v;
-    set('agp-edit-id', id||''); set('agp-obs', a?.obs); set('agp-valor', a?.valorInformado); set('agp-data', a?.data || toDateStrLocal(new Date())); set('agp-ini', a?.inicio); set('agp-fim', a?.fim);
-    set('agp-pac', a?.pacienteId); set('agp-cons', a?.consultorio); set('agp-st', a?.status || 'Aguardando confirmação');
+    set('agp-edit-id', id||''); set('agp-occ', dOcc); set('agp-obs', a?.obs); set('agp-valor', a?.valorInformado); set('agp-data', dOcc || a?.data || toDateStrLocal(_agpD)); set('agp-ini', a?.inicio); set('agp-fim', a?.fim);
+    document.getElementById('agp-data').disabled = serie;
+    set('agp-pac', a?.pacienteId); set('agp-cons', a?.consultorio); set('agp-st', ef?.status || 'Aguardando confirmação');
+    set('agp-rec', a?.recorrencia || ''); set('agp-rec-ate', a?.recorrenteAte);
+    document.getElementById('agp-rec-row').style.display = serie ? '' : 'none';
+    document.getElementById('agp-rec-note').style.display = serie ? '' : 'none';
     const known = a && _agpProfs.some(x => x.id === a.profId);
     set('agp-prof', a ? (known ? a.profId : '__outro') : ''); set('agp-prof-outro', a && !known ? a.profNome : '');
     document.getElementById('agp-prof-outro').style.display = a && !known ? '' : 'none';
     document.getElementById('agp-title').textContent = a ? 'Editar agendamento' : 'Novo agendamento';
     document.getElementById('agp-ver-pac').style.display = a ? '' : 'none';
-    const h = (a?.historico || []).slice(-4).reverse().map(x => `${new Date(x.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} — ${escH(x.acao)}`).join('<br>');
-    document.getElementById('agp-hist').innerHTML = h ? '<b>Alterações recentes</b><br>' + h : '';
+    const h = (a?.historico || []).slice().reverse().map(x => `${new Date(x.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} — ${escH(x.acao)}${x.por?' ('+escH(x.por)+')':''}`).join('<br>');
+    document.getElementById('agp-hist').innerHTML = h ? '<b>Histórico do agendamento</b><br>' + h : '';
     openModal('agp');
   };
   if(!_pacs.length || !_agpProfs.length) loadAgPac().then(run); else run();
@@ -11064,58 +11146,66 @@ function agpAbrir(id) {
 function agpPacChange() { const p = _pacs.find(x => x.id === _pv('agp-pac')); if(p && !_pv('agp-valor')) document.getElementById('agp-valor').value = p.valorInformado || ''; }
 function agpVerPac() { const id = _pv('agp-pac'); closeModal('agp'); showPage('pacientes', document.querySelector("[onclick*=\"'pacientes'\"]")); setTimeout(() => pacEditar(id), 400); }
 async function agpSalvar() {
-  const id = _pv('agp-edit-id'), pacId = _pv('agp-pac'), data = _pv('agp-data'), ini = _pv('agp-ini'), fim = _pv('agp-fim'), cons = _pv('agp-cons'), st = _pv('agp-st');
+  const id = _pv('agp-edit-id'), occ = _pv('agp-occ'), pacId = _pv('agp-pac'), ini = _pv('agp-ini'), fim = _pv('agp-fim'), cons = _pv('agp-cons'), st = _pv('agp-st');
+  const antigo = id ? _agps.find(x => x.id === id) : null;
+  const serieEd = !!(antigo && antigo.recorrencia === 'semanal' && occ);
+  const data = serieEd ? antigo.data : _pv('agp-data');
+  const rec = _pv('agp-rec'), ate = rec === 'semanal' ? _pv('agp-rec-ate') : '';
   const pac = _pacs.find(x => x.id === pacId), profSel = _pv('agp-prof');
   if(!pac) { showToast('Selecione o paciente.','error'); return; }
   if(!profSel || (profSel === '__outro' && !_pv('agp-prof-outro'))) { showToast('Informe o profissional.','error'); return; }
   if(!data || !ini || !fim) { showToast('Informe data, início e término.','error'); return; }
   if(fim <= ini) { showToast('O término deve ser depois do início.','error'); return; }
-  const antigo = id ? _agps.find(x => x.id === id) : null;
+  if(ate && ate < data) { showToast('A data final da repetição deve ser depois da primeira data.','error'); return; }
   if(pac.ativo === false && (!antigo || antigo.pacienteId !== pacId)) { showToast('Paciente inativo. Reative o cadastro para agendar.','error'); return; }
   const profNome = profSel === '__outro' ? _pv('agp-prof-outro') : (_agpProfs.find(x => x.id === profSel)?.nome || '');
   const profId = profSel === '__outro' ? '' : profSel;
   if(st !== 'Cancelado') {
-    const sobrep = a => a.id !== id && a.data === data && a.status !== 'Cancelado' && a.inicio < fim && a.fim > ini;
-    const cC = cons && _agps.find(a => sobrep(a) && a.consultorio === cons);
-    const cP = _agps.find(a => sobrep(a) && ((profId && a.profId === profId) || (!profId && a.profNome === profNome)));
-    const av = [cC && `${cons} já tem atendimento nesse horário (${cC.pacienteNome}, ${cC.inicio}–${cC.fim})`, cP && `${profNome} já tem atendimento nesse horário (${cP.pacienteNome}, ${cP.inicio}–${cP.fim})`].filter(Boolean);
-    if(av.length && !confirm('Conflito de horário:\n• ' + av.join('\n• ') + '\n\nDeseja agendar mesmo assim?')) return;
+    const hoje = toDateStrLocal(new Date()), lim = toDateStrLocal(new Date(Date.now()+182*864e5));
+    let datas = [data];
+    if(rec === 'semanal') { const i0 = data > hoje ? data : hoje; datas = agpExpandir({data, recorrencia:'semanal', recorrenteAte:ate}, i0, ate && ate < lim ? ate : lim).map(x => x.data); }
+    const outros = _agps.filter(a => a.id !== id), av = [];
+    for(const dt of datas) {
+      outros.flatMap(a => agpExpandir(a, dt, dt)).filter(a => a.status !== 'Cancelado' && a.inicio < fim && a.fim > ini).forEach(a => {
+        const q = _brD(dt);
+        if(cons && cons !== 'Online' && a.consultorio === cons) av.push(`${q}: ${cons} já tem atendimento (${a.pacienteNome}, ${a.inicio}–${a.fim})`);
+        if((profId && a.profId === profId) || (!profId && a.profNome === profNome)) av.push(`${q}: ${profNome} já tem atendimento (${a.pacienteNome}, ${a.inicio}–${a.fim})`);
+      });
+      if(av.length >= 4) break;
+    }
+    if(av.length && !confirm('Conflito de horário:\n• ' + av.slice(0,4).join('\n• ') + '\n\nDeseja agendar mesmo assim?')) return;
   }
   const FV = firebase.firestore.FieldValue, agora = new Date().toISOString();
-  const dados = {pacienteId:pacId, pacienteNome:pac.nome, profId, profNome, data, inicio:ini, fim, consultorio:cons, valorInformado:parseFloat(_pv('agp-valor'))||0, status:st, obs:_pv('agp-obs'), updatedAt:FV.serverTimestamp()};
+  const dados = {pacienteId:pacId, pacienteNome:pac.nome, profId, profNome, data, inicio:ini, fim, consultorio:cons, valorInformado:parseFloat(_pv('agp-valor'))||0, obs:_pv('agp-obs'), recorrencia:rec, recorrenteAte:ate, updatedAt:FV.serverTimestamp()};
+  if(serieEd) dados.ocorrencias = {[agpKey(occ)]:{status:st}}; else dados.status = st;
   try {
     if(antigo) {
-      const mud = [];
-      if(antigo.data !== data || antigo.inicio !== ini || antigo.fim !== fim) mud.push(`Data/horário: ${_brD(antigo.data)} ${antigo.inicio} → ${_brD(data)} ${ini}`);
+      const ef = serieEd ? (agpExpandir(antigo, occ, occ)[0] || antigo) : antigo, mud = [];
+      if(!serieEd && (antigo.data !== data)) mud.push(`Data: ${_brD(antigo.data)} → ${_brD(data)}`);
+      if(antigo.inicio !== ini || antigo.fim !== fim) mud.push(`Horário: ${antigo.inicio}–${antigo.fim} → ${ini}–${fim}`);
       if(antigo.profNome !== profNome) mud.push(`Profissional: ${antigo.profNome||'—'} → ${profNome}`);
       if((antigo.consultorio||'') !== cons) mud.push(`Consultório: ${antigo.consultorio||'—'} → ${cons||'—'}`);
-      if(antigo.status !== st) mud.push(`Status: ${antigo.status} → ${st}`);
+      if((antigo.recorrencia||'') !== rec || (antigo.recorrenteAte||'') !== ate) mud.push(`Repetição: ${rec==='semanal'?'semanal'+(ate?' até '+_brD(ate):''):'não repete'}`);
+      if(ef.status !== st) mud.push(`Status${serieEd?' ('+_brD(occ)+')':''}: ${ef.status} → ${st}`);
       if(mud.length) dados.historico = FV.arrayUnion({em:agora, acao:mud.join('; '), por:_quem()});
-      await db.collection('agendamentosPacientes').doc(id).update(dados);
+      await db.collection('agendamentosPacientes').doc(id).set(dados, {merge:true});
     } else {
-      dados.createdAt = FV.serverTimestamp(); dados.historico = [{em:agora, acao:'Agendamento criado', por:_quem()}];
+      dados.createdAt = FV.serverTimestamp(); dados.historico = [{em:agora, acao:'Agendamento criado'+(rec==='semanal'?' (semanal)':''), por:_quem()}];
       await db.collection('agendamentosPacientes').add(dados);
     }
     showToast('Agendamento salvo!','success'); closeModal('agp');
-    if(data) _agpD = new Date(data+'T12:00:00');
+    _agpD = new Date((serieEd ? occ : data)+'T12:00:00');
     await loadAgPac();
     if(document.getElementById('page-agenda').classList.contains('active')) renderAgendaDia();
   } catch(e) { console.error(e); showToast('Erro ao salvar o agendamento.','error'); }
 }
-async function agpStatus(id, novo) {
-  const a = _agps.find(x => x.id === id); if(!a || a.status === novo) return;
-  try {
-    await db.collection('agendamentosPacientes').doc(id).update({status:novo, updatedAt:firebase.firestore.FieldValue.serverTimestamp(), historico:firebase.firestore.FieldValue.arrayUnion({em:new Date().toISOString(), acao:`Status: ${a.status} → ${novo}`, por:_quem()})});
-    a.status = novo; agpRender();
-  } catch(e) { console.error(e); showToast('Erro ao atualizar o status.','error'); agpRender(); }
-}
-// Agendamentos de pacientes viram "locações" só para exibição no Mapa (sem financeiro, sem turno fixo)
+// Agendamentos de pacientes viram "locações" só para exibição no Mapa (sem financeiro, sem turno fixo). Online não ocupa sala.
 async function agpLocsPeriodo(ini, fim) {
   try {
-    const snap = await db.collection('agendamentosPacientes').where('data','>=',ini).where('data','<=',fim).get();
-    return snap.docs.map(d => ({id:d.id,...d.data()})).filter(a => a.status !== 'Cancelado' && a.consultorio).map(a => ({
-      id:'ap_'+a.id, _ap:true, _rotulo:`${a.pacienteNome} · ${a.profNome||'—'}`, profId:a.profId||'', sala:a.consultorio, vinculo:'Hora Avulsa',
-      inicio:a.inicio, fim:a.fim, dataInicio:a.data, dataFim:a.data, recorrencia:'', cor:'#4a6fa5'}));
+    const snap = await db.collection('agendamentosPacientes').where('data','<=',fim).get();
+    return snap.docs.map(d => ({id:d.id,...d.data()})).flatMap(a => agpExpandir(a, ini, fim)).filter(a => a.status !== 'Cancelado' && a.consultorio && a.consultorio !== 'Online').map(a => ({
+      id:'ap_'+a.id+'|'+a._occ, _ap:true, _rotulo:`${a.pacienteNome} · ${a.profNome||'—'}`, profId:a.profId||'', sala:a.consultorio, vinculo:'Hora Avulsa',
+      inicio:a.inicio, fim:a.fim, dataInicio:a._occ, dataFim:a._occ, recorrencia:'', cor:'#4a6fa5'}));
   } catch(e) { console.error('Agenda de pacientes no Mapa:', e); return []; }
 }
 
