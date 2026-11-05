@@ -1305,7 +1305,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
         <div class="sec-header"><span class="sec-title">Repasses a Parceiros</span><button class="btn btn-secondary" onclick="repExportar()">↓ CSV</button></div>
         <div class="card" style="margin-bottom:1rem">
           <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end">
-            <div style="flex:2;min-width:190px"><label class="form-label">Profissional parceiro</label><select class="form-select" id="rep-f-prof" onchange="repRender()"></select></div>
+            <div style="flex:2;min-width:190px"><label class="form-label">Profissional</label><select class="form-select" id="rep-f-prof" onchange="repRender()"></select></div>
             <div style="flex:1;min-width:135px"><label class="form-label">De</label><input class="form-input" type="date" id="rep-f-ini" onchange="repRender()"></div>
             <div style="flex:1;min-width:135px"><label class="form-label">Até</label><input class="form-input" type="date" id="rep-f-fim" onchange="repRender()"></div>
             <div style="flex:1.4;min-width:190px"><label class="form-label">Considerar</label><select class="form-select" id="rep-f-st" onchange="repRender()"><option value="r">Somente atendimentos realizados</option><option value="rc">Realizados + confirmados (previsão)</option></select></div>
@@ -1812,7 +1812,6 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
       <div class="form-group"><label class="form-label">Cidade / UF</label><input class="form-input" id="prof-cidade" placeholder="São Paulo / SP"></div>
     </div>
     <div style="font-size:.78rem;font-weight:600;color:var(--text-light);margin:.75rem 0 .5rem;text-transform:uppercase;letter-spacing:.05em">Contrato</div>
-    <div class="form-group"><label class="form-label">Categoria</label><select class="form-select" id="prof-categoria"><option value="">Padrão (sem repasse)</option><option value="PARCEIRO">PARCEIRO</option></select><div class="est-sub">Só profissionais PARCEIRO entram no controle de repasses (menu Repasses a Parceiros).</div></div>
     <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="prof-vinculo" onchange="updateVinculoAuto()"><option value="Hora Avulsa">Áthos Singular</option><option>Pacote de Horas</option><option>Turno Fixo</option></select></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="prof-status"><option>Ativo</option><option>Inativo</option></select></div>
@@ -2699,7 +2698,6 @@ function renderProfissionais(profs, filtro='todos') {
       ${horasBar}
       <div class="prof-tags">
         ${vinculoTag}
-        ${repEhParceiro(p)?'<span class="vinculo-tag" style="background:#ede9fe;color:#5b21b6">Parceiro</span>':''}
         ${p.abordagem?`<span class="tag">${p.abordagem}</span>`:''}
         ${p.publicoAlvo?`<span class="tag">${p.publicoAlvo}</span>`:''}
         ${(vencido||vencendo)?`<button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="event.stopPropagation();abrirRenovar('${p.id}')">Renovar</button>`:''}
@@ -2853,7 +2851,7 @@ const PROF_CAMPOS_LABEL = {
   abordagem:'Abordagem', publicoAlvo:'Público-alvo', valorSessao:'Valor de sessão',
   nascimento:'Data de nascimento', telefone:'Telefone', email:'E-mail',
   rua:'Rua/Av.', numero:'Número', complemento:'Complemento', bairro:'Bairro', cidade:'Cidade/UF', cep:'CEP',
-  categoria:'Categoria', vinculo:'Vínculo', status:'Status', vinculoFormal:'Vínculo formal',
+  vinculo:'Vínculo', status:'Status', vinculoFormal:'Vínculo formal',
   contratoInicio:'Contrato início', contratoFim:'Contrato fim', obs:'Observações',
   vencLocacao:'Vencimento da locação'
 };
@@ -2886,7 +2884,6 @@ async function salvarProfissional() {
     bairro: document.getElementById('prof-bairro').value,
     cidade: document.getElementById('prof-cidade').value,
     cep: document.getElementById('prof-cep').value,
-    categoria: document.getElementById('prof-categoria')?.value || '',
     vinculo, status: document.getElementById('prof-status').value,
     vinculoFormal: document.getElementById('prof-vinculo-formal').value,
     contratoInicio: document.getElementById('prof-contrato-inicio').value,
@@ -3069,7 +3066,6 @@ function editarProfissional(id) {
   document.getElementById('prof-bairro').value = p.bairro||'';
   document.getElementById('prof-cidade').value = p.cidade||'';
   document.getElementById('prof-cep').value = p.cep||'';
-  if(document.getElementById('prof-categoria')) document.getElementById('prof-categoria').value = p.categoria||'';
   document.getElementById('prof-vinculo').value = p.vinculo||'Hora Avulsa';
   document.getElementById('prof-status').value = p.status||'Ativo';
   document.getElementById('prof-vinculo-formal').value = p.vinculoFormal||'Sem vínculo';
@@ -4558,7 +4554,7 @@ async function exportarBackupExcel() {
     const profs = profSnap.docs.map(d => {
       const p = d.data();
       return { ID: d.id, Nome: p.nome||'', 'Registro Profissional': p.registro||'',
-        Especialidade: p.especialidade||'', Categoria: p.categoria||'', 'Vínculo': p.vinculo||'', Telefone: p.telefone||'',
+        Especialidade: p.especialidade||'', 'Vínculo': p.vinculo||'', Telefone: p.telefone||'',
         Email: p.email||'', 'Data Nascimento': p.dataNascimento||'', 'Contrato Início': p.contratoInicio||'',
         'Contrato Fim': p.contratoFim||'', Status: p.status||'', 'Observações': p.obs||'' };
     });
@@ -6377,7 +6373,6 @@ function openModal(id) {
       // Só reseta se for novo cadastro (editarProfissional seta o id antes de openModal)
       document.getElementById('prof-modal-title').textContent='Novo Profissional';
       document.getElementById('prof-vinculo-formal').value='Sem vínculo';
-      if(document.getElementById('prof-categoria')) document.getElementById('prof-categoria').value='';
     }
   }
   if(id==='nova-anotacao'){
@@ -11284,8 +11279,9 @@ async function agpLocsPeriodo(ini, fim) {
 // ── Repasses a Parceiros ──
 // Fonte única da verdade: os atendimentos (agendamentosPacientes). Pagamentos ficam em
 // pagamentosParceiros (um documento por pagamento, com a lista das sessões quitadas e o valor na data).
-let _repProfs = [], _repAgs = [], _repPags = [], _repLista = [], _repDesm = new Set(), _repPagErro = false, _repTmp = null;
-function repEhParceiro(p) { return String(p?.categoria || '').trim().toUpperCase() === 'PARCEIRO'; }
+let _repPacs = new Map(), _repAgs = [], _repPags = [], _repLista = [], _repDesm = new Set(), _repPagErro = false, _repTmp = null;
+// Regra: o atendimento gera repasse quando o paciente do agendamento tem modalidade Parceria (o mesmo profissional pode atender Particular e Parceria)
+function repEhParceria(a) { return String(_repPacs.get(a.pacienteId)?.modalidade || '').trim().toLowerCase() === 'parceria'; }
 function repMes(delta, silencioso) {
   const h = new Date(); h.setDate(1); h.setMonth(h.getMonth() + delta);
   document.getElementById('rep-f-ini').value = toDateStrLocal(new Date(h.getFullYear(), h.getMonth(), 1));
@@ -11295,32 +11291,32 @@ function repMes(delta, silencioso) {
 async function loadRepasses() {
   if(!_pv('rep-f-ini')) repMes(0, true);
   try {
-    const [pr, ag] = await Promise.all([db.collection('profissionais').get(), db.collection('agendamentosPacientes').get()]);
-    _repProfs = pr.docs.map(d => ({id:d.id, ...d.data()}));
+    const [pc, ag] = await Promise.all([db.collection('pacientes').get(), db.collection('agendamentosPacientes').get()]);
+    _repPacs = new Map(pc.docs.map(d => [d.id, d.data()]));
     _repAgs = ag.docs.map(d => ({id:d.id, ...d.data()}));
-  } catch(e) { console.error(e); document.getElementById('rep-body').innerHTML = '<div style="color:var(--danger);padding:1rem;font-size:.83rem">Erro ao carregar profissionais e atendimentos.</div>'; return; }
+  } catch(e) { console.error(e); document.getElementById('rep-body').innerHTML = '<div style="color:var(--danger);padding:1rem;font-size:.83rem">Erro ao carregar pacientes e atendimentos.</div>'; return; }
   try { _repPags = (await db.collection('pagamentosParceiros').get()).docs.map(d => ({id:d.id, ...d.data()})); _repPagErro = false; }
   catch(e) { console.error(e); _repPags = []; _repPagErro = true; }
   const sel = document.getElementById('rep-f-prof'), atual = sel.value;
-  const parc = _repProfs.filter(repEhParceiro).sort((a,b) => (a.nome||'').localeCompare(b.nome||'','pt'));
-  sel.innerHTML = '<option value="">Todos os parceiros</option>' + parc.map(p => `<option value="${p.id}">${escH(p.nome)}${p.status==='Inativo'?' (inativo)':''}</option>`).join('');
-  if(parc.some(p => p.id === atual)) sel.value = atual;
+  const parc = new Map(); _repAgs.filter(repEhParceria).forEach(a => parc.set(agpProfKey(a), a.profNome || '—'));
+  const ordem = [...parc].sort((a,b) => a[1].localeCompare(b[1],'pt'));
+  sel.innerHTML = '<option value="">Todos os profissionais</option>' + ordem.map(([k,n]) => `<option value="${escH(k)}">${escH(n)}</option>`).join('');
+  if(parc.has(atual)) sel.value = atual;
   repRender();
 }
 function repCalcular() {
   const ini = _pv('rep-f-ini'), fim = _pv('rep-f-fim'), fp = _pv('rep-f-prof');
   const ok = _pv('rep-f-st') === 'rc' ? ['Realizado','Confirmado'] : ['Realizado'];
-  const parc = new Map(_repProfs.filter(repEhParceiro).map(p => [p.id, p]));
   const pagas = new Map();
   _repPags.forEach(g => (g.itens || []).forEach(i => pagas.set(i.k, {data:g.dataPagamento, valor:Number(i.valor)||0})));
   const out = [];
   if(!ini || !fim) return out;
   _repAgs.forEach(a => {
-    if(!a.profId || !parc.has(a.profId) || (fp && a.profId !== fp)) return;
+    if(!repEhParceria(a) || (fp && agpProfKey(a) !== fp)) return;
     agpExpandir(a, ini, fim).forEach(o => {
       const pg = pagas.get(o.id + '|' + o._occ);
       if(!pg && !ok.includes(o.status)) return;
-      out.push({k:o.id+'|'+o._occ, profId:a.profId, profNome:parc.get(a.profId).nome||'—', paciente:o.pacienteNome||'—', data:o._occ, inicio:o.inicio||'', fim:o.fim||'', valor:Number(o.valorInformado)||0, status:o.status, pago:pg||null});
+      out.push({k:o.id+'|'+o._occ, profKey:agpProfKey(a), profId:a.profId||'', profNome:a.profNome||'—', paciente:o.pacienteNome||'—', data:o._occ, inicio:o.inicio||'', fim:o.fim||'', valor:Number(o.valorInformado)||0, status:o.status, pago:pg||null});
     });
   });
   return out.sort((x,y) => x.profNome.localeCompare(y.profNome,'pt') || x.data.localeCompare(y.data) || x.inicio.localeCompare(y.inicio));
@@ -11331,16 +11327,16 @@ function repRender() {
   _repLista = repCalcular();
   const soma = arr => arr.reduce((t,x) => t + (x.pago ? x.pago.valor : x.valor), 0);
   const total = soma(_repLista), pago = soma(_repLista.filter(x => x.pago)), aPagar = soma(_repLista.filter(repPagavel)), previsto = soma(_repLista.filter(x => !x.pago && x.status !== 'Realizado'));
-  const semParceiro = !_repProfs.some(repEhParceiro);
+  const semParceiro = ![..._repPacs.values()].some(p => String(p.modalidade||'').trim().toLowerCase() === 'parceria');
   document.getElementById('rep-aviso').innerHTML =
-    (semParceiro ? '<div class="vinculo-alert" style="margin-bottom:1rem">Nenhum profissional está na categoria PARCEIRO ainda. Abra o cadastro do profissional, escolha Categoria = PARCEIRO e salve.</div>' : '')
+    (semParceiro ? '<div class="vinculo-alert" style="margin-bottom:1rem">Nenhum paciente está com modalidade Parceria ainda. Abra o cadastro do paciente, escolha Modalidade = Parceria e salve.</div>' : '')
     + (_repPagErro ? '<div class="vinculo-alert" style="margin-bottom:1rem;background:#fef2f2;border-color:#fecaca;color:#b91c1c">Não foi possível ler os pagamentos registrados. Verifique as regras do Firestore para a coleção pagamentosParceiros; enquanto isso o relatório pode mostrar como pendente o que já foi pago.</div>' : '');
   const card = (t, v, c) => `<div class="card" style="flex:1;min-width:140px;padding:.8rem 1rem"><div style="font-size:.7rem;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em">${t}</div><div style="font-size:1.15rem;font-weight:700;color:${c}">${_brMoeda(v)}</div></div>`;
   document.getElementById('rep-resumo').innerHTML = card('Total no período', total, 'inherit') + card('Já pago', pago, '#16a34a') + card('Pendente a pagar', aPagar, aPagar > 0 ? '#d97706' : 'inherit') + (previsto > 0 ? card('Previsto (não realizado)', previsto, '#6b7280') : '');
   const body = document.getElementById('rep-body');
   if(!_repLista.length) body.innerHTML = '<div class="card" style="text-align:center;font-size:.84rem;color:var(--text-lighter)">Nenhum atendimento de parceiro neste período.</div>';
   else {
-    const grupos = new Map(); _repLista.forEach(x => { if(!grupos.has(x.profId)) grupos.set(x.profId, []); grupos.get(x.profId).push(x); });
+    const grupos = new Map(); _repLista.forEach(x => { if(!grupos.has(x.profKey)) grupos.set(x.profKey, []); grupos.get(x.profKey).push(x); });
     body.innerHTML = [...grupos].map(([pid, it]) => {
       const nome = it[0].profNome, pg = it.filter(repPagavel), selec = pg.filter(x => !_repDesm.has(x.k));
       const totP = soma(it), pagoP = soma(it.filter(x => x.pago)), pendP = soma(pg), selV = soma(selec);
@@ -11349,21 +11345,21 @@ function repRender() {
         const cb = repPagavel(x) ? `<input type="checkbox" ${_repDesm.has(x.k)?'':'checked'} data-k="${escH(x.k)}" onchange="repTog(this.dataset.k)">` : '';
         return `<div style="display:grid;grid-template-columns:26px 88px 1fr 90px 150px;gap:.4rem;align-items:center;padding:.45rem .25rem;border-top:1px solid var(--border);font-size:.82rem"><span>${cb}</span><span>${_brD(x.data)}<br><span class="est-sub">${escH(x.inicio)}</span></span><span>${escH(x.paciente)}</span><span style="text-align:right;font-weight:600">${x.valor > 0 || x.pago ? _brMoeda(x.pago ? x.pago.valor : x.valor) : '<span style="color:#dc2626" title="Atendimento sem valor informado">R$ 0,00 ⚠</span>'}</span><span>${sit}</span></div>`;
       }).join('');
-      return `<div class="card" style="margin-bottom:1rem;overflow-x:auto"><div style="min-width:560px"><div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem"><div><div style="font-weight:700;font-size:.95rem">${escH(nome)}</div><div class="est-sub">${it.length} atendimento(s) · total ${_brMoeda(totP)} · pago ${_brMoeda(pagoP)} · pendente <b>${_brMoeda(pendP)}</b></div></div><button class="btn btn-primary btn-sm" ${selec.length?'':'disabled'} data-p="${pid}" onclick="repAbrirPag(this.dataset.p)">Registrar pagamento (${selec.length} · ${_brMoeda(selV)})</button></div>${linhas}<div style="display:flex;justify-content:flex-end;gap:1rem;border-top:2px solid var(--border);padding-top:.5rem;margin-top:.25rem;font-size:.84rem"><span>Total acumulado: <b>${_brMoeda(totP)}</b></span><span>A pagar: <b style="color:#d97706">${_brMoeda(pendP)}</b></span></div></div></div>`;
+      return `<div class="card" style="margin-bottom:1rem;overflow-x:auto"><div style="min-width:560px"><div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem"><div><div style="font-weight:700;font-size:.95rem">${escH(nome)}</div><div class="est-sub">${it.length} atendimento(s) · total ${_brMoeda(totP)} · pago ${_brMoeda(pagoP)} · pendente <b>${_brMoeda(pendP)}</b></div></div><button class="btn btn-primary btn-sm" ${selec.length?'':'disabled'} data-p="${escH(pid)}" onclick="repAbrirPag(this.dataset.p)">Registrar pagamento (${selec.length} · ${_brMoeda(selV)})</button></div>${linhas}<div style="display:flex;justify-content:flex-end;gap:1rem;border-top:2px solid var(--border);padding-top:.5rem;margin-top:.25rem;font-size:.84rem"><span>Total acumulado: <b>${_brMoeda(totP)}</b></span><span>A pagar: <b style="color:#d97706">${_brMoeda(pendP)}</b></span></div></div></div>`;
     }).join('');
   }
   repHistRender();
 }
 function repHistRender() {
   const ini = _pv('rep-f-ini'), fim = _pv('rep-f-fim'), fp = _pv('rep-f-prof');
-  const lista = _repPags.filter(g => (!fp || g.profId === fp) && ((g.dataPagamento >= ini && g.dataPagamento <= fim) || (g.itens || []).some(i => i.data >= ini && i.data <= fim))).sort((a,b) => (b.dataPagamento||'').localeCompare(a.dataPagamento||''));
+  const lista = _repPags.filter(g => (!fp || (g.profKey || g.profId || ('n:' + (g.profNome||''))) === fp) && ((g.dataPagamento >= ini && g.dataPagamento <= fim) || (g.itens || []).some(i => i.data >= ini && i.data <= fim))).sort((a,b) => (b.dataPagamento||'').localeCompare(a.dataPagamento||''));
   document.getElementById('rep-hist').innerHTML = lista.length ? lista.map(g => `<details class="card" style="margin-bottom:.5rem;padding:.7rem 1rem"><summary style="cursor:pointer;font-size:.84rem"><b>${_brD(g.dataPagamento)}</b> · ${escH(g.profNome||'—')} · ${(g.itens||[]).length} sessão(ões) · <b>${_brMoeda(g.total)}</b>${g.obs?' · <span class="est-sub">'+escH(g.obs)+'</span>':''}</summary><div style="margin-top:.5rem;font-size:.8rem">${(g.itens||[]).map(i => `<div style="display:flex;justify-content:space-between;padding:2px 0;border-top:1px solid var(--border)"><span>${_brD(i.data)} · ${escH(i.pacienteNome||'—')}</span><span>${_brMoeda(i.valor)}</span></div>`).join('')}<div class="est-sub" style="margin-top:.4rem">Registrado por ${escH(g.criadoPor||'—')}</div><button class="btn btn-secondary btn-sm" style="margin-top:.5rem;color:#b91c1c" data-g="${g.id}" onclick="repEstornar(this.dataset.g)">Estornar pagamento</button></div></details>`).join('') : '<div style="font-size:.82rem;color:var(--text-lighter)">Nenhum pagamento registrado neste período.</div>';
 }
-function repAbrirPag(profId) {
-  const itens = _repLista.filter(x => x.profId === profId && repPagavel(x) && !_repDesm.has(x.k));
+function repAbrirPag(profKey) {
+  const itens = _repLista.filter(x => x.profKey === profKey && repPagavel(x) && !_repDesm.has(x.k));
   if(!itens.length) { showToast('Nenhuma sessão pendente selecionada.','error'); return; }
   const total = itens.reduce((t,x) => t + x.valor, 0);
-  _repTmp = {profId, profNome:itens[0].profNome, itens, total};
+  _repTmp = {profKey, profId:itens[0].profId, profNome:itens[0].profNome, itens, total};
   document.getElementById('rep-pag-resumo').innerHTML = `<b>${escH(itens[0].profNome)}</b><br>${itens.length} sessão(ões) · de ${_brD(itens[0].data)} a ${_brD(itens[itens.length-1].data)}<br>Total a pagar: <b style="font-size:1rem">${_brMoeda(total)}</b>${itens.some(x => !x.valor) ? '<br><span style="color:#dc2626">⚠ Há sessão(ões) sem valor informado.</span>' : ''}`;
   document.getElementById('rep-pag-data').value = toDateStrLocal(new Date());
   document.getElementById('rep-pag-obs').value = '';
@@ -11376,10 +11372,10 @@ async function repConfirmarPag() {
   const btn = document.getElementById('rep-pag-btn'); btn.disabled = true;
   try {
     // Reconfere no banco para não pagar duas vezes a mesma sessão (outro aparelho/aba)
-    const fresh = (await db.collection('pagamentosParceiros').where('profId','==',_repTmp.profId).get()).docs.flatMap(d => (d.data().itens || []).map(i => i.k));
+    const fresh = (await db.collection('pagamentosParceiros').get()).docs.flatMap(d => (d.data().itens || []).map(i => i.k));
     if(_repTmp.itens.some(x => fresh.includes(x.k))) { showToast('Alguma sessão já foi paga. Atualizando...','error'); closeModal('rep-pag'); await loadRepasses(); return; }
     const itens = _repTmp.itens.map(x => ({k:x.k, pacienteNome:x.paciente, data:x.data, inicio:x.inicio, valor:x.valor}));
-    await db.collection('pagamentosParceiros').add({profId:_repTmp.profId, profNome:_repTmp.profNome, dataPagamento:data, total:_repTmp.total, qtd:itens.length, periodoIni:_pv('rep-f-ini'), periodoFim:_pv('rep-f-fim'), itens, obs:_pv('rep-pag-obs'), criadoPor:_quem(), createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    await db.collection('pagamentosParceiros').add({profKey:_repTmp.profKey, profId:_repTmp.profId, profNome:_repTmp.profNome, dataPagamento:data, total:_repTmp.total, qtd:itens.length, periodoIni:_pv('rep-f-ini'), periodoFim:_pv('rep-f-fim'), itens, obs:_pv('rep-pag-obs'), criadoPor:_quem(), createdAt:firebase.firestore.FieldValue.serverTimestamp()});
     showToast('Pagamento registrado!','success'); closeModal('rep-pag'); _repTmp = null; await loadRepasses();
   } catch(e) { console.error(e); btn.disabled = false; showToast('Erro ao registrar o pagamento. Verifique as regras do Firestore (pagamentosParceiros).','error'); }
 }
