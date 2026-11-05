@@ -1967,7 +1967,13 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
       <div class="form-group"><label class="form-label">UF</label><input class="form-input" id="pac-uf" maxlength="2"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Modalidade de atendimento</label><select class="form-select" id="pac-mod"><option>Particular</option><option>Parceria</option></select></div>
+      <div class="form-group"><label class="form-label">Modalidade de atendimento</label><select class="form-select" id="pac-mod" onchange="pacRepChange()"><option>Particular</option><option>Parceria</option></select></div>
+      <div id="pac-rep-box" style="display:none">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Repasse ao profissional</label><select class="form-select" id="pac-rep-tipo" onchange="pacRepChange()"><option value="integral">Valor integral da sessão</option><option value="percentual">Percentual da sessão</option></select></div>
+          <div class="form-group" id="pac-rep-pct-g" style="display:none"><label class="form-label">Percentual (%)</label><input class="form-input" type="number" min="0" max="100" step="0.01" id="pac-rep-pct" placeholder="Ex: 70"></div>
+        </div>
+      </div>
       <div class="form-group"><label class="form-label">Valor informado ao paciente (R$)</label><input class="form-input" type="number" min="0" step="0.01" id="pac-valor"></div>
     </div>
     <div class="est-sub" style="margin:-.25rem 0 .75rem">Valor de consulta e referência. Não entra no financeiro da clínica.</div>
@@ -1999,15 +2005,19 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
     <div class="form-group"><label class="form-label">Profissional responsável</label><select class="form-select" id="agp-prof" onchange="document.getElementById('agp-prof-outro').style.display=this.value==='__outro'?'':'none'"></select>
       <input class="form-input" id="agp-prof-outro" placeholder="Nome do profissional" style="display:none;margin-top:.4rem"></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Data</label><input class="form-input" type="date" id="agp-data" onchange="agpQtdParaData()"></div>
+      <div class="form-group"><label class="form-label">Data</label><input class="form-input" type="date" id="agp-data" onchange="agpDataChange()"></div>
       <div class="form-group"><label class="form-label">Consultório</label><select class="form-select" id="agp-cons"></select></div>
     </div>
     <div class="form-group"><label class="form-label">Repetição</label><select class="form-select" id="agp-rec" onchange="agpRecChange()"><option value="">Não repete</option><option value="semanal">Toda semana (mesmo dia e horário)</option></select></div>
-    <div class="form-row" id="agp-rec-row" style="display:none">
-      <div class="form-group"><label class="form-label">Quantidade de sessões</label><input class="form-input" type="number" min="1" max="156" step="1" id="agp-rec-qtd" placeholder="Ex: 12" oninput="agpQtdParaData()"></div>
-      <div class="form-group"><label class="form-label">Repetir até (opcional)</label><input class="form-input" type="date" id="agp-rec-ate" onchange="agpDataParaQtd()"></div>
+    <div id="agp-rec-row" style="display:none">
+      <div class="form-group"><label class="form-label">Dias da semana</label>
+        <div id="agp-dias" style="display:flex;gap:.7rem;flex-wrap:wrap;font-size:.82rem"><label style="display:flex;align-items:center;gap:3px"><input type="checkbox" class="agp-dia" value="1" onchange="agpDiasChange()">Seg</label><label style="display:flex;align-items:center;gap:3px"><input type="checkbox" class="agp-dia" value="2" onchange="agpDiasChange()">Ter</label><label style="display:flex;align-items:center;gap:3px"><input type="checkbox" class="agp-dia" value="3" onchange="agpDiasChange()">Qua</label><label style="display:flex;align-items:center;gap:3px"><input type="checkbox" class="agp-dia" value="4" onchange="agpDiasChange()">Qui</label><label style="display:flex;align-items:center;gap:3px"><input type="checkbox" class="agp-dia" value="5" onchange="agpDiasChange()">Sex</label><label style="display:flex;align-items:center;gap:3px"><input type="checkbox" class="agp-dia" value="6" onchange="agpDiasChange()">Sáb</label><label style="display:flex;align-items:center;gap:3px"><input type="checkbox" class="agp-dia" value="0" onchange="agpDiasChange()">Dom</label></div></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Quantidade de sessões</label><input class="form-input" type="number" min="1" max="156" step="1" id="agp-rec-qtd" placeholder="Ex: 12" oninput="agpQtdParaData()"></div>
+        <div class="form-group"><label class="form-label">Repetir até (opcional)</label><input class="form-input" type="date" id="agp-rec-ate" onchange="agpDataParaQtd()"></div>
+      </div>
     </div>
-    <div class="est-sub" id="agp-rec-hint" style="display:none;margin:-.25rem 0 .75rem">Informe a quantidade de sessões e a data final é calculada sozinha (1 por semana, contando a primeira). Deixe os dois em branco para repetir sem data final.</div>
+    <div class="est-sub" id="agp-rec-hint" style="display:none;margin:-.25rem 0 .75rem">Marque os dias da semana (um ou mais) e informe a quantidade total de sessões: a data final é calculada sozinha, contando a primeira. Horário e profissional valem para todos os dias marcados. Deixe quantidade e data em branco para repetir sem data final.</div>
     <div class="est-sub" id="agp-rec-note" style="display:none;margin:-.25rem 0 .75rem">Atendimento semanal: dia, horário, profissional e consultório valem para toda a série. O status vale só para a data aberta. Para cancelar apenas esta data, marque Cancelado.</div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Início</label><input class="form-input" type="time" id="agp-ini"></div>
@@ -4562,7 +4572,7 @@ async function exportarBackupExcel() {
 
     const hoje = new Date();
     const dataStr = `${hoje.getFullYear()}${String(hoje.getMonth()+1).padStart(2,'0')}${String(hoje.getDate()).padStart(2,'0')}`;
-    const pacientesX = pacSnap.docs.map(d => { const p = d.data(); return {Nome:p.nome||'', CPF:p.cpf||'', Nascimento:p.nascimento||'', Telefone:p.telefone||'', 'Telefone emergência':p.telefoneEmergencia||'', Email:p.email||'', CEP:p.cep||'', Endereço:p.endereco||'', Número:p.numero||'', Complemento:p.complemento||'', Bairro:p.bairro||'', Cidade:p.cidade||'', UF:p.uf||'', Modalidade:p.modalidade||'', 'Valor informado':p.valorInformado||0, Situação:p.ativo===false?'Inativo':'Ativo', Observações:p.obs||''}; });
+    const pacientesX = pacSnap.docs.map(d => { const p = d.data(); return {Nome:p.nome||'', CPF:p.cpf||'', Nascimento:p.nascimento||'', Telefone:p.telefone||'', 'Telefone emergência':p.telefoneEmergencia||'', Email:p.email||'', CEP:p.cep||'', Endereço:p.endereco||'', Número:p.numero||'', Complemento:p.complemento||'', Bairro:p.bairro||'', Cidade:p.cidade||'', UF:p.uf||'', Modalidade:p.modalidade||'', 'Repasse':p.repasseTipo||'', 'Repasse %':p.repassePct||'', 'Valor informado':p.valorInformado||0, Situação:p.ativo===false?'Inativo':'Ativo', Observações:p.obs||''}; });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pacientesX.length ? pacientesX : [{}]), 'Pacientes');
     const agendaX = agSnap.docs.map(d => { const a = d.data(); return {Paciente:a.pacienteNome||'', Data:a.data||'', Início:a.inicio||'', Término:a.fim||'', Profissional:a.profNome||'', Consultório:a.consultorio||'', Status:a.status||'', 'Valor informado':a.valorInformado||0, Repetição:a.recorrencia==='semanal'?'Semanal':'', 'Repetir até':a.recorrenteAte||'', Observações:a.obs||''}; });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(agendaX.length ? agendaX : [{}]), 'Agenda de Pacientes');
@@ -10968,9 +10978,15 @@ function pacRender() {
     </div>`;
   }).join('');
 }
+function pacRepChange() {
+  const par = _pv('pac-mod') === 'Parceria';
+  document.getElementById('pac-rep-box').style.display = par ? '' : 'none';
+  document.getElementById('pac-rep-pct-g').style.display = par && _pv('pac-rep-tipo') === 'percentual' ? '' : 'none';
+}
 function pacNovo() {
   ['pac-id','pac-nome','pac-cpf','pac-nasc','pac-tel','pac-tel2','pac-email','pac-cep','pac-num','pac-end','pac-comp','pac-bairro','pac-cidade','pac-uf','pac-valor','pac-obs'].forEach(i => document.getElementById(i).value = '');
   document.getElementById('pac-mod').value = 'Particular'; document.getElementById('pac-ativo').value = '1';
+  document.getElementById('pac-rep-tipo').value = 'integral'; document.getElementById('pac-rep-pct').value = ''; pacRepChange();
   document.getElementById('pac-title').textContent = 'Novo paciente'; document.getElementById('pac-hist-btn').style.display = 'none';
   document.getElementById('pac-cep-msg').textContent = '';
   openModal('paciente');
@@ -10982,7 +10998,7 @@ function pacEditar(id) {
   const set = (i,v) => document.getElementById(i).value = v == null ? '' : v;
   set('pac-id',p.id); set('pac-nome',p.nome); set('pac-cpf',pacCpfFmt(p.cpf)); set('pac-nasc',p.nascimento); set('pac-tel',p.telefone); set('pac-tel2',p.telefoneEmergencia);
   set('pac-email',p.email); set('pac-cep',p.cep); set('pac-num',p.numero); set('pac-end',p.endereco); set('pac-comp',p.complemento); set('pac-bairro',p.bairro);
-  set('pac-cidade',p.cidade); set('pac-uf',p.uf); set('pac-mod',p.modalidade||'Particular'); set('pac-valor',p.valorInformado); set('pac-obs',p.obs);
+  set('pac-cidade',p.cidade); set('pac-uf',p.uf); set('pac-mod',p.modalidade||'Particular'); set('pac-rep-tipo',p.repasseTipo||'integral'); set('pac-rep-pct',p.repassePct); pacRepChange(); set('pac-valor',p.valorInformado); set('pac-obs',p.obs);
   set('pac-ativo', p.ativo === false ? '0' : '1');
   openModal('paciente');
 }
@@ -11000,6 +11016,7 @@ async function pacCep() {
   } catch(e) { msg.textContent = 'Não foi possível consultar o CEP agora.'; msg.style.color = 'var(--danger)'; }
 }
 async function pacSalvar() {
+  if(_pv('pac-mod') === 'Parceria' && _pv('pac-rep-tipo') === 'percentual') { const x = parseFloat(_pv('pac-rep-pct')); if(!(x > 0 && x <= 100)) { showToast('Informe o percentual do repasse (maior que 0 e até 100).','error'); return; } }
   const id = _pv('pac-id'), nome = _pv('pac-nome'), cpf = _pv('pac-cpf').replace(/\D/g,''), tel = _pv('pac-tel');
   if(!nome) { showToast('Informe o nome completo.','error'); return; }
   if(cpf && !pacCpfValido(cpf) && !confirm('O CPF informado parece inválido. Salvar mesmo assim?')) return;
@@ -11009,7 +11026,14 @@ async function pacSalvar() {
   const FV = firebase.firestore.FieldValue;
   const data = {nome, cpf, nascimento:_pv('pac-nasc'), telefone:tel, telefoneEmergencia:_pv('pac-tel2'), email:_pv('pac-email'),
     cep:_pv('pac-cep'), endereco:_pv('pac-end'), numero:_pv('pac-num'), complemento:_pv('pac-comp'), bairro:_pv('pac-bairro'), cidade:_pv('pac-cidade'), uf:_pv('pac-uf').toUpperCase(),
-    modalidade:_pv('pac-mod'), valorInformado: parseFloat(_pv('pac-valor')) || 0, obs:_pv('pac-obs'), ativo:_pv('pac-ativo') !== '0', updatedAt:FV.serverTimestamp()};
+    modalidade:_pv('pac-mod'), repasseTipo: _pv('pac-mod') === 'Parceria' ? _pv('pac-rep-tipo') : '', repassePct: _pv('pac-mod') === 'Parceria' && _pv('pac-rep-tipo') === 'percentual' ? (parseFloat(_pv('pac-rep-pct')) || 0) : 0, valorInformado: parseFloat(_pv('pac-valor')) || 0, obs:_pv('pac-obs'), ativo:_pv('pac-ativo') !== '0', updatedAt:FV.serverTimestamp()};
+  // Histórico de Parceria: trocar para Particular fecha o período e mantém os atendimentos antigos nos repasses
+  { const ant = id ? _pacs.find(x => x.id === id) : null, hoje = toDateStrLocal(new Date());
+    const per = Array.isArray(ant?.parceriaPeriodos) ? ant.parceriaPeriodos.map(x => ({...x})) : (ant && ant.modalidade === 'Parceria' ? [{de:'', ate:'', repasseTipo:ant.repasseTipo||'integral', repassePct:ant.repassePct||0}] : []);
+    const aberto = per.find(x => !x.ate);
+    if(data.modalidade === 'Parceria') { if(aberto) { aberto.repasseTipo = data.repasseTipo; aberto.repassePct = data.repassePct; } else per.push({de: ant ? hoje : '', ate:'', repasseTipo:data.repasseTipo, repassePct:data.repassePct}); }
+    else if(aberto) aberto.ate = hoje;
+    data.parceriaPeriodos = per; }
   try {
     if(id) await db.collection('pacientes').doc(id).update(data);
     else { data.createdAt = FV.serverTimestamp(); await db.collection('pacientes').add(data); }
@@ -11051,10 +11075,11 @@ function agpCorProf(k) { const i = agpTodasProfs().findIndex(x => x.key === k); 
 function agpExpandir(a, ini, fim) {
   if(a.recorrencia !== 'semanal') return (a.data >= ini && a.data <= fim) ? [{...a, _occ:a.data}] : [];
   const out = [], base = new Date(a.data+'T12:00:00'), lim = a.recorrenteAte || '9999-12-31';
+  const dias = (a.diasSemana && a.diasSemana.length) ? a.diasSemana : [base.getDay()];
   const d = new Date(Math.max(base, new Date(ini+'T12:00:00')));
-  const resto = (((Math.round((d-base)/864e5)) % 7) + 7) % 7; if(resto) d.setDate(d.getDate() + 7 - resto);
-  for(; ; d.setDate(d.getDate()+7)) {
+  for(; ; d.setDate(d.getDate()+1)) {
     const ds = toDateStrLocal(d); if(ds > fim || ds > lim) break;
+    if(!dias.includes(d.getDay())) continue;
     const o = a.ocorrencias && a.ocorrencias[agpKey(ds)];
     out.push({...a, data:ds, _occ:ds, status:(o && o.status) || (ds === a.data ? a.status : 'Aguardando confirmação')});
   }
@@ -11171,6 +11196,7 @@ function agpAbrir(idOcc) {
     document.getElementById('agp-data').disabled = serie;
     set('agp-pac', a?.pacienteId); set('agp-cons', a?.consultorio); set('agp-st', ef?.status || 'Aguardando confirmação');
     set('agp-rec', a?.recorrencia || ''); set('agp-rec-ate', a?.recorrenteAte); set('agp-rec-qtd', '');
+    { const dB = a ? a.data : _pv('agp-data'); agpSetDias(a?.diasSemana?.length ? a.diasSemana : (dB ? [new Date(dB + 'T12:00:00').getDay()] : [])); }
     agpDataParaQtd();
     document.getElementById('agp-rec-row').style.display = serie ? '' : 'none';
     document.getElementById('agp-rec-hint').style.display = serie ? '' : 'none';
@@ -11191,23 +11217,41 @@ function agpBase() {
   const id = _pv('agp-edit-id'), a = id ? _agps.find(x => x.id === id) : null;
   return (a && a.recorrencia === 'semanal') ? a.data : _pv('agp-data');
 }
+function agpDias() { return [...document.querySelectorAll('.agp-dia:checked')].map(x => +x.value); }
+function agpSetDias(arr) { document.querySelectorAll('.agp-dia').forEach(x => x.checked = arr.includes(+x.value)); }
+function agpDiasEfetivos() {
+  const b = agpBase(), dias = agpDias();
+  if(b) { const wd = new Date(b + 'T12:00:00').getDay(); if(!dias.includes(wd)) dias.push(wd); }
+  return dias.sort();
+}
 function agpRecChange() {
   const on = _pv('agp-rec') === 'semanal';
   document.getElementById('agp-rec-row').style.display = on ? '' : 'none';
   document.getElementById('agp-rec-hint').style.display = on ? '' : 'none';
   if(!on) { document.getElementById('agp-rec-qtd').value = ''; document.getElementById('agp-rec-ate').value = ''; }
-  else agpQtdParaData();
+  else agpDataChange();
 }
+function agpDataChange() {
+  const id = _pv('agp-edit-id'), a = id ? _agps.find(x => x.id === id) : null;
+  if(!(a && a.recorrencia === 'semanal') && _pv('agp-data')) {
+    const wd = new Date(_pv('agp-data') + 'T12:00:00').getDay(), dias = agpDias();
+    if(dias.length <= 1) agpSetDias([wd]); else if(!dias.includes(wd)) agpSetDias([...dias, wd]);
+  }
+  agpQtdParaData();
+}
+function agpDiasChange() { if(parseInt(_pv('agp-rec-qtd')) >= 1) agpQtdParaData(); else agpDataParaQtd(); }
 function agpQtdParaData() {
-  const n = parseInt(_pv('agp-rec-qtd')), d = agpBase();
-  if(!(n >= 1) || !d) return;
-  const dt = new Date(d + 'T12:00:00'); dt.setDate(dt.getDate() + 7*(n-1));
-  document.getElementById('agp-rec-ate').value = toDateStrLocal(dt);
+  const n = parseInt(_pv('agp-rec-qtd')), b = agpBase();
+  if(!(n >= 1) || !b) return;
+  const dias = agpDiasEfetivos(), d = new Date(b + 'T12:00:00');
+  for(let c = 0, i = 0; i < 4000; i++, d.setDate(d.getDate()+1)) if(dias.includes(d.getDay()) && ++c === n) { document.getElementById('agp-rec-ate').value = toDateStrLocal(d); return; }
 }
 function agpDataParaQtd() {
-  const d = agpBase(), ate = _pv('agp-rec-ate'), el = document.getElementById('agp-rec-qtd');
-  if(!d || !ate || ate < d) { el.value = ''; return; }
-  el.value = Math.floor(Math.round((new Date(ate+'T12:00:00') - new Date(d+'T12:00:00')) / 864e5) / 7) + 1;
+  const b = agpBase(), ate = _pv('agp-rec-ate'), el = document.getElementById('agp-rec-qtd');
+  if(!b || !ate || ate < b) { el.value = ''; return; }
+  const dias = agpDiasEfetivos(), d = new Date(b + 'T12:00:00'); let c = 0;
+  for(let i = 0; i < 4000 && toDateStrLocal(d) <= ate; i++, d.setDate(d.getDate()+1)) if(dias.includes(d.getDay())) c++;
+  el.value = c;
 }
 function agpPacChange() { const p = _pacs.find(x => x.id === _pv('agp-pac')); if(p && !_pv('agp-valor')) document.getElementById('agp-valor').value = p.valorInformado || ''; }
 function agpVerPac() { const id = _pv('agp-pac'); closeModal('agp'); showPage('pacientes', document.querySelector("[onclick*=\"'pacientes'\"]")); setTimeout(() => pacEditar(id), 400); }
@@ -11230,7 +11274,7 @@ async function agpSalvar() {
   if(st !== 'Cancelado') {
     const hoje = toDateStrLocal(new Date()), lim = toDateStrLocal(new Date(Date.now()+182*864e5));
     let datas = [data];
-    if(rec === 'semanal') { const i0 = data > hoje ? data : hoje; datas = agpExpandir({data, recorrencia:'semanal', recorrenteAte:ate}, i0, ate && ate < lim ? ate : lim).map(x => x.data); }
+    if(rec === 'semanal') { const i0 = data > hoje ? data : hoje; datas = agpExpandir({data, recorrencia:'semanal', recorrenteAte:ate, diasSemana:agpDiasEfetivos()}, i0, ate && ate < lim ? ate : lim).map(x => x.data); }
     const outros = _agps.filter(a => a.id !== id), av = [];
     for(const dt of datas) {
       outros.flatMap(a => agpExpandir(a, dt, dt)).filter(a => a.status !== 'Cancelado' && a.inicio < fim && a.fim > ini).forEach(a => {
@@ -11243,7 +11287,7 @@ async function agpSalvar() {
     if(av.length && !confirm('Conflito de horário:\n• ' + av.slice(0,4).join('\n• ') + '\n\nDeseja agendar mesmo assim?')) return;
   }
   const FV = firebase.firestore.FieldValue, agora = new Date().toISOString();
-  const dados = {pacienteId:pacId, pacienteNome:pac.nome, profId, profNome, data, inicio:ini, fim, consultorio:cons, valorInformado:parseFloat(_pv('agp-valor'))||0, obs:_pv('agp-obs'), recorrencia:rec, recorrenteAte:ate, qtdSessoes: rec === 'semanal' ? (parseInt(_pv('agp-rec-qtd')) || 0) : 0, updatedAt:FV.serverTimestamp()};
+  const dados = {pacienteId:pacId, pacienteNome:pac.nome, profId, profNome, data, inicio:ini, fim, consultorio:cons, valorInformado:parseFloat(_pv('agp-valor'))||0, obs:_pv('agp-obs'), recorrencia:rec, recorrenteAte:ate, qtdSessoes: rec === 'semanal' ? (parseInt(_pv('agp-rec-qtd')) || 0) : 0, diasSemana: rec === 'semanal' ? agpDiasEfetivos() : [], updatedAt:FV.serverTimestamp()};
   if(serieEd) dados.ocorrencias = {[agpKey(occ)]:{status:st}}; else dados.status = st;
   try {
     if(antigo) {
@@ -11280,8 +11324,13 @@ async function agpLocsPeriodo(ini, fim) {
 // Fonte única da verdade: os atendimentos (agendamentosPacientes). Pagamentos ficam em
 // pagamentosParceiros (um documento por pagamento, com a lista das sessões quitadas e o valor na data).
 let _repPacs = new Map(), _repAgs = [], _repPags = [], _repLista = [], _repDesm = new Set(), _repPagErro = false, _repTmp = null;
-// Regra: o atendimento gera repasse quando o paciente do agendamento tem modalidade Parceria (o mesmo profissional pode atender Particular e Parceria)
-function repEhParceria(a) { return String(_repPacs.get(a.pacienteId)?.modalidade || '').trim().toLowerCase() === 'parceria'; }
+// Regra: o atendimento gera repasse quando, na data dele, o paciente estava na modalidade Parceria (períodos guardados no cadastro do paciente)
+function repPeriodos(pid) {
+  const p = _repPacs.get(pid); if(!p) return [];
+  if(Array.isArray(p.parceriaPeriodos)) return p.parceriaPeriodos;
+  return String(p.modalidade || '').trim().toLowerCase() === 'parceria' ? [{de:'', ate:'', repasseTipo:p.repasseTipo, repassePct:p.repassePct}] : [];
+}
+function repPeriodoEm(pid, ds) { return repPeriodos(pid).find(x => (!x.de || ds >= x.de) && (!x.ate || ds <= x.ate)) || null; }
 function repMes(delta, silencioso) {
   const h = new Date(); h.setDate(1); h.setMonth(h.getMonth() + delta);
   document.getElementById('rep-f-ini').value = toDateStrLocal(new Date(h.getFullYear(), h.getMonth(), 1));
@@ -11298,7 +11347,7 @@ async function loadRepasses() {
   try { _repPags = (await db.collection('pagamentosParceiros').get()).docs.map(d => ({id:d.id, ...d.data()})); _repPagErro = false; }
   catch(e) { console.error(e); _repPags = []; _repPagErro = true; }
   const sel = document.getElementById('rep-f-prof'), atual = sel.value;
-  const parc = new Map(); _repAgs.filter(repEhParceria).forEach(a => parc.set(agpProfKey(a), a.profNome || '—'));
+  const parc = new Map(); _repAgs.filter(a => repPeriodos(a.pacienteId).length).forEach(a => parc.set(agpProfKey(a), a.profNome || '—'));
   const ordem = [...parc].sort((a,b) => a[1].localeCompare(b[1],'pt'));
   sel.innerHTML = '<option value="">Todos os profissionais</option>' + ordem.map(([k,n]) => `<option value="${escH(k)}">${escH(n)}</option>`).join('');
   if(parc.has(atual)) sel.value = atual;
@@ -11308,15 +11357,17 @@ function repCalcular() {
   const ini = _pv('rep-f-ini'), fim = _pv('rep-f-fim'), fp = _pv('rep-f-prof');
   const ok = _pv('rep-f-st') === 'rc' ? ['Realizado','Confirmado'] : ['Realizado'];
   const pagas = new Map();
-  _repPags.forEach(g => (g.itens || []).forEach(i => pagas.set(i.k, {data:g.dataPagamento, valor:Number(i.valor)||0})));
+  _repPags.forEach(g => (g.itens || []).forEach(i => pagas.set(i.k, {data:g.dataPagamento, valor:Number(i.valor)||0, pct:i.pct, valorSessao:i.valorSessao})));
   const out = [];
   if(!ini || !fim) return out;
   _repAgs.forEach(a => {
-    if(!repEhParceria(a) || (fp && agpProfKey(a) !== fp)) return;
+    if(!repPeriodos(a.pacienteId).length || (fp && agpProfKey(a) !== fp)) return;
     agpExpandir(a, ini, fim).forEach(o => {
       const pg = pagas.get(o.id + '|' + o._occ);
+      const per = repPeriodoEm(a.pacienteId, o._occ); if(!per && !pg) return;
       if(!pg && !ok.includes(o.status)) return;
-      out.push({k:o.id+'|'+o._occ, profKey:agpProfKey(a), profId:a.profId||'', profNome:a.profNome||'—', paciente:o.pacienteNome||'—', data:o._occ, inicio:o.inicio||'', fim:o.fim||'', valor:Number(o.valorInformado)||0, status:o.status, pago:pg||null});
+      const pac = per || {}, pct = (pac.repasseTipo === 'percentual' && Number(pac.repassePct) > 0) ? Number(pac.repassePct) : 100, vs = Number(o.valorInformado) || 0;
+      out.push({k:o.id+'|'+o._occ, pct, valorSessao:vs, profKey:agpProfKey(a), profId:a.profId||'', profNome:a.profNome||'—', paciente:o.pacienteNome||'—', data:o._occ, inicio:o.inicio||'', fim:o.fim||'', valor:Math.round(vs*pct)/100, status:o.status, pago:pg||null});
     });
   });
   return out.sort((x,y) => x.profNome.localeCompare(y.profNome,'pt') || x.data.localeCompare(y.data) || x.inicio.localeCompare(y.inicio));
@@ -11327,7 +11378,7 @@ function repRender() {
   _repLista = repCalcular();
   const soma = arr => arr.reduce((t,x) => t + (x.pago ? x.pago.valor : x.valor), 0);
   const total = soma(_repLista), pago = soma(_repLista.filter(x => x.pago)), aPagar = soma(_repLista.filter(repPagavel)), previsto = soma(_repLista.filter(x => !x.pago && x.status !== 'Realizado'));
-  const semParceiro = ![..._repPacs.values()].some(p => String(p.modalidade||'').trim().toLowerCase() === 'parceria');
+  const semParceiro = ![..._repPacs.keys()].some(id => repPeriodos(id).length);
   document.getElementById('rep-aviso').innerHTML =
     (semParceiro ? '<div class="vinculo-alert" style="margin-bottom:1rem">Nenhum paciente está com modalidade Parceria ainda. Abra o cadastro do paciente, escolha Modalidade = Parceria e salve.</div>' : '')
     + (_repPagErro ? '<div class="vinculo-alert" style="margin-bottom:1rem;background:#fef2f2;border-color:#fecaca;color:#b91c1c">Não foi possível ler os pagamentos registrados. Verifique as regras do Firestore para a coleção pagamentosParceiros; enquanto isso o relatório pode mostrar como pendente o que já foi pago.</div>' : '');
@@ -11343,7 +11394,7 @@ function repRender() {
       const linhas = it.map(x => {
         const sit = x.pago ? `<span class="badge badge-success">Pago em ${_brD(x.pago.data)}</span>` : x.status === 'Realizado' ? '<span class="badge badge-warning">Pendente</span>' : `<span class="badge badge-neutral">Previsto · ${escH(x.status)}</span>`;
         const cb = repPagavel(x) ? `<input type="checkbox" ${_repDesm.has(x.k)?'':'checked'} data-k="${escH(x.k)}" onchange="repTog(this.dataset.k)">` : '';
-        return `<div style="display:grid;grid-template-columns:26px 88px 1fr 90px 150px;gap:.4rem;align-items:center;padding:.45rem .25rem;border-top:1px solid var(--border);font-size:.82rem"><span>${cb}</span><span>${_brD(x.data)}<br><span class="est-sub">${escH(x.inicio)}</span></span><span>${escH(x.paciente)}</span><span style="text-align:right;font-weight:600">${x.valor > 0 || x.pago ? _brMoeda(x.pago ? x.pago.valor : x.valor) : '<span style="color:#dc2626" title="Atendimento sem valor informado">R$ 0,00 ⚠</span>'}</span><span>${sit}</span></div>`;
+        return `<div style="display:grid;grid-template-columns:26px 88px 1fr 90px 150px;gap:.4rem;align-items:center;padding:.45rem .25rem;border-top:1px solid var(--border);font-size:.82rem"><span>${cb}</span><span>${_brD(x.data)}<br><span class="est-sub">${escH(x.inicio)}</span></span><span>${escH(x.paciente)}</span><span style="text-align:right;font-weight:600">${x.valor > 0 || x.pago ? _brMoeda(x.pago ? x.pago.valor : x.valor) : '<span style="color:#dc2626" title="Atendimento sem valor informado">R$ 0,00 ⚠</span>'}${(x.pago ? (x.pago.pct || 100) : x.pct) < 100 ? `<br><span class="est-sub" style="font-weight:400">${x.pago ? (x.pago.pct || 100) : x.pct}% de ${_brMoeda(x.pago ? (x.pago.valorSessao || x.pago.valor) : x.valorSessao)}</span>` : ''}</span><span>${sit}</span></div>`;
       }).join('');
       return `<div class="card" style="margin-bottom:1rem;overflow-x:auto"><div style="min-width:560px"><div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem"><div><div style="font-weight:700;font-size:.95rem">${escH(nome)}</div><div class="est-sub">${it.length} atendimento(s) · total ${_brMoeda(totP)} · pago ${_brMoeda(pagoP)} · pendente <b>${_brMoeda(pendP)}</b></div></div><button class="btn btn-primary btn-sm" ${selec.length?'':'disabled'} data-p="${escH(pid)}" onclick="repAbrirPag(this.dataset.p)">Registrar pagamento (${selec.length} · ${_brMoeda(selV)})</button></div>${linhas}<div style="display:flex;justify-content:flex-end;gap:1rem;border-top:2px solid var(--border);padding-top:.5rem;margin-top:.25rem;font-size:.84rem"><span>Total acumulado: <b>${_brMoeda(totP)}</b></span><span>A pagar: <b style="color:#d97706">${_brMoeda(pendP)}</b></span></div></div></div>`;
     }).join('');
@@ -11374,7 +11425,7 @@ async function repConfirmarPag() {
     // Reconfere no banco para não pagar duas vezes a mesma sessão (outro aparelho/aba)
     const fresh = (await db.collection('pagamentosParceiros').get()).docs.flatMap(d => (d.data().itens || []).map(i => i.k));
     if(_repTmp.itens.some(x => fresh.includes(x.k))) { showToast('Alguma sessão já foi paga. Atualizando...','error'); closeModal('rep-pag'); await loadRepasses(); return; }
-    const itens = _repTmp.itens.map(x => ({k:x.k, pacienteNome:x.paciente, data:x.data, inicio:x.inicio, valor:x.valor}));
+    const itens = _repTmp.itens.map(x => ({k:x.k, pacienteNome:x.paciente, data:x.data, inicio:x.inicio, valor:x.valor, valorSessao:x.valorSessao, pct:x.pct}));
     await db.collection('pagamentosParceiros').add({profKey:_repTmp.profKey, profId:_repTmp.profId, profNome:_repTmp.profNome, dataPagamento:data, total:_repTmp.total, qtd:itens.length, periodoIni:_pv('rep-f-ini'), periodoFim:_pv('rep-f-fim'), itens, obs:_pv('rep-pag-obs'), criadoPor:_quem(), createdAt:firebase.firestore.FieldValue.serverTimestamp()});
     showToast('Pagamento registrado!','success'); closeModal('rep-pag'); _repTmp = null; await loadRepasses();
   } catch(e) { console.error(e); btn.disabled = false; showToast('Erro ao registrar o pagamento. Verifique as regras do Firestore (pagamentosParceiros).','error'); }
@@ -11388,8 +11439,8 @@ async function repEstornar(id) {
 function repExportar() {
   if(!_repLista.length) { showToast('Nada para exportar neste período.','error'); return; }
   const q = v => '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"';
-  const linhas = [['Profissional','Paciente','Data','Início','Valor','Situação','Data do pagamento'].map(q).join(';')]
-    .concat(_repLista.map(x => [x.profNome, x.paciente, _brD(x.data), x.inicio, (x.pago ? x.pago.valor : x.valor).toFixed(2).replace('.',','), x.pago ? 'Pago' : x.status === 'Realizado' ? 'Pendente' : 'Previsto', x.pago ? _brD(x.pago.data) : ''].map(q).join(';')));
+  const linhas = [['Profissional','Paciente','Data','Início','Valor da sessão','Percentual','Valor do repasse','Situação','Data do pagamento'].map(q).join(';')]
+    .concat(_repLista.map(x => [x.profNome, x.paciente, _brD(x.data), x.inicio, (x.pago ? (x.pago.valorSessao || x.pago.valor) : x.valorSessao).toFixed(2).replace('.',','), (x.pago ? (x.pago.pct || 100) : x.pct), (x.pago ? x.pago.valor : x.valor).toFixed(2).replace('.',','), x.pago ? 'Pago' : x.status === 'Realizado' ? 'Pendente' : 'Previsto', x.pago ? _brD(x.pago.data) : ''].map(q).join(';')));
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\ufeff' + linhas.join('\r\n')], {type:'text/csv;charset=utf-8'}));
   a.download = `Repasses_${_pv('rep-f-ini')}_a_${_pv('rep-f-fim')}.csv`; a.click(); URL.revokeObjectURL(a.href);
