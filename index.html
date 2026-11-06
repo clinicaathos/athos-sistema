@@ -729,6 +729,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
           <div class="stat-card"><div class="stat-label">Profissionais Ativos</div><div class="stat-value" id="dash-profs">—</div><div class="stat-sub" id="dash-profs-sub">carregando...</div></div>
           <div class="stat-card"><div class="stat-label">A Receber</div><div class="stat-value" style="color:var(--danger)" id="dash-receber">—</div><div class="stat-sub" id="dash-receber-sub">carregando...</div></div>
         </div>
+        <div class="stats-grid" id="dash-pac-stats" style="margin-top:.75rem"></div>
         <div class="dash-grid">
           <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
@@ -867,6 +868,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
             <div class="month-days" id="agenda-mes-body"></div>
           </div>
           <div class="agenda-legend" style="margin-top:.75rem">
+            <div class="legend-item"><div class="legend-dot" style="background:#4a6fa5"></div>Atendimento de paciente</div>
             <div class="legend-item"><div class="legend-dot" style="background:rgba(160,120,80,.3)"></div>Turno Fixo</div>
             <div class="legend-item"><div class="legend-dot" style="background:rgba(61,138,122,.3)"></div>Pacote de Horas</div>
             <div class="legend-item"><div class="legend-dot" style="background:rgba(109,90,172,.3)"></div>Áthos Singular</div>
@@ -1555,7 +1557,16 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
           <div class="card">
             <div class="cfg-title">Integrações</div>
             <div class="cfg-row"><div><div class="cfg-label">Google Calendar</div><div class="cfg-sub">Sincronizar reservas automaticamente</div></div><button class="toggle" id="toggle-gcal" onclick="this.classList.toggle('on')"></button></div>
-            <div class="cfg-row"><div><div class="cfg-label">Backup automático</div><div class="cfg-sub">Diariamente às 03h</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+          </div>
+          <div class="card" id="bk-card">
+            <div class="cfg-title">Backup e Restauração</div>
+            <div class="cfg-row"><div><div class="cfg-label">Backup manual</div><div class="cfg-sub">Gera na hora e baixa no seu aparelho</div></div><div style="display:flex;gap:.4rem;flex-wrap:wrap"><button class="btn btn-primary btn-sm" onclick="bkBaixar()">Backup completo</button><button class="btn btn-secondary btn-sm" onclick="bkExcel()">Excel</button></div></div>
+            <div class="cfg-row"><div><div class="cfg-label">Backup automático</div><div class="cfg-sub">Salvo na nuvem (Firestore), mantendo as 10 últimas cópias. Roda quando o sistema está aberto em algum aparelho.</div></div><button class="toggle on" id="bk-auto-toggle" onclick="this.classList.toggle('on');bkCfgSalvar()"></button></div>
+            <div class="cfg-row"><div class="cfg-label">Frequência</div><select class="form-select" id="bk-freq" style="max-width:180px" onchange="bkCfgSalvar()"><option value="6">A cada 6 horas</option><option value="12">A cada 12 horas</option><option value="24">Diário</option><option value="168">Semanal</option></select></div>
+            <div class="cfg-row"><div><div class="cfg-label">Baixar cópia no computador</div><div class="cfg-sub">Também baixa o arquivo a cada backup automático</div></div><button class="toggle" id="bk-dl-toggle" onclick="this.classList.toggle('on');bkCfgSalvar()"></button></div>
+            <div class="cfg-row"><div><div class="cfg-label">Último backup concluído</div><div class="cfg-sub" id="bk-ultimo">—</div></div><button class="btn btn-secondary btn-sm" onclick="bkNuvemAgora()">Fazer agora na nuvem</button></div>
+            <div class="cfg-row" style="display:block"><div class="cfg-label" style="margin-bottom:.4rem">Cópias na nuvem</div><div id="bk-lista" style="font-size:.8rem">—</div></div>
+            <div class="cfg-row"><div><div class="cfg-label">Restaurar backup</div><div class="cfg-sub">Importa um arquivo .athosbackup e substitui os dados atuais (pede confirmação)</div></div><button class="btn btn-secondary btn-sm" onclick="document.getElementById('bk-file').click()">Importar arquivo</button><input type="file" id="bk-file" accept=".athosbackup,.json,application/json" style="display:none" onchange="bkEscolherArquivo(this)"></div>
           </div>
           <div class="card">
             <div class="cfg-title">Conta</div>
@@ -2037,6 +2048,22 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
   </div>
 </div>
 
+<!-- Restaurar backup -->
+<div class="modal-overlay" id="modal-restore" onclick="closeModalBg(event,'restore')">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title">Restaurar backup</div>
+    <div id="rst-info" style="font-size:.84rem;margin-bottom:.75rem"></div>
+    <div style="overflow-x:auto;margin-bottom:.75rem"><table style="width:100%;font-size:.78rem;border-collapse:collapse" id="rst-tab"></table></div>
+    <div class="vinculo-alert" style="margin-bottom:.75rem;background:#fef2f2;border-color:#fecaca;color:#b91c1c;font-size:.8rem"><b>Atenção:</b> esta ação substitui todos os dados atuais pelos do arquivo. Registros que existem hoje e não estão no backup serão removidos. Antes de começar, o sistema baixa automaticamente uma cópia dos dados atuais. Não feche a página durante a restauração.</div>
+    <div class="form-group"><label class="form-label">Digite RESTAURAR para confirmar</label><input class="form-input" id="rst-conf" autocomplete="off" oninput="document.getElementById('rst-btn').disabled = this.value.trim().toUpperCase() !== 'RESTAURAR'"></div>
+    <div class="est-sub" id="rst-prog" style="margin-bottom:.6rem;min-height:1.1em"></div>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn btn-primary" style="flex:1" id="rst-btn" disabled onclick="bkRestaurarExecutar()">Restaurar agora</button>
+      <button class="btn btn-secondary" onclick="closeModal('restore')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Repasses: registrar pagamento -->
 <div class="modal-overlay" id="modal-rep-pag" onclick="closeModalBg(event,'rep-pag')">
   <div class="modal" style="max-width:460px">
@@ -2481,6 +2508,7 @@ auth.onAuthStateChanged(user => {
     const initials = user.email.substring(0,1).toUpperCase();
     document.getElementById('user-avatar').textContent = initials;
     initApp();
+    setTimeout(bkAutoVerificar, 10000);
   } else {
     document.getElementById('login-screen').classList.add('visible');
     document.getElementById('app').classList.remove('visible');
@@ -3218,6 +3246,7 @@ function updateDashboardProfs() {
   }
 
   bdayBanner.innerHTML = bannerHtml;
+  dashPacientes();
 
   // Alertas — inclui vencidos
   const alertas=[];
@@ -4514,77 +4543,7 @@ function toggleTipoPessoa() {
 }
 
 // ── BACKUP EXCEL ──
-async function exportarBackupExcel() {
-  showToast('Gerando backup... aguarde.', 'success');
-  try {
-    const [recSnap, despSnap, locSnap, profSnap, pacSnap, agSnap, repSnap] = await Promise.all([
-      db.collection('receitas').get(),
-      db.collection('despesas').get(),
-      db.collection('locacoes').get(),
-      db.collection('profissionais').get(),
-      db.collection('pacientes').get().catch(()=>({docs:[]})),
-      db.collection('agendamentosPacientes').get().catch(()=>({docs:[]})),
-      db.collection('pagamentosParceiros').get().catch(()=>({docs:[]}))
-    ]);
-
-    const wb = XLSX.utils.book_new();
-
-    // Receitas
-    const receitas = recSnap.docs.map(d => {
-      const r = d.data();
-      return { ID: d.id, Profissional: r.profissional||'', Categoria: r.categoria||'', Tipo: r.tipo||'',
-        Subcategoria: r.subcategoria||'', Valor: r.valor||'', Desconto: r.desconto||'0',
-        'Valor Final': r.valorFinal||'', Vencimento: r.vencimento||'', Status: r.status||'',
-        'Observação': r.obs||'', Parcela: r.parcela||'', 'Nº Recorrência': r.recorrenciaNum||'',
-        'ID Recorrência': r.recorrenciaId||'' };
-    });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(receitas.length ? receitas : [{}]), 'Receitas');
-
-    // Despesas
-    const despesas = despSnap.docs.map(d => {
-      const x = d.data();
-      return { ID: d.id, 'Descrição': x.descricao||'', Categoria: x.categoria||'',
-        Subcategoria: x.subcategoria||'', Valor: x.valor||'', Vencimento: x.vencimento||'',
-        'Recorrência': x.recorrencia||'', Status: x.status||'', Parcela: x.parcela||'',
-        'Nº Recorrência': x.recorrenciaNum||'', 'ID Recorrência': x.recorrenciaId||'', 'Observação': x.obs||'' };
-    });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(despesas.length ? despesas : [{}]), 'Despesas');
-
-    // Locações
-    const locacoes = locSnap.docs.map(d => {
-      const l = d.data();
-      const profNome = profissionaisCache.find(p => p.id === l.profId)?.nome || l.profId || '';
-      return { ID: d.id, Profissional: profNome, Sala: l.sala||'', 'Vínculo': l.vinculo||'',
-        'Hora Início': l.inicio||'', 'Hora Fim': l.fim||'', 'Data Início': l.dataInicio||'',
-        'Data Fim': l.dataFim||'', 'Recorrência': l.recorrencia||'', 'Observação': l.obs||'' };
-    });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(locacoes.length ? locacoes : [{}]), 'Locações');
-
-    // Profissionais
-    const profs = profSnap.docs.map(d => {
-      const p = d.data();
-      return { ID: d.id, Nome: p.nome||'', 'Registro Profissional': p.registro||'',
-        Especialidade: p.especialidade||'', 'Vínculo': p.vinculo||'', Telefone: p.telefone||'',
-        Email: p.email||'', 'Data Nascimento': p.dataNascimento||'', 'Contrato Início': p.contratoInicio||'',
-        'Contrato Fim': p.contratoFim||'', Status: p.status||'', 'Observações': p.obs||'' };
-    });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(profs.length ? profs : [{}]), 'Profissionais');
-
-    const hoje = new Date();
-    const dataStr = `${hoje.getFullYear()}${String(hoje.getMonth()+1).padStart(2,'0')}${String(hoje.getDate()).padStart(2,'0')}`;
-    const pacientesX = pacSnap.docs.map(d => { const p = d.data(); return {Nome:p.nome||'', CPF:p.cpf||'', Nascimento:p.nascimento||'', Telefone:p.telefone||'', 'Telefone emergência':p.telefoneEmergencia||'', Email:p.email||'', CEP:p.cep||'', Endereço:p.endereco||'', Número:p.numero||'', Complemento:p.complemento||'', Bairro:p.bairro||'', Cidade:p.cidade||'', UF:p.uf||'', Modalidade:p.modalidade||'', 'Repasse':p.repasseTipo||'', 'Repasse %':p.repassePct||'', 'Valor informado':p.valorInformado||0, Situação:p.ativo===false?'Inativo':'Ativo', Observações:p.obs||''}; });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pacientesX.length ? pacientesX : [{}]), 'Pacientes');
-    const agendaX = agSnap.docs.map(d => { const a = d.data(); return {Paciente:a.pacienteNome||'', Data:a.data||'', Início:a.inicio||'', Término:a.fim||'', Profissional:a.profNome||'', Consultório:a.consultorio||'', Status:a.status||'', 'Valor informado':a.valorInformado||0, Repetição:a.recorrencia==='semanal'?'Semanal':'', 'Repetir até':a.recorrenteAte||'', Observações:a.obs||''}; });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(agendaX.length ? agendaX : [{}]), 'Agenda de Pacientes');
-    const repX = repSnap.docs.flatMap(d => { const g = d.data(); return (g.itens||[]).map(i => ({Profissional:g.profNome||'', 'Data do pagamento':g.dataPagamento||'', Paciente:i.pacienteNome||'', 'Data do atendimento':i.data||'', Valor:i.valor||0, 'Total do pagamento':g.total||0, Observações:g.obs||'', 'ID pagamento':d.id})); });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(repX.length ? repX : [{}]), 'Repasses Parceiros');
-    XLSX.writeFile(wb, `Backup_Athos_${dataStr}.xlsx`);
-    showToast('Backup Excel gerado com sucesso!', 'success');
-  } catch(e) {
-    console.error('Erro ao gerar backup:', e);
-    showToast('Erro ao gerar backup. Tente novamente.', 'error');
-  }
-}
+async function exportarBackupExcel() { return bkExcel(); }
 
 function exportarFinanceiro() {
   showToast('Exportação em PDF gerada!','success');
@@ -5623,8 +5582,9 @@ function renderAgendaMes() {
   const ultimoDia=new Date(ano,mes+1,0);
   const inicio=(primeiroDia.getDay());
 
-  db.collection('locacoes').get().then(snap=>{
+  Promise.all([db.collection('locacoes').get(), agpLocsPeriodo(toDateStrLocal(primeiroDia), toDateStrLocal(ultimoDia))]).then(([snap, apLocs])=>{
     const all=snap.docs.map(d=>({id:d.id,...d.data()}));
+    const apMap={}; apLocs.forEach(a=>{ apMap[a.dataInicio]=(apMap[a.dataInicio]||0)+1; });
     // Mapa: dataStr → count de locações (somente nos dias em que cada locação de fato ocorre)
     const ocupMap={};
     all.forEach(l=>{
@@ -5650,9 +5610,11 @@ function renderAgendaMes() {
       const ds=`${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const cnt=ocupMap[ds]||0;
       const dots=cnt>0?`<div style="display:flex;gap:2px;justify-content:center;margin-top:2px">${Array.from({length:Math.min(cnt,6)},()=>'<span style="width:5px;height:5px;border-radius:50%;background:var(--gold);display:inline-block"></span>').join('')}</div>`:'';
-      html+=`<div class="month-day${isToday?' today-day':''}" onclick="selectMonthDay('${ds}')">
+      const cntAp=apMap[ds]||0;
+      const dotsAp=cntAp>0?`<div style="display:flex;gap:2px;justify-content:center;margin-top:2px;align-items:center">${Array.from({length:Math.min(cntAp,6)},()=>'<span style="width:5px;height:5px;border-radius:50%;background:#4a6fa5;display:inline-block"></span>').join('')}<span style="font-size:.6rem;color:#4a6fa5;margin-left:2px">${cntAp}</span></div>`:'';
+      html+=`<div class="month-day${isToday?' today-day':''}" onclick="selectMonthDay('${ds}')" title="${cnt} locação(ões) · ${cntAp} atendimento(s) de pacientes">
         <div class="month-day-num">${d}${isToday?' ●':''}</div>
-        ${dots}
+        ${dots}${dotsAp}
       </div>`;
     }
     document.getElementById('agenda-mes-body').innerHTML=html;
@@ -6342,6 +6304,7 @@ function showPage(n,el) {
   if(n==='estoque') loadEstoque();
   if(n==='pacientes') loadPacientes();
   if(n==='agpac') loadAgPac();
+  if(n==='configuracoes') bkCfgCarregar();
   if(n==='repasses') loadRepasses();
   if(n==='planos') preencherValoresTabela();
   if(n==='servicos') loadServicos();
@@ -11353,9 +11316,8 @@ async function loadRepasses() {
   if(parc.has(atual)) sel.value = atual;
   repRender();
 }
-function repCalcular() {
-  const ini = _pv('rep-f-ini'), fim = _pv('rep-f-fim'), fp = _pv('rep-f-prof');
-  const ok = _pv('rep-f-st') === 'rc' ? ['Realizado','Confirmado'] : ['Realizado'];
+function repCalcular() { return repSessoes(_pv('rep-f-ini'), _pv('rep-f-fim'), _pv('rep-f-prof'), _pv('rep-f-st') === 'rc' ? ['Realizado','Confirmado'] : ['Realizado']); }
+function repSessoes(ini, fim, fp, ok) {
   const pagas = new Map();
   _repPags.forEach(g => (g.itens || []).forEach(i => pagas.set(i.k, {data:g.dataPagamento, valor:Number(i.valor)||0, pct:i.pct, valorSessao:i.valorSessao})));
   const out = [];
@@ -11444,6 +11406,281 @@ function repExportar() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['\ufeff' + linhas.join('\r\n')], {type:'text/csv;charset=utf-8'}));
   a.download = `Repasses_${_pv('rep-f-ini')}_a_${_pv('rep-f-fim')}.csv`; a.click(); URL.revokeObjectURL(a.href);
+}
+
+// ── Dashboard: indicadores e aniversariantes de pacientes ──
+async function dashPacientes() {
+  const box = document.getElementById('dash-pac-stats'); if(!box) return;
+  try {
+    const [pc, ag] = await Promise.all([db.collection('pacientes').get(), db.collection('agendamentosPacientes').get()]);
+    const pacs = pc.docs.map(d => ({id:d.id, ...d.data()})), ags = ag.docs.map(d => ({id:d.id, ...d.data()}));
+    const hoje = new Date(), hojeS = toDateStrLocal(hoje), ano = hoje.getFullYear(), mes = hoje.getMonth();
+    const ini = toDateStrLocal(new Date(ano, mes, 1)), fim = toDateStrLocal(new Date(ano, mes+1, 0));
+    const ativos = pacs.filter(p => p.ativo !== false), nPar = ativos.filter(p => p.modalidade === 'Parceria').length;
+    const occ = ags.flatMap(a => agpExpandir(a, ini, fim));
+    const dia = occ.filter(o => o._occ === hojeS && o.status !== 'Cancelado');
+    const cnt = (arr, st) => arr.filter(o => o.status === st).length;
+    const canc = cnt(occ, 'Cancelado'), mesVal = occ.length - canc;
+    let pend = '—', pendSub = 'não foi possível calcular';
+    try {
+      _repPacs = new Map(pc.docs.map(d => [d.id, d.data()])); _repAgs = ags;
+      _repPags = (await db.collection('pagamentosParceiros').get()).docs.map(d => ({id:d.id, ...d.data()}));
+      const l = repSessoes('2000-01-01', hojeS, '', ['Realizado']).filter(repPagavel);
+      pend = _brMoeda(l.reduce((t,x) => t + x.valor, 0)); pendSub = `${l.length} sessão(ões) realizada(s) a pagar`;
+    } catch(e) { console.error('Repasses no dashboard:', e); }
+    const card = (l, v, sub, cor, go) => `<div class="stat-card" style="cursor:pointer" onclick="showPage('${go}',document.querySelector('[onclick*=&quot;${go}&quot;]'))"><div class="stat-label">${l}</div><div class="stat-value" style="color:${cor}">${v}</div><div class="stat-sub">${sub}</div></div>`;
+    box.innerHTML =
+      card('Pacientes Ativos', ativos.length, `${ativos.length - nPar} particular · ${nPar} parceria`, 'inherit', 'pacientes')
+      + card('Atendimentos Hoje', dia.length, `${cnt(dia,'Aguardando confirmação')} aguardando · ${cnt(dia,'Confirmado')} confirmados · ${cnt(dia,'Realizado')} realizados`, 'var(--gold)', 'agpac')
+      + card('Atendimentos do Mês', mesVal, `${cnt(occ,'Realizado')} realizados · ${canc} cancelados${occ.length ? ' (' + Math.round(canc*100/occ.length) + '%)' : ''}`, 'inherit', 'agpac')
+      + card('Repasses Pendentes', pend, pendSub, '#d97706', 'repasses');
+    // aniversariantes de pacientes
+    const nomesMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const nasc = ativos.filter(p => p.nascimento).map(p => ({p, n:new Date(p.nascimento + 'T12:00:00')}));
+    const doMes = nasc.filter(x => x.n.getMonth() === mes).sort((a,b) => a.n.getDate() - b.n.getDate());
+    const prox = [];
+    for(let i = 1; i <= 7; i++) { const d = new Date(hoje); d.setDate(hoje.getDate() + i); if(d.getMonth() === mes) continue; nasc.forEach(x => { if(x.n.getDate() === d.getDate() && x.n.getMonth() === d.getMonth()) prox.push({...x, d, i}); }); }
+    document.getElementById('bday-pac')?.remove();
+    if(doMes.length || prox.length) {
+      const linha = (dd, mm, nome, anos, extra, forte) => `<div style="display:flex;align-items:center;gap:8px;padding:.4rem 0;border-bottom:1px solid rgba(160,120,80,.15)"><span style="font-size:.78rem;font-weight:700;min-width:36px;color:var(--gold)">${String(dd).padStart(2,'0')}/${String(mm+1).padStart(2,'0')}</span><span style="font-size:.82rem;font-weight:${forte?'700':'500'}">${escH(nome||'—')}</span><span style="font-size:.72rem;color:var(--text-lighter)">${anos} anos</span>${extra}</div>`;
+      const rows = doMes.map(x => linha(x.n.getDate(), mes, x.p.nome, ano - x.n.getFullYear(), x.n.getDate() === hoje.getDate() ? '<span class="badge badge-warning" style="margin-left:auto;font-size:.65rem">Hoje!</span>' : '', x.n.getDate() === hoje.getDate())).join('')
+        + prox.map(x => linha(x.d.getDate(), x.d.getMonth(), x.p.nome, x.d.getFullYear() - x.n.getFullYear(), `<span style="font-size:.72rem;color:var(--text-lighter);margin-left:auto">${x.i === 1 ? 'amanhã' : 'em ' + x.i + ' dias'}</span>`, false)).join('');
+      document.getElementById('bday-banner').insertAdjacentHTML('beforeend', `<div class="bday-alert" id="bday-pac" style="margin-top:.5rem"><div style="display:flex;align-items:center;gap:6px;margin-bottom:.5rem"><strong>Aniversariantes — pacientes · ${nomesMes[mes]}</strong><span class="badge badge-warning" style="font-size:.65rem">${doMes.length + prox.length}</span></div>${rows}</div>`);
+    }
+  } catch(e) { console.error('Dashboard de pacientes:', e); box.innerHTML = ''; }
+}
+
+// ── Backup e restauração ──
+const BK_COLECOES = ['locacoes','receitas','despesas','profissionais','bloqueios','lembretes','pacotesHoras','anotacoes','servicos','pacientes','agendamentosPacientes','reservasMateriais','estoqueItens','estoqueMov','estoqueCategorias','planos','pagamentosParceiros','usosPacote','subcategorias','materiais','historicoProf','config'];
+const BK_NOMES = {locacoes:'Locações', receitas:'Receitas', despesas:'Despesas', profissionais:'Profissionais', bloqueios:'Bloqueios', lembretes:'Lembretes', pacotesHoras:'Pacotes de Horas', anotacoes:'Anotações', servicos:'Serviços', pacientes:'Pacientes', agendamentosPacientes:'Agenda de Pacientes', reservasMateriais:'Reservas de Materiais', estoqueItens:'Estoque - Itens', estoqueMov:'Estoque - Movimentos', estoqueCategorias:'Estoque - Categorias', planos:'Planos e Pacotes', pagamentosParceiros:'Pagamentos a Parceiros', usosPacote:'Usos de Pacote', subcategorias:'Subcategorias', materiais:'Materiais', historicoProf:'Histórico Profissionais', config:'Configurações'};
+const BK_LS = ['simulador_lancamentos_v17','simulador_config_v17','athos_transacoes','athos-dark'];
+const BK_MAX_NUVEM = 10;
+let _bkOcupado = false, _rst = null;
+const bkReservado = (col, id) => col === 'config' && id === 'backupConfig'; // estado do agendador: fora do backup e da restauração
+const bkFmt = iso => new Date(iso).toLocaleString('pt-BR', {dateStyle:'short', timeStyle:'short'});
+const bkStamp = () => { const d = new Date(); return toDateStrLocal(d) + '_' + String(d.getHours()).padStart(2,'0') + String(d.getMinutes()).padStart(2,'0'); };
+function bkEnc(v) {
+  if(v === null || v === undefined) return v;
+  if(typeof v.toDate === 'function' && typeof v.seconds === 'number') return {__ts:[v.seconds, v.nanoseconds]};
+  if(Array.isArray(v)) return v.map(bkEnc);
+  if(typeof v === 'object') { const o = {}; for(const k in v) o[k] = bkEnc(v[k]); return o; }
+  return v;
+}
+function bkDec(v) {
+  if(v && typeof v === 'object') {
+    if(Array.isArray(v)) return v.map(bkDec);
+    if(v.__ts) return new firebase.firestore.Timestamp(v.__ts[0], v.__ts[1]);
+    const o = {}; for(const k in v) o[k] = bkDec(v[k]); return o;
+  }
+  return v;
+}
+function bkPlano(v) {
+  if(v && typeof v === 'object') {
+    if(v.__ts) return new Date(v.__ts[0] * 1000).toISOString();
+    if(Array.isArray(v)) return v.map(bkPlano);
+    const o = {}; for(const k in v) o[k] = bkPlano(v[k]); return o;
+  }
+  return v;
+}
+function bkCel(v) { v = bkPlano(v); if(v === null || v === undefined) return ''; if(typeof v === 'object') v = JSON.stringify(v); if(typeof v === 'string' && v.length > 32000) v = v.slice(0, 32000); return v; }
+async function bkHash(str) {
+  try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join(''); } catch(e) { return ''; }
+}
+// Lê TODAS as coleções; se alguma falhar, aborta (nunca gera backup incompleto sem avisar)
+async function bkColetar(progress) {
+  const colecoes = {}, contagens = {};
+  for(const nome of BK_COLECOES) {
+    if(progress) progress('Lendo ' + BK_NOMES[nome] + '...');
+    let snap;
+    try { snap = await db.collection(nome).get(); } catch(e) { throw new Error('Não foi possível ler a coleção "' + nome + '" (' + (e.code || e.message) + ').'); }
+    colecoes[nome] = snap.docs.filter(d => !bkReservado(nome, d.id)).map(d => ({id:d.id, d:bkEnc(d.data())}));
+    contagens[nome] = colecoes[nome].length;
+  }
+  const ls = {}; BK_LS.forEach(k => { const v = localStorage.getItem(k); if(v !== null) ls[k] = v; });
+  return {colecoes, contagens, ls};
+}
+async function bkMontar(origem, progress) {
+  const c = await bkColetar(progress);
+  const dados = JSON.stringify({colecoes:c.colecoes, ls:c.ls});
+  const hash = await bkHash(dados);
+  const total = Object.values(c.contagens).reduce((t,n) => t + n, 0);
+  const cab = {formato:'athos-backup', versao:1, geradoEm:new Date().toISOString(), origem, email:(auth.currentUser && auth.currentUser.email) || '', contagens:c.contagens, total, hash, dados};
+  return {texto:JSON.stringify(cab), cab, total};
+}
+function bkDownload(texto, nome, tipo) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([texto], {type: tipo || 'application/json'}));
+  a.download = nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+async function bkCfgLer() { try { const d = await db.collection('config').doc('backupConfig').get(); return d.exists ? d.data() : {}; } catch(e) { return {}; } }
+async function bkCfgGravar(p) { await db.collection('config').doc('backupConfig').set(p, {merge:true}); }
+async function bkRegistrar(tipo, destino) {
+  const agora = new Date().toISOString();
+  try { await bkCfgGravar({ultimoBackupEm:agora, ultimoTipo:tipo, ultimoDestino:destino, ultimoErro:null, ...(destino === 'nuvem' ? {ultimoNuvemEm:agora} : {})}); } catch(e) { console.error(e); }
+}
+async function bkCfgCarregar() {
+  const c = await bkCfgLer();
+  const el = id => document.getElementById(id); if(!el('bk-card')) return;
+  el('bk-auto-toggle').classList.toggle('on', c.ativo !== false);
+  el('bk-dl-toggle').classList.toggle('on', !!c.copiaDownload);
+  el('bk-freq').value = String(c.frequenciaHoras || 24);
+  el('bk-ultimo').innerHTML = (c.ultimoBackupEm ? bkFmt(c.ultimoBackupEm) + ' · ' + (c.ultimoTipo === 'automatico' ? 'automático' : 'manual') + ' (' + (c.ultimoDestino === 'nuvem' ? 'nuvem' : 'arquivo baixado') + ')' : 'Nenhum backup concluído ainda')
+    + (c.ultimoErro ? `<br><span style="color:#b91c1c">Última tentativa automática falhou em ${bkFmt(c.ultimoErro.em)}: ${escH(c.ultimoErro.msg)}</span>` : '');
+  bkListarNuvem();
+}
+async function bkCfgSalvar() {
+  try { await bkCfgGravar({ativo:document.getElementById('bk-auto-toggle').classList.contains('on'), frequenciaHoras:parseInt(_pv('bk-freq')) || 24, copiaDownload:document.getElementById('bk-dl-toggle').classList.contains('on')}); showToast('Configuração de backup salva.','success'); }
+  catch(e) { console.error(e); showToast('Não foi possível salvar a configuração.','error'); }
+}
+async function bkBaixar(prefixo) {
+  if(_bkOcupado) { showToast('Já existe um backup em andamento.','error'); return false; }
+  _bkOcupado = true; showToast('Gerando backup...','success');
+  try {
+    const b = await bkMontar('manual');
+    bkDownload(b.texto, (prefixo || 'Backup_Athos') + '_' + bkStamp() + '.athosbackup');
+    await bkRegistrar('manual', 'download'); bkCfgCarregar();
+    showToast('Backup concluído: ' + b.total + ' registros.','success'); return true;
+  } catch(e) { console.error(e); showToast('Erro ao gerar o backup: ' + (e.message || e),'error'); return false; }
+  finally { _bkOcupado = false; }
+}
+async function bkExcel() {
+  if(_bkOcupado) { showToast('Já existe um backup em andamento.','error'); return; }
+  _bkOcupado = true; showToast('Gerando Excel...','success');
+  try {
+    const c = await bkColetar(), wb = XLSX.utils.book_new();
+    const add = (nome, rows, cols) => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows, {header:cols}), nome.slice(0,31));
+    add('Resumo', [{Aba:'Gerado em', Registros:bkFmt(new Date().toISOString())}, ...BK_COLECOES.map(n => ({Aba:BK_NOMES[n], Registros:c.contagens[n]}))], ['Aba','Registros']);
+    BK_COLECOES.forEach(n => {
+      const cols = ['id']; c.colecoes[n].forEach(x => Object.keys(x.d).forEach(k => { if(!cols.includes(k)) cols.push(k); }));
+      add(BK_NOMES[n], c.colecoes[n].map(x => { const o = {id:x.id}; Object.keys(x.d).forEach(k => o[k] = bkCel(x.d[k])); return o; }), cols);
+    });
+    const it = c.colecoes.pagamentosParceiros.flatMap(g => (g.d.itens || []).map(i => ({Profissional:g.d.profNome||'', 'Data do pagamento':g.d.dataPagamento||'', Paciente:i.pacienteNome||'', 'Data do atendimento':i.data||'', 'Valor da sessão':i.valorSessao ?? i.valor ?? 0, Percentual:i.pct || 100, 'Valor do repasse':i.valor || 0, Observações:g.d.obs||'', 'ID pagamento':g.id})));
+    add('Repasses (itens)', it, ['Profissional','Data do pagamento','Paciente','Data do atendimento','Valor da sessão','Percentual','Valor do repasse','Observações','ID pagamento']);
+    XLSX.writeFile(wb, 'Backup_Athos_' + bkStamp() + '.xlsx');
+    await bkRegistrar('manual', 'download'); bkCfgCarregar();
+    showToast('Excel gerado com todas as abas e registros.','success');
+  } catch(e) { console.error(e); showToast('Erro ao gerar o Excel: ' + (e.message || e),'error'); }
+  finally { _bkOcupado = false; }
+}
+// Nuvem (coleção backupsAuto: 1 doc "meta" + N docs "parte" por backup)
+async function bkNuvemGerar(origem, copiaDownload) {
+  const b = await bkMontar(origem), col = db.collection('backupsAuto');
+  const id = col.doc().id, TAM = 200000, n = Math.ceil(b.texto.length / TAM);
+  for(let i = 0; i < n; i += 6) { const bt = db.batch(); for(let j = i; j < Math.min(n, i + 6); j++) bt.set(col.doc(id + '_p' + j), {tipo:'parte', backupId:id, n:j, t:b.texto.slice(j*TAM, (j+1)*TAM)}); await bt.commit(); }
+  await col.doc(id).set({tipo:'meta', criadoEm:b.cab.geradoEm, origem, email:b.cab.email, partes:n, tamanho:b.texto.length, total:b.total, hash:b.cab.hash});
+  if(copiaDownload) bkDownload(b.texto, 'Backup_Athos_' + bkStamp() + '.athosbackup');
+  await bkRegistrar(origem, 'nuvem');
+  try { await bkNuvemPodar(); } catch(e) { console.error('Poda de backups:', e); }
+  return b.total;
+}
+async function bkNuvemExcluir(id) {
+  await db.collection('backupsAuto').doc(id).delete();
+  const ps = await db.collection('backupsAuto').where('backupId','==',id).get();
+  for(let i = 0; i < ps.docs.length; i += 100) { const bt = db.batch(); ps.docs.slice(i, i+100).forEach(d => bt.delete(d.ref)); await bt.commit(); }
+}
+async function bkNuvemMetas() {
+  const snap = await db.collection('backupsAuto').where('tipo','==','meta').get();
+  return snap.docs.map(d => ({id:d.id, ...d.data()})).sort((a,b) => b.criadoEm.localeCompare(a.criadoEm));
+}
+async function bkNuvemPodar() { for(const m of (await bkNuvemMetas()).slice(BK_MAX_NUVEM)) await bkNuvemExcluir(m.id); }
+async function bkNuvemTexto(id) {
+  const metas = await bkNuvemMetas(), m = metas.find(x => x.id === id); if(!m) throw new Error('Cópia não encontrada.');
+  const ps = (await db.collection('backupsAuto').where('backupId','==',id).get()).docs.map(d => d.data()).sort((a,b) => a.n - b.n);
+  if(ps.length !== m.partes) throw new Error('A cópia está incompleta na nuvem.');
+  return ps.map(x => x.t).join('');
+}
+async function bkNuvemAgora() {
+  if(_bkOcupado) { showToast('Já existe um backup em andamento.','error'); return; }
+  _bkOcupado = true; showToast('Gerando backup na nuvem...','success');
+  try { const t = await bkNuvemGerar('manual', false); showToast('Backup na nuvem concluído: ' + t + ' registros.','success'); }
+  catch(e) { console.error(e); showToast('Erro no backup na nuvem: ' + (e.message || e) + ' (verifique as regras do Firestore para backupsAuto).','error'); }
+  finally { _bkOcupado = false; bkCfgCarregar(); }
+}
+async function bkListarNuvem() {
+  const el = document.getElementById('bk-lista'); if(!el) return;
+  try {
+    const l = await bkNuvemMetas();
+    el.innerHTML = l.length ? l.map(m => `<div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.35rem 0;border-top:1px solid var(--border);flex-wrap:wrap"><span>${bkFmt(m.criadoEm)} · ${m.origem === 'automatico' ? 'automático' : 'manual'} · ${m.total} registros · ${(m.tamanho/1048576).toFixed(2)} MB</span><span style="display:flex;gap:.3rem"><button class="btn btn-secondary btn-sm" data-i="${m.id}" onclick="bkNuvemBaixar(this.dataset.i)">Baixar</button><button class="btn btn-secondary btn-sm" data-i="${m.id}" onclick="bkNuvemRestaurar(this.dataset.i)">Restaurar</button></span></div>`).join('') : 'Nenhuma cópia na nuvem ainda.';
+  } catch(e) { console.error(e); el.innerHTML = '<span style="color:#b91c1c">Não foi possível ler as cópias na nuvem. Verifique as regras do Firestore para a coleção backupsAuto.</span>'; }
+}
+async function bkNuvemBaixar(id) {
+  try { const t = await bkNuvemTexto(id); bkDownload(t, 'Backup_Athos_nuvem_' + bkStamp() + '.athosbackup'); } catch(e) { showToast(e.message || 'Erro ao baixar.','error'); }
+}
+async function bkNuvemRestaurar(id) {
+  try { const t = await bkNuvemTexto(id); await bkPrepararRestore(t); } catch(e) { showToast(e.message || 'Erro ao carregar a cópia.','error'); }
+}
+// Automático: roda quando o sistema está aberto; um "lock" evita execução dupla em dois aparelhos
+async function bkAutoVerificar() {
+  if(!auth.currentUser || _bkOcupado) return;
+  const cfg = await bkCfgLer();
+  if(cfg.ativo === false) return;
+  const ultimo = cfg.ultimoNuvemEm ? new Date(cfg.ultimoNuvemEm).getTime() : 0;
+  if(Date.now() - ultimo < (cfg.frequenciaHoras || 24) * 3600e3) return;
+  const ref = db.collection('config').doc('backupConfig'); let ok = false;
+  try { await db.runTransaction(async tx => { const d = await tx.get(ref), x = d.exists ? d.data() : {}; if(x.lockAte && x.lockAte > Date.now()) return; ok = true; tx.set(ref, {lockAte:Date.now() + 10*60000}, {merge:true}); }); } catch(e) { console.error(e); return; }
+  if(!ok) return;
+  _bkOcupado = true;
+  try { await bkNuvemGerar('automatico', !!cfg.copiaDownload); }
+  catch(e) { console.error('Backup automático:', e); try { await bkCfgGravar({ultimoErro:{em:new Date().toISOString(), msg:String(e.message || e).slice(0,160)}}); } catch(_) {} }
+  finally { _bkOcupado = false; try { await bkCfgGravar({lockAte:0}); } catch(_) {} if(document.getElementById('page-configuracoes')?.classList.contains('active')) bkCfgCarregar(); }
+}
+setInterval(bkAutoVerificar, 15 * 60000);
+// Restauração
+async function bkValidar(texto) {
+  let cab; try { cab = JSON.parse(texto); } catch(e) { throw new Error('O arquivo não é um backup do Áthos (não foi possível ler).'); }
+  if(!cab || cab.formato !== 'athos-backup' || typeof cab.dados !== 'string') throw new Error('O arquivo não é um backup do Áthos.');
+  if(cab.versao > 1) throw new Error('Este backup foi gerado por uma versão mais nova do sistema.');
+  if(cab.hash) { const h = await bkHash(cab.dados); if(h && h !== cab.hash) throw new Error('O arquivo está corrompido ou foi alterado (a verificação de integridade falhou).'); }
+  let dados; try { dados = JSON.parse(cab.dados); } catch(e) { throw new Error('O conteúdo do backup está ilegível.'); }
+  const col = dados.colecoes || {}; let total = 0;
+  for(const n of BK_COLECOES) {
+    if(col[n] !== undefined && !Array.isArray(col[n])) throw new Error('Estrutura inválida na coleção ' + n + '.');
+    const q = (col[n] || []).length; total += q;
+    if(cab.contagens && cab.contagens[n] !== undefined && cab.contagens[n] !== q) throw new Error('A contagem de registros de ' + (BK_NOMES[n] || n) + ' não confere com o arquivo.');
+  }
+  if(!total) throw new Error('O backup não contém nenhum registro.');
+  return {cab, dados, total};
+}
+async function bkEscolherArquivo(inp) {
+  const f = inp.files && inp.files[0]; inp.value = ''; if(!f) return;
+  try { await bkPrepararRestore(await f.text()); } catch(e) { showToast('Não foi possível ler o arquivo.','error'); }
+}
+async function bkPrepararRestore(texto) {
+  try {
+    showToast('Conferindo o arquivo...','success');
+    const v = await bkValidar(texto), atual = {};
+    for(const n of BK_COLECOES) atual[n] = (await db.collection(n).get()).docs.filter(d => !bkReservado(n, d.id)).length;
+    _rst = {v};
+    document.getElementById('rst-info').innerHTML = `Backup de <b>${bkFmt(v.cab.geradoEm)}</b>${v.cab.email ? ' · gerado por ' + escH(v.cab.email) : ''} · <b>${v.total}</b> registros`;
+    document.getElementById('rst-tab').innerHTML = '<tr style="text-align:left;border-bottom:1px solid var(--border)"><th style="padding:3px 6px">Aba</th><th style="padding:3px 6px;text-align:right">Hoje</th><th style="padding:3px 6px;text-align:right">No backup</th></tr>'
+      + BK_COLECOES.filter(n => atual[n] || (v.dados.colecoes[n] || []).length).map(n => { const b = (v.dados.colecoes[n] || []).length; return `<tr style="border-bottom:1px solid var(--border);${atual[n] !== b ? 'background:#fffbeb' : ''}"><td style="padding:3px 6px">${BK_NOMES[n]}</td><td style="padding:3px 6px;text-align:right">${atual[n]}</td><td style="padding:3px 6px;text-align:right">${b}</td></tr>`; }).join('');
+    document.getElementById('rst-conf').value = ''; document.getElementById('rst-btn').disabled = true; document.getElementById('rst-prog').textContent = '';
+    openModal('restore');
+  } catch(e) { console.error(e); showToast(e.message || 'Erro ao preparar a restauração.','error'); }
+}
+async function bkRestaurarExecutar() {
+  if(!_rst || _bkOcupado) return;
+  if(_pv('rst-conf').trim().toUpperCase() !== 'RESTAURAR') { showToast('Digite RESTAURAR para confirmar.','error'); return; }
+  const btn = document.getElementById('rst-btn'), log = t => { document.getElementById('rst-prog').textContent = t; };
+  btn.disabled = true;
+  try {
+    log('Gerando cópia de segurança dos dados atuais...');
+    if(!(await bkBaixar('Backup_Athos_ANTES_DA_RESTAURACAO'))) throw new Error('Não foi possível gerar a cópia de segurança. Nada foi alterado.');
+    _bkOcupado = true;
+    const col = _rst.v.dados.colecoes;
+    for(const n of BK_COLECOES) { // 1) grava tudo do backup (sobrescreve documentos com o mesmo id)
+      const docs = (col[n] || []).filter(x => !bkReservado(n, x.id)); log('Restaurando ' + BK_NOMES[n] + ' (' + docs.length + ')...');
+      for(let i = 0; i < docs.length; i += 300) { const bt = db.batch(); docs.slice(i, i+300).forEach(x => bt.set(db.collection(n).doc(x.id), bkDec(x.d))); await bt.commit(); }
+    }
+    for(const n of BK_COLECOES) { // 2) remove o que existe hoje e não está no backup
+      const ids = new Set((col[n] || []).map(x => x.id));
+      const extra = (await db.collection(n).get()).docs.filter(d => !ids.has(d.id) && !bkReservado(n, d.id)); log('Conferindo ' + BK_NOMES[n] + '...');
+      for(let i = 0; i < extra.length; i += 300) { const bt = db.batch(); extra.slice(i, i+300).forEach(d => bt.delete(d.ref)); await bt.commit(); }
+    }
+    Object.entries(_rst.v.dados.ls || {}).forEach(([k, val]) => { if(BK_LS.includes(k)) localStorage.setItem(k, val); });
+    log('Concluído. Recarregando o sistema...'); showToast('Backup restaurado com sucesso!','success'); setTimeout(() => location.reload(), 1500);
+  } catch(e) { console.error(e); log('Erro: ' + (e.message || e)); showToast('A restauração parou: ' + (e.message || e),'error'); btn.disabled = false; }
+  finally { _bkOcupado = false; }
 }
 
 // Estoque: conversão de caixas/pacotes em unidades
