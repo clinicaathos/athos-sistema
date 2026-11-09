@@ -1961,9 +1961,12 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Telefone principal</label><input class="form-input" id="pac-tel" inputmode="tel" placeholder="(85) 90000-0000"></div>
+      <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" type="email" id="pac-email"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Nome do contato de emergência</label><input class="form-input" id="pac-emerg-nome" placeholder="Ex: Maria Silva (mãe)"></div>
       <div class="form-group"><label class="form-label">Telefone de emergência</label><input class="form-input" id="pac-tel2" inputmode="tel"></div>
     </div>
-    <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" type="email" id="pac-email"></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">CEP</label><div style="display:flex;gap:.35rem"><input class="form-input" id="pac-cep" inputmode="numeric" placeholder="00000-000" style="flex:1"><button type="button" class="btn btn-secondary" title="Buscar endereço" onclick="pacCep()">🔍</button></div><div class="est-sub" id="pac-cep-msg"></div></div>
       <div class="form-group"><label class="form-label">Número</label><input class="form-input" id="pac-num"></div>
@@ -2008,6 +2011,20 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
 </div>
 
 <!-- Agendamento de paciente -->
+<div class="modal-overlay" id="modal-agp-del" onclick="closeModalBg(event,'agp-del')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">Excluir agendamento</div>
+    <div class="est-sub" id="agp-del-info" style="margin-bottom:.75rem"></div>
+    <div style="display:flex;flex-direction:column;gap:.5rem">
+      <button class="btn btn-secondary" id="agp-del-1" onclick="agpExcluirConfirmar('uma')"></button>
+      <button class="btn btn-secondary" id="agp-del-fut" onclick="agpExcluirConfirmar('futuras')"></button>
+      <button class="btn btn-secondary" id="agp-del-all" onclick="agpExcluirConfirmar('serie')"></button>
+      <button class="btn btn-secondary" onclick="closeModal('agp-del')">Voltar</button>
+    </div>
+    <div class="est-sub" style="margin-top:.75rem">Para manter o registro na agenda, prefira marcar o status como Cancelado.</div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-agp" onclick="closeModalBg(event,'agp')">
   <div class="modal">
     <div class="modal-title" id="agp-title">Novo agendamento</div>
@@ -2043,6 +2060,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
     <div style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap">
       <button class="btn btn-primary" style="flex:1" onclick="agpSalvar()">Salvar</button>
       <button class="btn btn-secondary" id="agp-ver-pac" style="display:none" onclick="agpVerPac()">Ver paciente</button>
+      <button class="btn btn-secondary" id="agp-del-btn" style="display:none;color:var(--danger)" onclick="agpExcluir()">Excluir</button>
       <button class="btn btn-secondary" onclick="closeModal('agp')">Cancelar</button>
     </div>
   </div>
@@ -10947,7 +10965,7 @@ function pacRepChange() {
   document.getElementById('pac-rep-pct-g').style.display = par && _pv('pac-rep-tipo') === 'percentual' ? '' : 'none';
 }
 function pacNovo() {
-  ['pac-id','pac-nome','pac-cpf','pac-nasc','pac-tel','pac-tel2','pac-email','pac-cep','pac-num','pac-end','pac-comp','pac-bairro','pac-cidade','pac-uf','pac-valor','pac-obs'].forEach(i => document.getElementById(i).value = '');
+  ['pac-id','pac-nome','pac-cpf','pac-nasc','pac-tel','pac-emerg-nome','pac-tel2','pac-email','pac-cep','pac-num','pac-end','pac-comp','pac-bairro','pac-cidade','pac-uf','pac-valor','pac-obs'].forEach(i => document.getElementById(i).value = '');
   document.getElementById('pac-mod').value = 'Particular'; document.getElementById('pac-ativo').value = '1';
   document.getElementById('pac-rep-tipo').value = 'integral'; document.getElementById('pac-rep-pct').value = ''; pacRepChange();
   document.getElementById('pac-title').textContent = 'Novo paciente'; document.getElementById('pac-hist-btn').style.display = 'none';
@@ -10959,7 +10977,7 @@ function pacEditar(id) {
   pacNovo();
   document.getElementById('pac-title').textContent = 'Editar paciente'; document.getElementById('pac-hist-btn').style.display = '';
   const set = (i,v) => document.getElementById(i).value = v == null ? '' : v;
-  set('pac-id',p.id); set('pac-nome',p.nome); set('pac-cpf',pacCpfFmt(p.cpf)); set('pac-nasc',p.nascimento); set('pac-tel',p.telefone); set('pac-tel2',p.telefoneEmergencia);
+  set('pac-id',p.id); set('pac-nome',p.nome); set('pac-cpf',pacCpfFmt(p.cpf)); set('pac-nasc',p.nascimento); set('pac-tel',p.telefone); set('pac-emerg-nome',p.contatoEmergenciaNome); set('pac-tel2',p.telefoneEmergencia);
   set('pac-email',p.email); set('pac-cep',p.cep); set('pac-num',p.numero); set('pac-end',p.endereco); set('pac-comp',p.complemento); set('pac-bairro',p.bairro);
   set('pac-cidade',p.cidade); set('pac-uf',p.uf); set('pac-mod',p.modalidade||'Particular'); set('pac-rep-tipo',p.repasseTipo||'integral'); set('pac-rep-pct',p.repassePct); pacRepChange(); set('pac-valor',p.valorInformado); set('pac-obs',p.obs);
   set('pac-ativo', p.ativo === false ? '0' : '1');
@@ -10987,7 +11005,7 @@ async function pacSalvar() {
   const dup = _pacs.find(p => p.id !== id && ((cpf && p.cpf === cpf) || (!cpf && telD && (p.telefone||'').replace(/\D/g,'') === telD)));
   if(dup && !confirm(`Já existe um cadastro com ${cpf?'este CPF':'este telefone'}: ${dup.nome}. Deseja salvar mesmo assim?`)) return;
   const FV = firebase.firestore.FieldValue;
-  const data = {nome, cpf, nascimento:_pv('pac-nasc'), telefone:tel, telefoneEmergencia:_pv('pac-tel2'), email:_pv('pac-email'),
+  const data = {nome, cpf, nascimento:_pv('pac-nasc'), telefone:tel, contatoEmergenciaNome:_pv('pac-emerg-nome'), telefoneEmergencia:_pv('pac-tel2'), email:_pv('pac-email'),
     cep:_pv('pac-cep'), endereco:_pv('pac-end'), numero:_pv('pac-num'), complemento:_pv('pac-comp'), bairro:_pv('pac-bairro'), cidade:_pv('pac-cidade'), uf:_pv('pac-uf').toUpperCase(),
     modalidade:_pv('pac-mod'), repasseTipo: _pv('pac-mod') === 'Parceria' ? _pv('pac-rep-tipo') : '', repassePct: _pv('pac-mod') === 'Parceria' && _pv('pac-rep-tipo') === 'percentual' ? (parseFloat(_pv('pac-rep-pct')) || 0) : 0, valorInformado: parseFloat(_pv('pac-valor')) || 0, obs:_pv('pac-obs'), ativo:_pv('pac-ativo') !== '0', updatedAt:FV.serverTimestamp()};
   // Histórico de Parceria: trocar para Particular fecha o período e mantém os atendimentos antigos nos repasses
@@ -11037,12 +11055,12 @@ function agpCorProf(k) { const i = agpTodasProfs().findIndex(x => x.key === k); 
 // Expande atendimentos semanais em ocorrências dentro do período
 function agpExpandir(a, ini, fim) {
   if(a.recorrencia !== 'semanal') return (a.data >= ini && a.data <= fim) ? [{...a, _occ:a.data}] : [];
-  const out = [], base = new Date(a.data+'T12:00:00'), lim = a.recorrenteAte || '9999-12-31';
+  const out = [], base = new Date(a.data+'T12:00:00'), lim = a.recorrenteAte || '9999-12-31', exc = a.excluidas || [];
   const dias = (a.diasSemana && a.diasSemana.length) ? a.diasSemana : [base.getDay()];
   const d = new Date(Math.max(base, new Date(ini+'T12:00:00')));
   for(; ; d.setDate(d.getDate()+1)) {
     const ds = toDateStrLocal(d); if(ds > fim || ds > lim) break;
-    if(!dias.includes(d.getDay())) continue;
+    if(!dias.includes(d.getDay()) || exc.includes(ds)) continue;
     const o = a.ocorrencias && a.ocorrencias[agpKey(ds)];
     out.push({...a, data:ds, _occ:ds, status:(o && o.status) || (ds === a.data ? a.status : 'Aguardando confirmação')});
   }
@@ -11169,6 +11187,7 @@ function agpAbrir(idOcc) {
     document.getElementById('agp-prof-outro').style.display = a && !known ? '' : 'none';
     document.getElementById('agp-title').textContent = a ? 'Editar agendamento' : 'Novo agendamento';
     document.getElementById('agp-ver-pac').style.display = a ? '' : 'none';
+    document.getElementById('agp-del-btn').style.display = a ? '' : 'none';
     const h = (a?.historico || []).slice().reverse().map(x => `${new Date(x.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} — ${escH(x.acao)}${x.por?' ('+escH(x.por)+')':''}`).join('<br>');
     document.getElementById('agp-hist').innerHTML = h ? '<b>Histórico do agendamento</b><br>' + h : '';
     openModal('agp');
@@ -11273,13 +11292,61 @@ async function agpSalvar() {
     if(document.getElementById('page-agenda').classList.contains('active')) renderAgendaDia();
   } catch(e) { console.error(e); showToast('Erro ao salvar o agendamento.','error'); }
 }
+// Exclusão de agendamento (avulso ou recorrente). Sessões já pagas em Repasses não podem ser excluídas.
+async function agpExcluir() {
+  const id = _pv('agp-edit-id'), occ = _pv('agp-occ'), a = _agps.find(x => x.id === id); if(!a) return;
+  const serie = a.recorrencia === 'semanal';
+  if(!serie) {
+    if(!confirm(`Excluir o atendimento de ${a.pacienteNome} em ${_brD(a.data)} (${a.inicio}–${a.fim})? Esta ação não pode ser desfeita.`)) return;
+    return agpExcluirConfirmar('serie');
+  }
+  const d = occ || a.data;
+  document.getElementById('agp-del-info').textContent = `${a.pacienteNome} — atendimento semanal. Data aberta: ${_brD(d)}.`;
+  document.getElementById('agp-del-1').textContent = `Somente ${_brD(d)}`;
+  document.getElementById('agp-del-fut').textContent = `Esta data e as seguintes (encerra a série em ${_brD(d)})`;
+  document.getElementById('agp-del-all').textContent = 'Toda a série (todas as datas)';
+  document.getElementById('agp-del-fut').style.display = d > a.data ? '' : 'none';
+  openModal('agp-del');
+}
+async function agpExcluirConfirmar(escopo) {
+  const id = _pv('agp-edit-id'), occ = _pv('agp-occ'), a = _agps.find(x => x.id === id); if(!a) return;
+  const serie = a.recorrencia === 'semanal', d = occ || a.data;
+  const FV = firebase.firestore.FieldValue;
+  try {
+    const pagas = new Set();
+    (await db.collection('pagamentosParceiros').get()).docs.forEach(g => (g.data().itens || []).forEach(i => pagas.add(i.k)));
+    const bloqueada = [...pagas].some(k => { const [kid, kd] = String(k).split('|'); return kid === id && (escopo === 'serie' ? true : escopo === 'futuras' ? kd >= d : kd === d); });
+    if(bloqueada) { showToast('Há sessão já paga em Repasses neste período. Marque como Cancelado em vez de excluir.','error'); return; }
+    const ref = db.collection('agendamentosPacientes').doc(id), log = acao => FV.arrayUnion({em:new Date().toISOString(), acao, por:_quem()});
+    if(!serie || escopo === 'serie') await ref.delete();
+    else if(escopo === 'futuras') {
+      const ant = new Date(d + 'T12:00:00'); ant.setDate(ant.getDate() - 1);
+      await ref.update({recorrenteAte:toDateStrLocal(ant), historico:log(`Série encerrada: ${_brD(d)} e seguintes excluídas`), updatedAt:FV.serverTimestamp()});
+    } else await ref.update({excluidas:FV.arrayUnion(d), historico:log(`Atendimento de ${_brD(d)} excluído`), updatedAt:FV.serverTimestamp()});
+    showToast('Agendamento excluído.','success'); closeModal('agp-del'); closeModal('agp');
+    await loadAgPac();
+    if(document.getElementById('page-agenda').classList.contains('active')) renderAgendaDia();
+  } catch(e) { console.error(e); showToast('Erro ao excluir o agendamento.','error'); }
+}
 // Agendamentos de pacientes viram "locações" só para exibição no Mapa (sem financeiro, sem turno fixo). Online não ocupa sala.
 async function agpLocsPeriodo(ini, fim) {
   try {
-    const snap = await db.collection('agendamentosPacientes').where('data','<=',fim).get();
-    return snap.docs.map(d => ({id:d.id,...d.data()})).flatMap(a => agpExpandir(a, ini, fim)).filter(a => a.status !== 'Cancelado' && a.consultorio && a.consultorio !== 'Online').map(a => ({
-      id:'ap_'+a.id+'|'+a._occ, _ap:true, _rotulo:`${a.pacienteNome} · ${a.profNome||'—'}`, profId:a.profId||'', sala:a.consultorio, vinculo:'Hora Avulsa',
-      inicio:a.inicio, fim:a.fim, dataInicio:a._occ, dataFim:a._occ, recorrencia:'', cor:'#4a6fa5'}));
+    const [snap, snapL] = await Promise.all([db.collection('agendamentosPacientes').where('data','<=',fim).get(), db.collection('locacoes').get()]);
+    const locs = snapL.docs.map(d => ({id:d.id,...d.data()}));
+    const mn = h => { const [x,y] = String(h||'0:0').split(':').map(Number); return x*60 + (y||0); };
+    // Online: aparece no Mapa só se o profissional tem locação ativa naquela data cobrindo o horário do atendimento (mesma sala da locação)
+    const locDoOnline = a => a.profId ? locs.find(l => l.profId === a.profId && locAtivaEmDia(l, a._occ) && (ehReservaPorHorario(l)
+      ? (mn(a.inicio) >= mn(l.inicio) && mn(a.inicio) < mn(l.fim))
+      : getTurnosOcupados(l).includes(getTurnoKeyGlobal(a.inicio)))) : null;
+    const out = [];
+    snap.docs.map(d => ({id:d.id,...d.data()})).flatMap(a => agpExpandir(a, ini, fim)).filter(a => a.status !== 'Cancelado' && a.consultorio).forEach(a => {
+      const on = a.consultorio === 'Online';
+      let sala = a.consultorio;
+      if(on) { const l = locDoOnline(a); if(!l) return; sala = getSalaKeyGlobal(l.sala, l.vinculo) === 's2' ? (appConfig.sala2||'Áthos II') : (appConfig.sala1||'Áthos I'); }
+      out.push({id:'ap_'+a.id+'|'+a._occ, _ap:true, _rotulo:`${a.pacienteNome} · ${a.profNome||'—'}${on?' (online)':''}`, profId:a.profId||'', sala, vinculo:'Hora Avulsa',
+        inicio:a.inicio, fim:a.fim, dataInicio:a._occ, dataFim:a._occ, recorrencia:'', cor:on?'#6b7fa5':'#4a6fa5'});
+    });
+    return out;
   } catch(e) { console.error('Agenda de pacientes no Mapa:', e); return []; }
 }
 
@@ -11436,15 +11503,15 @@ async function dashPacientes() {
       + card('Repasses Pendentes', pend, pendSub, '#d97706', 'repasses');
     // aniversariantes de pacientes
     const nomesMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const nasc = ativos.filter(p => p.nascimento).map(p => ({p, n:new Date(p.nascimento + 'T12:00:00')}));
-    const doMes = nasc.filter(x => x.n.getMonth() === mes).sort((a,b) => a.n.getDate() - b.n.getDate());
+    const nasc = pacs.filter(p => p.nascimento).map(p => ({p, n:new Date(p.nascimento + 'T12:00:00'), off:p.ativo === false}));
+    const doMes = nasc.filter(x => x.n.getMonth() === mes).sort((a,b) => a.n.getDate() - b.n.getDate() || (a.off - b.off));
     const prox = [];
     for(let i = 1; i <= 7; i++) { const d = new Date(hoje); d.setDate(hoje.getDate() + i); if(d.getMonth() === mes) continue; nasc.forEach(x => { if(x.n.getDate() === d.getDate() && x.n.getMonth() === d.getMonth()) prox.push({...x, d, i}); }); }
     document.getElementById('bday-pac')?.remove();
     if(doMes.length || prox.length) {
-      const linha = (dd, mm, nome, anos, extra, forte) => `<div style="display:flex;align-items:center;gap:8px;padding:.4rem 0;border-bottom:1px solid rgba(160,120,80,.15)"><span style="font-size:.78rem;font-weight:700;min-width:36px;color:var(--gold)">${String(dd).padStart(2,'0')}/${String(mm+1).padStart(2,'0')}</span><span style="font-size:.82rem;font-weight:${forte?'700':'500'}">${escH(nome||'—')}</span><span style="font-size:.72rem;color:var(--text-lighter)">${anos} anos</span>${extra}</div>`;
-      const rows = doMes.map(x => linha(x.n.getDate(), mes, x.p.nome, ano - x.n.getFullYear(), x.n.getDate() === hoje.getDate() ? '<span class="badge badge-warning" style="margin-left:auto;font-size:.65rem">Hoje!</span>' : '', x.n.getDate() === hoje.getDate())).join('')
-        + prox.map(x => linha(x.d.getDate(), x.d.getMonth(), x.p.nome, x.d.getFullYear() - x.n.getFullYear(), `<span style="font-size:.72rem;color:var(--text-lighter);margin-left:auto">${x.i === 1 ? 'amanhã' : 'em ' + x.i + ' dias'}</span>`, false)).join('');
+      const linha = (dd, mm, nome, anos, extra, forte, off) => `<div style="display:flex;align-items:center;gap:8px;padding:${off?'.2rem':'.4rem'} 0;border-bottom:1px solid rgba(160,120,80,.15);${off?'opacity:.6':''}"><span style="font-size:${off?'.72rem':'.78rem'};font-weight:${off?'500':'700'};min-width:36px;color:${off?'var(--text-light)':'var(--gold)'}">${String(dd).padStart(2,'0')}/${String(mm+1).padStart(2,'0')}</span><span style="font-size:${off?'.76rem':'.82rem'};font-weight:${forte?'700':'500'};${off?'color:var(--text-light)':''}">${escH(nome||'—')}</span><span style="font-size:.68rem;color:var(--text-lighter)">${anos} anos${off?' · inativo':''}</span>${extra}</div>`;
+      const rows = doMes.map(x => linha(x.n.getDate(), mes, x.p.nome, ano - x.n.getFullYear(), x.n.getDate() === hoje.getDate() ? '<span class="badge badge-warning" style="margin-left:auto;font-size:.65rem">Hoje!</span>' : '', x.n.getDate() === hoje.getDate(), x.off)).join('')
+        + prox.map(x => linha(x.d.getDate(), x.d.getMonth(), x.p.nome, x.d.getFullYear() - x.n.getFullYear(), `<span style="font-size:.72rem;color:var(--text-lighter);margin-left:auto">${x.i === 1 ? 'amanhã' : 'em ' + x.i + ' dias'}</span>`, false, x.off)).join('');
       document.getElementById('bday-banner').insertAdjacentHTML('beforeend', `<div class="bday-alert" id="bday-pac" style="margin-top:.5rem"><div style="display:flex;align-items:center;gap:6px;margin-bottom:.5rem"><strong>Aniversariantes — pacientes · ${nomesMes[mes]}</strong><span class="badge badge-warning" style="font-size:.65rem">${doMes.length + prox.length}</span></div>${rows}</div>`);
     }
   } catch(e) { console.error('Dashboard de pacientes:', e); box.innerHTML = ''; }
