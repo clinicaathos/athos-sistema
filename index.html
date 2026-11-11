@@ -2045,7 +2045,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
     <div class="form-group"><label class="form-label">Profissional responsável</label><select class="form-select" id="agp-prof" onchange="document.getElementById('agp-prof-outro').style.display=this.value==='__outro'?'':'none'"></select>
       <input class="form-input" id="agp-prof-outro" placeholder="Nome do profissional" style="display:none;margin-top:.4rem"></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Data</label><input class="form-input" type="date" id="agp-data" onchange="agpDataChange()"></div>
+      <div class="form-group"><label class="form-label">Data</label><input class="form-input" type="date" id="agp-data" onchange="agpDataChange()"><div id="agp-data-hint" style="display:none;font-size:.72rem;color:var(--text-lighter);margin-top:4px;line-height:1.4"></div></div>
       <div class="form-group"><label class="form-label">Consultório</label><select class="form-select" id="agp-cons"></select></div>
     </div>
     <div class="form-group"><label class="form-label">Repetição</label><select class="form-select" id="agp-rec" onchange="agpRecChange()"><option value="">Não repete</option><option value="semanal">Toda semana (mesmo dia e horário)</option></select></div>
@@ -5693,6 +5693,7 @@ async function mpAbrirUso(profId) {
   document.getElementById('mp-uso-horas').value = '';
   document.getElementById('mp-uso-obs').value = '';
   document.getElementById('mp-uso-saldo').textContent = 'Calculando saldo...';
+  { const sel = document.getElementById('mp-uso-sala'); sel.options[0].textContent = appConfig.sala1 || 'Áthos I'; sel.options[1].textContent = appConfig.sala2 || 'Áthos II'; sel.value = '1'; document.getElementById('mp-uso-mapa').checked = true; }
   openModal('mp-uso');
   mpAtualizarSaldoUso();
 }
@@ -5724,16 +5725,39 @@ async function mpConfirmarUso() {
   if(!data) { showToast('Informe a data do uso.', 'error'); return; }
   if(!(horas > 0)) { showToast('Informe a quantidade de horas.', 'error'); return; }
   if(ini && fim && fim <= ini) { showToast('O horário final deve ser depois do inicial.', 'error'); return; }
+  const noMapa = !!document.getElementById('mp-uso-mapa')?.checked;
+  if(noMapa && (!ini || !fim)) { showToast('Informe início e fim para reservar no mapa, ou desmarque a reserva.', 'error'); return; }
   const comp = mpCompetencia(data);
   try {
     const usos = await mpCarregarUsos(profId);
     const saldo = mpCotaDoMes(p, comp) - mpUsadasNoMes(usos, comp);
     if(horas > saldo + 1e-9) { showToast(`Saldo insuficiente em ${mpNomeMes(comp)}: ${mpFmtH(Math.max(0, saldo))} disponíveis.`, 'error'); return; }
+    let locId = '';
+    if(noMapa) {
+      const sala = document.getElementById('mp-uso-sala').value || '1';
+      const loc = {
+        profId, sala, vinculo: 'Hora Avulsa', inicio: ini, fim,
+        dataInicio: data, dataFim: '', recorrencia: 'Apenas este horário', diasSemana: null,
+        obs: 'Horas gratuitas — Membro Parceiro', cor: '#3d8a7a',
+        desconto: '0', descontoInicio: '', descontoFim: '',
+        valorBase: valorBaseLocacao(sala, 'Hora Avulsa').toFixed(2), valorLancamento: '0.00', diaVencimento: null,
+        mpUso: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      const todasLoc = (await db.collection('locacoes').get()).docs.map(d => ({id: d.id, ...d.data()}));
+      const conflito = verificarConflito(loc, todasLoc);
+      if(conflito) { showToast(conflito, 'error'); return; }
+      const bloq = await db.collection('bloqueios').where('sala', '==', sala).where('data', '==', data).get();
+      if(bloq.docs.some(d => getTurnosOcupados(loc).includes(d.data().turno))) { showToast('Este turno está bloqueado nesta data. Remova o bloqueio antes de reservar.', 'error'); return; }
+      loc.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      locId = (await db.collection('locacoes').add(loc)).id;
+    }
     await db.collection('usosMembroParceiro').add({
       profId, profNome: p.nome || '', competencia: comp, data, inicio: ini || '', fim: fim || '',
-      horas, obs, origem: 'manual', cota: mpCotaDoMes(p, comp),
+      horas, obs, origem: noMapa ? 'agenda' : 'manual', cota: mpCotaDoMes(p, comp),
+      ...(locId ? { locacaoId: locId } : {}),
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    if(locId) { renderAgendaDia(); renderAgendaSemana(); if(typeof renderAgendaMes === 'function') renderAgendaMes(); }
     closeModal('mp-uso');
     showToast('Uso registrado!', 'success');
     loadProfissionais();
@@ -5742,13 +5766,30 @@ async function mpConfirmarUso() {
 }
 
 async function mpExcluirUso(usoId, profId) {
-  if(!confirm('Excluir este registro de uso? As horas voltam para o saldo do mês.')) return;
+  if(!confirm('Excluir este registro de uso? As horas voltam para o saldo do mês e, se houver reserva no mapa, ela também é removida.')) return;
   try {
+    const _u = await db.collection('usosMembroParceiro').doc(usoId).get();
+    const _locId = _u.exists ? _u.data().locacaoId : '';
+    if(_locId) { await db.collection('locacoes').doc(_locId).delete(); renderAgendaDia(); renderAgendaSemana(); if(typeof renderAgendaMes === 'function') renderAgendaMes(); }
     await db.collection('usosMembroParceiro').doc(usoId).delete();
     showToast('Registro removido. Saldo restaurado.', 'success');
     loadProfissionais();
     mpAbrirHistorico(profId);
   } catch(e) { showToast('Erro ao excluir o registro.', 'error'); }
+}
+
+// ── Encerrar adesão: para a mensalidade e as horas gratuitas, mantém o profissional e todo o histórico ──
+async function mpEncerrarAdesao(profId) {
+  const p = profissionaisCache.find(x => x.id === profId);
+  if(!p || p.vinculo !== MP_VINCULO) return;
+  if(!confirm(`Encerrar a adesão de ${p.nome} como Membro Parceiro?\n\n• Para de gerar a mensalidade e as horas gratuitas.\n• O cadastro e o histórico de horas continuam salvos.\n• O vínculo passa para Áthos Singular.\n• Mensalidade já lançada em A Receber e reservas já feitas no mapa não são alteradas.`)) return;
+  try {
+    await db.collection('profissionais').doc(profId).update({ vinculo: 'Hora Avulsa', vinculoFormal: 'Sem vínculo', mpEncerradoEm: toDateStrLocal(new Date()), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    await db.collection('historicoProf').add({ profId, profNome: p.nome || '', alteradoEm: firebase.firestore.FieldValue.serverTimestamp(), campos: [{ campo: 'Vínculo', de: MP_VINCULO, para: 'Hora Avulsa' }] });
+    showToast('Adesão encerrada.', 'success');
+    await loadProfissionais();
+    mpAbrirHistorico(profId);
+  } catch(e) { console.error(e); showToast('Erro ao encerrar a adesão.', 'error'); }
 }
 
 // ── Histórico mensal ──
@@ -5759,6 +5800,8 @@ async function mpAbrirHistorico(profId) {
   document.getElementById('mp-hist-titulo').textContent = `Horas gratuitas — ${p.nome || ''}`;
   const regBtn = document.getElementById('mp-hist-reg-btn');
   if(regBtn) regBtn.style.display = (p.vinculo === MP_VINCULO && p.status !== 'Inativo') ? '' : 'none';
+  const endBtn = document.getElementById('mp-hist-end-btn');
+  if(endBtn) endBtn.style.display = p.vinculo === MP_VINCULO ? '' : 'none';
   const box = document.getElementById('mp-hist-content');
   box.innerHTML = '<div style="font-size:.82rem;color:var(--text-light);text-align:center;padding:1rem">Carregando...</div>';
   openModal('mp-hist');
@@ -5798,8 +5841,8 @@ function mpRenderHistorico(p, usos) {
           <span style="min-width:74px;font-weight:600">${formatDate(u.data)}</span>
           <span style="min-width:96px;color:var(--text-light)">${horario}</span>
           <span style="min-width:38px;font-weight:600">${mpFmtH(parseFloat(u.horas) || 0)}</span>
-          <span style="flex:1;color:var(--text-lighter);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${daAgenda ? 'Agenda' : 'Manual'}${u.obs && !daAgenda ? ' · ' + escH(u.obs) : ''}</span>
-          ${daAgenda ? '<span style="font-size:.68rem;color:var(--text-lighter)" title="Exclua a reserva na Agenda para devolver as horas">via Agenda</span>' : `<button class="btn btn-danger btn-sm" style="padding:.15rem .5rem;font-size:.68rem" onclick="mpExcluirUso('${u.id}','${p.id}')">Excluir</button>`}
+          <span style="flex:1;color:var(--text-lighter);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${daAgenda ? 'No mapa' : 'Só histórico'}${u.obs && !daAgenda ? ' · ' + escH(u.obs) : ''}</span>
+          <button class="btn btn-danger btn-sm" style="padding:.15rem .5rem;font-size:.68rem" onclick="mpExcluirUso('${u.id}','${p.id}')">Excluir</button>
         </div>`;
       }).join('')}
     </div>`;
@@ -10797,6 +10840,7 @@ async function verHistoricoProf(profId) {
     <div class="modal-title" id="mp-hist-titulo">Horas gratuitas</div>
     <div id="mp-hist-content" style="max-height:62vh;overflow-y:auto"></div>
     <div class="modal-actions">
+      <button class="btn btn-danger" id="mp-hist-end-btn" style="margin-right:auto" onclick="mpEncerrarAdesao(window._mpHistProfId)">Encerrar adesão</button>
       <button class="btn btn-secondary" onclick="closeModal('mp-hist')">Fechar</button>
       <button class="btn btn-primary" id="mp-hist-reg-btn" onclick="mpAbrirUso(window._mpHistProfId)">Registrar uso</button>
     </div>
@@ -10809,13 +10853,15 @@ async function verHistoricoProf(profId) {
     <div class="modal-title" id="mp-uso-titulo">Registrar uso</div>
     <input type="hidden" id="mp-uso-prof-id">
     <div style="font-size:.82rem;color:var(--text-light);margin-bottom:.4rem;font-weight:500" id="mp-uso-saldo">—</div>
-    <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.75rem;line-height:1.4">Para reservar a sala, use a Agenda e marque “Usar horas gratuitas”. Este registro serve para uso já realizado ou fora da Agenda.</div>
+    <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.75rem;line-height:1.4">Com início e fim preenchidos, o horário também entra no mapa de consultórios, sem cobrança.</div>
     <div class="form-group"><label class="form-label">Data do uso</label><input class="form-input" type="date" id="mp-uso-data" onchange="mpAtualizarSaldoUso()"></div>
+    <div class="form-group"><label class="form-label">Consultório</label><select class="form-select" id="mp-uso-sala"><option value="1">Áthos I</option><option value="2">Áthos II</option></select></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Início</label><input class="form-input" type="time" id="mp-uso-ini" onchange="mpCalcHorasUso()"></div>
       <div class="form-group"><label class="form-label">Fim</label><input class="form-input" type="time" id="mp-uso-fim" onchange="mpCalcHorasUso()"></div>
     </div>
     <div class="form-group"><label class="form-label">Horas utilizadas</label><input class="form-input" type="number" min="0.5" step="0.5" id="mp-uso-horas" placeholder="Ex: 1"></div>
+    <label style="display:flex;gap:.5rem;align-items:flex-start;font-size:.8rem;cursor:pointer;margin-bottom:.75rem"><input type="checkbox" id="mp-uso-mapa" checked style="margin-top:3px;accent-color:var(--gold)"><span><strong>Reservar o horário no mapa de consultórios</strong><br><span style="font-size:.72rem;color:var(--text-lighter)">Exige início e fim. Sem marcar, o uso só entra no histórico.</span></span></label>
     <div class="form-group"><label class="form-label">Observação (opcional)</label><input class="form-input" id="mp-uso-obs" placeholder="Ex: Atendimento — Áthos I"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('mp-uso')">Cancelar</button>
@@ -11754,7 +11800,8 @@ function agpAbrir(idOcc) {
     document.getElementById('agp-st').innerHTML = AGP_STATUS.map(s => `<option>${s}</option>`).join('');
     const set = (i,v) => document.getElementById(i).value = v == null ? '' : v;
     set('agp-edit-id', id||''); set('agp-occ', dOcc); set('agp-obs', a?.obs); set('agp-valor', a?.valorInformado); set('agp-data', dOcc || a?.data || toDateStrLocal(_agpD)); set('agp-ini', a?.inicio); set('agp-fim', a?.fim);
-    document.getElementById('agp-data').disabled = serie;
+    document.getElementById('agp-data').disabled = false;
+    { const h = document.getElementById('agp-data-hint'); if(h) { h.style.display = serie ? '' : 'none'; h.textContent = serie ? 'Mudar a data remarca somente esta sessão. A série semanal continua igual.' : ''; } }
     set('agp-pac', a?.pacienteId); set('agp-cons', a?.consultorio); set('agp-st', ef?.status || 'Aguardando confirmação');
     set('agp-rec', a?.recorrencia || ''); set('agp-rec-ate', a?.recorrenteAte); set('agp-rec-qtd', '');
     { const dB = a ? a.data : _pv('agp-data'); agpSetDias(a?.diasSemana?.length ? a.diasSemana : (dB ? [new Date(dB + 'T12:00:00').getDay()] : [])); }
@@ -11831,6 +11878,10 @@ async function agpSalvar() {
   if(fim <= ini) { showToast('O término deve ser depois do início.','error'); return; }
   if(ate && ate < data) { showToast('A data final da repetição deve ser depois da primeira data.','error'); return; }
   if(pac.ativo === false && (!antigo || antigo.pacienteId !== pacId)) { showToast('Paciente inativo. Reative o cadastro para agendar.','error'); return; }
+  // Sessão de uma série remarcada para outra data: só esta sessão muda
+  if(serieEd && _pv('agp-data') && _pv('agp-data') !== occ) {
+    return agpMoverOcorrencia(antigo, occ, _pv('agp-data'), {pac, ini, fim, cons, st, profId: (profSel === '__outro' ? '' : profSel), profNome: (profSel === '__outro' ? _pv('agp-prof-outro') : (_agpProfs.find(x => x.id === profSel)?.nome || ''))});
+  }
   const profNome = profSel === '__outro' ? _pv('agp-prof-outro') : (_agpProfs.find(x => x.id === profSel)?.nome || '');
   const profId = profSel === '__outro' ? '' : profSel;
   if(st !== 'Cancelado') {
@@ -11871,6 +11922,37 @@ async function agpSalvar() {
     await loadAgPac();
     if(document.getElementById('page-agenda').classList.contains('active')) renderAgendaDia();
   } catch(e) { console.error(e); showToast('Erro ao salvar o agendamento.','error'); }
+}
+// Remarca UMA sessão de uma série semanal: a data original sai da série (excluidas) e nasce um atendimento avulso na nova data.
+async function agpMoverOcorrencia(antigo, occ, novaData, v) {
+  const FV = firebase.firestore.FieldValue;
+  try {
+    // Sessão já paga em Repasses não pode mudar de data
+    const pagas = new Set();
+    (await db.collection('pagamentosParceiros').get()).docs.forEach(g => (g.data().itens || []).forEach(i => pagas.add(i.k)));
+    if(pagas.has(antigo.id + '|' + occ)) { showToast('Esta sessão já foi paga em Repasses. Não é possível mudar a data.','error'); return; }
+    if(v.st !== 'Cancelado') {
+      const av = [];
+      _agps.flatMap(a => agpExpandir(a, novaData, novaData))
+        .filter(a => !(a.id === antigo.id && a._occ === occ) && a.status !== 'Cancelado' && a.inicio < v.fim && a.fim > v.ini)
+        .forEach(a => {
+          if(v.cons && v.cons !== 'Online' && a.consultorio === v.cons) av.push(`${v.cons} já tem atendimento (${a.pacienteNome}, ${a.inicio}–${a.fim})`);
+          if((v.profId && a.profId === v.profId) || (!v.profId && a.profNome === v.profNome)) av.push(`${v.profNome} já tem atendimento (${a.pacienteNome}, ${a.inicio}–${a.fim})`);
+        });
+      if(av.length && !confirm(`Conflito de horário em ${_brD(novaData)}:\n• ` + av.slice(0,4).join('\n• ') + '\n\nDeseja remarcar mesmo assim?')) return;
+    }
+    const agora = new Date().toISOString();
+    const dados = {pacienteId:v.pac.id, pacienteNome:v.pac.nome, profId:v.profId, profNome:v.profNome, data:novaData, inicio:v.ini, fim:v.fim, consultorio:v.cons,
+      valorInformado:parseFloat(_pv('agp-valor'))||0, obs:_pv('agp-obs'), recorrencia:'', recorrenteAte:'', qtdSessoes:0, diasSemana:[], status:v.st,
+      serieOrigemId:antigo.id, ocorrenciaOriginal:occ, createdAt:FV.serverTimestamp(), updatedAt:FV.serverTimestamp(),
+      historico:[{em:agora, acao:`Sessão de ${_brD(occ)} remarcada para ${_brD(novaData)}`, por:_quem()}]};
+    await db.collection('agendamentosPacientes').add(dados);
+    await db.collection('agendamentosPacientes').doc(antigo.id).update({excluidas:FV.arrayUnion(occ), historico:FV.arrayUnion({em:agora, acao:`Sessão de ${_brD(occ)} remarcada para ${_brD(novaData)}`, por:_quem()}), updatedAt:FV.serverTimestamp()});
+    showToast(`Sessão remarcada para ${_brD(novaData)}.`,'success'); closeModal('agp');
+    _agpD = new Date(novaData + 'T12:00:00');
+    await loadAgPac();
+    if(document.getElementById('page-agenda').classList.contains('active')) renderAgendaDia();
+  } catch(e) { console.error(e); showToast('Erro ao remarcar a sessão.','error'); }
 }
 // Exclusão de agendamento (avulso ou recorrente). Sessões já pagas em Repasses não podem ser excluídas.
 async function agpExcluir() {
