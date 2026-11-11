@@ -1664,10 +1664,17 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
     <div class="modal-title" id="loc-modal-title">Nova Locação</div>
     <input type="hidden" id="loc-edit-id">
     <input type="hidden" id="loc-clicked-date">
-    <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="loc-prof" onchange="toggleSaldoPacote()"><option value="">Selecionar...</option></select></div>
+    <div id="loc-edit-scope-wrap" style="display:none;margin-bottom:.9rem;padding:.7rem .8rem;border:1px solid var(--border);border-radius:9px;background:#faf7f2">
+      <div style="font-size:.78rem;font-weight:600;margin-bottom:.45rem">Esta locação é recorrente. Aplicar a alteração em:</div>
+      <label style="display:flex;gap:.5rem;align-items:flex-start;font-size:.8rem;cursor:pointer;margin-bottom:.35rem"><input type="radio" name="loc-edit-scope" value="single" onchange="onLocEditScopeChange()" style="margin-top:3px;accent-color:var(--gold)"><span><strong>Somente esta ocorrência</strong></span></label>
+      <label style="display:flex;gap:.5rem;align-items:flex-start;font-size:.8rem;cursor:pointer;margin-bottom:.35rem"><input type="radio" name="loc-edit-scope" value="future" onchange="onLocEditScopeChange()" style="margin-top:3px;accent-color:var(--gold)"><span><strong>Esta e as próximas</strong> <span style="color:var(--text-lighter)">(os anteriores ficam preservados)</span></span></label>
+      <label style="display:flex;gap:.5rem;align-items:flex-start;font-size:.8rem;cursor:pointer"><input type="radio" name="loc-edit-scope" value="all" checked onchange="onLocEditScopeChange()" style="margin-top:3px;accent-color:var(--gold)"><span><strong>Toda a série</strong></span></label>
+      <div id="loc-edit-scope-hint" style="font-size:.74rem;color:var(--text-lighter);margin-top:.45rem;line-height:1.4"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="loc-prof" onchange="toggleSaldoPacote();mpToggleLoc()"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
       <div class="form-group" id="loc-sala-group"><label class="form-label">Sala</label><select class="form-select" id="loc-sala" onchange="calcDescontoLocacao()"><option value="1" id="loc-s1-opt">Sala 1</option><option value="2" id="loc-s2-opt">Sala 2</option></select></div>
-      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista();toggleQtdAvulsa()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option value="Pacote de 5 Horas">Áthos Essencial</option><option value="Pacote de 10 Horas">Áthos Continuidade</option><option value="Hora Avulsa">Áthos Singular</option></select></div>
+      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista();toggleQtdAvulsa();mpToggleLoc()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option value="Pacote de 5 Horas">Áthos Essencial</option><option value="Pacote de 10 Horas">Áthos Continuidade</option><option value="Hora Avulsa">Áthos Singular</option></select></div>
     </div>
     <div class="form-group" id="loc-saldo-pacote-group" style="display:none">
       <div style="background:#f3f4f6;border-radius:8px;padding:.6rem .75rem;font-size:.78rem;color:var(--text-light)" id="loc-saldo-pacote-info">—</div>
@@ -1685,14 +1692,18 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
         <div id="loc-saldo-pos" style="font-size:.76rem;margin-top:4px;color:var(--text-light)"></div>
       </div>
     </div>
+    <div class="form-group" id="loc-mp-group" style="display:none">
+      <label style="display:flex;gap:.5rem;align-items:flex-start;cursor:pointer;font-size:.82rem"><input type="checkbox" id="loc-mp-usar" onchange="mpToggleLoc()" style="margin-top:3px;accent-color:var(--gold)"><span><strong>Usar horas gratuitas do Membro Parceiro</strong><br><span style="font-size:.72rem;color:var(--text-lighter)">A reserva sai sem cobrança e as horas são descontadas do saldo do mês.</span></span></label>
+      <div id="loc-mp-info" style="font-size:.76rem;color:var(--text-light);margin-top:4px"></div>
+    </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Hora Início</label><select class="form-select" id="loc-inicio" onchange="atualizarResumoQtdAvulsa()"><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:30</option><option>18:00</option><option>19:00</option><option>20:00</option><option>21:00</option><option>21:30</option></select></div>
-      <div class="form-group"><label class="form-label">Hora Fim</label><select class="form-select" id="loc-fim"><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>17:30</option><option>19:00</option><option>20:00</option><option>21:00</option><option>21:30</option><option>22:00</option></select></div>
+      <div class="form-group"><label class="form-label">Hora Início</label><select class="form-select" id="loc-inicio" onchange="atualizarResumoQtdAvulsa();mpToggleLoc()"><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:30</option><option>18:00</option><option>19:00</option><option>20:00</option><option>21:00</option><option>21:30</option></select></div>
+      <div class="form-group"><label class="form-label">Hora Fim</label><select class="form-select" id="loc-fim" onchange="mpToggleLoc()"><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>17:30</option><option>19:00</option><option>20:00</option><option>21:00</option><option>21:30</option><option>22:00</option></select></div>
     </div>
     <div class="form-row" id="loc-qtd-avulsa-wrap" style="display:none">
       <div class="form-group">
         <label class="form-label">Quantidade de horas</label>
-        <input class="form-input" type="number" min="1" max="12" id="loc-qtd-horas" placeholder="Ex: 4" value="1" oninput="atualizarResumoQtdAvulsa()">
+        <input class="form-input" type="number" min="1" max="12" id="loc-qtd-horas" placeholder="Ex: 4" value="1" oninput="atualizarResumoQtdAvulsa();mpToggleLoc()">
       </div>
       <div class="form-group">
         <label class="form-label">&nbsp;</label>
@@ -1700,7 +1711,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
       </div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Data Início</label><input class="form-input" type="date" id="loc-data-inicio" onchange="toggleDiasSemana()"></div>
+      <div class="form-group"><label class="form-label">Data Início</label><input class="form-input" type="date" id="loc-data-inicio" onchange="toggleDiasSemana();mpToggleLoc()"></div>
       <div class="form-group"><label class="form-label">Data Término</label><input class="form-input" type="date" id="loc-data-fim"></div>
     </div>
     <div class="form-group"><label class="form-label">Recorrência</label><select class="form-select" id="loc-recorrencia" onchange="toggleDiasSemana()"><option>Apenas este horário</option><option>Semanal</option><option>Quinzenal</option><option>Mensal</option></select></div>
@@ -1823,7 +1834,8 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
       <div class="form-group"><label class="form-label">Cidade / UF</label><input class="form-input" id="prof-cidade" placeholder="São Paulo / SP"></div>
     </div>
     <div style="font-size:.78rem;font-weight:600;color:var(--text-light);margin:.75rem 0 .5rem;text-transform:uppercase;letter-spacing:.05em">Contrato</div>
-    <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="prof-vinculo" onchange="updateVinculoAuto()"><option value="Hora Avulsa">Áthos Singular</option><option>Pacote de Horas</option><option>Turno Fixo</option></select></div>
+    <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="prof-vinculo" onchange="updateVinculoAuto()"><option value="Hora Avulsa">Áthos Singular</option><option>Pacote de Horas</option><option>Turno Fixo</option><option value="Membro Parceiro">Membro Parceiro</option></select></div>
+    <div id="prof-mp-info" style="display:none;font-size:.76rem;color:var(--text-light);background:#faf7f2;border:1px solid var(--border);border-radius:8px;padding:.55rem .75rem;margin:-.25rem 0 .75rem;line-height:1.45"><strong>Membro Parceiro:</strong> mensalidade fixa de R$ 185,00 e 3 horas gratuitas por mês, renovadas automaticamente. A mensalidade é lançada em A Receber, uma vez por mês, no dia de vencimento escolhido abaixo.</div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="prof-status"><option>Ativo</option><option>Inativo</option></select></div>
       <div class="form-group"><label class="form-label">Vínculo Formal</label><input class="form-input" id="prof-vinculo-formal" readonly value="Sem vínculo" style="background:#f9fafb;color:var(--text-light)"></div>
@@ -2598,6 +2610,7 @@ async function initApp() {
   renovarHorasMensais();
   verificarAlertasVencimento();
   gerarLancamentosLocacoesMensais();
+  gerarMensalidadesMembroParceiro();
 }
 
 // ══ CONFIG ══
@@ -2665,6 +2678,12 @@ async function loadProfissionais() {
       db.collection('profissionais').orderBy('nome').get(),
       db.collection('pacotesHoras').where('status','==','Ativo').get()
     ]);
+    // Horas gratuitas já usadas no mês atual (Membro Parceiro)
+    window._mpUsosMes = {};
+    try {
+      const _mpSnap = await db.collection('usosMembroParceiro').where('competencia','==', mpCompetencia(toDateStrLocal(new Date()))).get();
+      _mpSnap.docs.forEach(d=>{ const u=d.data(); window._mpUsosMes[u.profId] = (window._mpUsosMes[u.profId]||0) + (parseFloat(u.horas)||0); });
+    } catch(e) { console.error('Usos Membro Parceiro:', e); }
     profissionaisCache = snap.docs.map(d => ({id:d.id,...d.data()}));
     // Agrupar pacotes ativos por profId para exibição no card
     window._pacotesAtivosMap = {};
@@ -2751,7 +2770,7 @@ function renderProfissionais(profs, filtro='todos') {
       ${p.vinculo?`<div class="prof-info"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> ${rotuloVinc(p.vinculo)}</div>`:''}
       ${p.contratoFim?`<div class="prof-info" style="${vencido?'color:var(--danger);font-weight:600':vencendo?'color:var(--warning)':''}"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> ${vencido?'<svg class="ic ic-sm" viewBox="0 0 24 24" style="stroke:none"><circle cx="12" cy="12" r="6" fill="#dc2626"/></svg> VENCIDO — ':vencendo?'<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg> ':''}Contrato ${vencido?'em':'até'} ${formatDate(p.contratoFim)}</div>`:''}
       ${p.rua?`<div class="prof-info"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg> ${p.rua}, ${p.numero||''} — ${p.cidade||''}</div>`:''}
-      ${horasBar}
+      ${horasBar}${mpBarraHtml(p)}
       <div class="prof-tags">
         ${vinculoTag}
         ${p.abordagem?`<span class="tag">${p.abordagem}</span>`:''}
@@ -2849,6 +2868,7 @@ function updateVinculoAuto() {
   const v = document.getElementById('prof-vinculo').value;
   const f = document.getElementById('prof-vinculo-formal');
   f.value = v==='Turno Fixo' ? 'Com vínculo' : 'Sem vínculo';
+  mpToggleInfoProf();
 }
 
 // ── COPIAR DADOS — gera texto pronto para enviar ao profissional (WhatsApp, e-mail etc.) ──
@@ -2949,6 +2969,17 @@ async function salvarProfissional() {
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   if(!data.nome){showToast('Nome é obrigatório.','error');return;}
+  let novoProfId = '';
+  if(vinculo === MP_VINCULO) {
+    // Condições comerciais gravadas no cadastro (não mudam retroativamente se o preço padrão mudar)
+    const _ant = id ? profissionaisCache.find(x=>x.id===id) : null;
+    const _jaEra = !!(_ant && _ant.vinculo === MP_VINCULO);
+    const _hoje = toDateStrLocal(new Date());
+    data.mpMensalidade = (_ant && _ant.mpMensalidade) || MP_MENSALIDADE_PADRAO;
+    data.mpHorasMes = (_ant && _ant.mpHorasMes != null && _ant.mpHorasMes !== '') ? _ant.mpHorasMes : MP_HORAS_MES_PADRAO;
+    data.mpDesde = (_ant && _ant.mpDesde) || _hoje;
+    data.mpEntradaEm = (_jaEra && _ant.mpEntradaEm) ? _ant.mpEntradaEm : _hoje;
+  }
   try {
     if(id) {
       // Comparar com os dados anteriores para registrar o histórico de alterações
@@ -2977,7 +3008,13 @@ async function salvarProfissional() {
     } else {
       data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
       data.renovacoes=0;
-      await db.collection('profissionais').add(data);
+      const _refNovoProf = await db.collection('profissionais').add(data);
+      novoProfId = _refNovoProf.id;
+    }
+    // Membro Parceiro: gera a mensalidade do mês (1 por competência, sem duplicar)
+    if(vinculo === MP_VINCULO && data.status !== 'Inativo') {
+      const _gerouMP = await gerarMensalidadeMP(id || novoProfId);
+      if(_gerouMP && typeof loadFinanceiro === 'function') loadFinanceiro();
     }
     closeModal('novo-prof');
     showToast(id?'Profissional atualizado!':'Profissional cadastrado!','success');
@@ -3011,6 +3048,7 @@ function verProfissional(id) {
       <button class="btn btn-danger" onclick="excluirProfissional('${id}')">Excluir</button>
       <button class="btn btn-secondary" onclick="closeModal('ver-prof')">Fechar</button>
       <button class="btn btn-secondary" onclick="closeModal('ver-prof');verHistoricoProf('${id}')">Histórico</button>
+      ${(p.vinculo===MP_VINCULO||p.mpDesde)?`<button class="btn btn-secondary" onclick="closeModal('ver-prof');mpAbrirHistorico('${id}')">⏱ Horas Membro Parceiro</button>`:''}
       <button class="btn btn-secondary" onclick="closeModal('ver-prof');abrirLocacaoRecorrenteProf('${id}')">🔁 Locação Recorrente</button>
       <button class="btn btn-primary" onclick="closeModal('ver-prof');editarProfissional('${id}')">Editar Cadastro</button>
     </div>`;
@@ -3047,7 +3085,7 @@ async function abrirLocacaoRecorrenteProf(profId) {
         <div style="font-size:.78rem;color:var(--text-light);margin-top:2px">${l.recorrencia} · vencimento dia ${l.diaVencimento||'—'} · ${valorTxt}${descontoTxt}</div>
         <div style="font-size:.76rem;color:var(--text-lighter);margin-top:2px">Desde ${l.dataInicio?formatDate(l.dataInicio):'—'}${l.dataFim?` até ${formatDate(l.dataFim)}`:''}</div>
         <div style="display:flex;gap:.5rem;margin-top:.6rem">
-          <button class="btn btn-secondary btn-sm" onclick="closeModal('loc-recorrente-prof');editarLocacao('${l.id}','${l.dataInicio||''}')">Editar</button>
+          <button class="btn btn-secondary btn-sm" onclick="closeModal('loc-recorrente-prof');editarLocacao('${l.id}','${proximaOcorrenciaLoc(l)}')">Editar</button>
           <button class="btn btn-danger btn-sm" onclick="encerrarRecorrenciaLocacao('${l.id}')">Encerrar Recorrência</button>
         </div>
       </div>`;
@@ -3123,6 +3161,7 @@ function editarProfissional(id) {
   document.getElementById('prof-cidade').value = p.cidade||'';
   document.getElementById('prof-cep').value = p.cep||'';
   document.getElementById('prof-vinculo').value = p.vinculo||'Hora Avulsa';
+  mpToggleInfoProf();
   document.getElementById('prof-status').value = p.status||'Ativo';
   document.getElementById('prof-vinculo-formal').value = p.vinculoFormal||'Sem vínculo';
   document.getElementById('prof-contrato-inicio').value = p.contratoInicio||'';
@@ -4889,6 +4928,17 @@ function editarLocacao(id, dataClicada) {
     const dvFim=document.getElementById('loc-desconto-fim'); if(dvFim) dvFim.value=l.descontoFim||'';
     calcDescontoLocacao();
     toggleSaldoPacote();
+    // Escopo da edição (só recorrentes) e reserva com horas gratuitas
+    const _recEd = l.recorrencia && l.recorrencia !== 'Apenas este horário';
+    window._locEditOrig = { dataInicio: l.dataInicio||'', dataFim: l.dataFim||'' };
+    window._locEditMp = !!l.mpUso;
+    const _sw = document.getElementById('loc-edit-scope-wrap');
+    if(_sw) {
+      _sw.style.display = _recEd ? '' : 'none';
+      const _rAll = document.querySelector('input[name="loc-edit-scope"][value="all"]'); if(_rAll) _rAll.checked = true;
+      const _h = document.getElementById('loc-edit-scope-hint'); if(_h) _h.textContent = '';
+    }
+    mpToggleLoc();
     // Selecionar cor
     selectedColor=l.cor||'#a07850';
     document.querySelectorAll('.color-dot').forEach(d=>{
@@ -4960,6 +5010,7 @@ async function confirmarExclusaoLocacao() {
   try {
     if(escopo === 'all') {
       await reverterPacoteNaExclusao(id);
+      await mpReverterUsoLocacao(id);
       await excluirLancamentosPendentesDaLocacao(id, null, destino);
       await db.collection('locacoes').doc(id).delete();
       showToast('Série excluída!','success');
@@ -4973,6 +5024,7 @@ async function confirmarExclusaoLocacao() {
         // Se a ocorrência selecionada é a primeira da série, não há "passado"
         // a preservar — excluir a série inteira é o resultado equivalente.
         await reverterPacoteNaExclusao(id);
+        await mpReverterUsoLocacao(id);
         await excluirLancamentosPendentesDaLocacao(id, null, destino);
         await db.collection('locacoes').doc(id).delete();
         showToast('Série excluída!','success');
@@ -5192,13 +5244,39 @@ async function salvarLocacao() {
     if(data.descontoFim < data.descontoInicio){showToast('O fim da vigência do desconto não pode ser anterior ao início.','error');return;}
   }
 
+  // Escopo da edição de uma locação recorrente (só esta / esta e próximas / toda a série)
+  let escopoEd = 'all', origLoc = null;
+  const clickedEd = document.getElementById('loc-clicked-date').value || '';
+  if(editId) {
+    try { const _od = await db.collection('locacoes').doc(editId).get(); origLoc = _od.exists ? _od.data() : null; } catch(e) {}
+    const _recOrig = !!(origLoc && origLoc.recorrencia && origLoc.recorrencia !== 'Apenas este horário');
+    const _sel = document.querySelector('input[name="loc-edit-scope"]:checked')?.value || 'all';
+    if(_recOrig && _sel !== 'all') {
+      if(!clickedEd) { showToast('Não foi possível identificar a data da ocorrência.','error'); return; }
+      // "Esta e as próximas" a partir da 1ª ocorrência equivale a alterar a série inteira
+      escopoEd = (_sel === 'future' && clickedEd <= (origLoc.dataInicio || '')) ? 'all' : _sel;
+    }
+  }
+
   // Validação de conflito aprimorada
   try {
     const snap = await db.collection('locacoes').get();
     const todas = snap.docs.map(d=>({id:d.id,...d.data()})).filter(l=>editId ? l.id !== editId : true);
+    let dataCheck = data;
+    if(editId && escopoEd !== 'all' && origLoc) {
+      // A série original continua existindo, mas sem a(s) ocorrência(s) que estão sendo alteradas
+      const _o = {id: editId, ...origLoc};
+      if(escopoEd === 'single') {
+        _o.datasExcecao = [...(_o.datasExcecao||[]), clickedEd];
+        dataCheck = {...data, recorrencia:'Apenas este horário', dataFim:'', diasSemana:null};
+      } else {
+        _o.dataFim = diaAnteriorStr(clickedEd);
+      }
+      todas.push(_o);
+    }
 
     // Verificar conflito em datas relevantes (checar pelo menos 60 dias)
-    const conflito = verificarConflito(data, todas);
+    const conflito = verificarConflito(dataCheck, todas);
     if(conflito) {
       showToast(conflito,'error');
       return;
@@ -5222,11 +5300,34 @@ async function salvarLocacao() {
   // a partir da Hora Início, em vez de exigir uma inserção manual por hora.
   const qtdAvulsa = (!editId && vinculo === 'Hora Avulsa') ? (parseInt(document.getElementById('loc-qtd-horas')?.value) || 1) : 1;
 
+  // Membro Parceiro: reserva usando as horas gratuitas do mês (sem cobrança)
+  let mpUsar = false;
+  if(!editId && vinculo === 'Hora Avulsa' && document.getElementById('loc-mp-usar')?.checked) {
+    const _profMp = profissionaisCache.find(p=>p.id===data.profId);
+    if(!_profMp || _profMp.vinculo !== MP_VINCULO) { showToast('Este profissional não é Membro Parceiro.','error'); return; }
+    const _horasMp = qtdAvulsa > 1 ? qtdAvulsa : (timeToMin(data.fim) - timeToMin(data.inicio)) / 60;
+    if(!(_horasMp > 0)) { showToast('Horário inválido.','error'); return; }
+    try {
+      const _usosMp = await mpCarregarUsos(data.profId);
+      const _compMp = mpCompetencia(data.dataInicio);
+      const _saldoMp = mpCotaDoMes(_profMp, _compMp) - mpUsadasNoMes(_usosMp, _compMp);
+      if(_horasMp > _saldoMp + 1e-9) { showToast(`Saldo insuficiente em ${mpNomeMes(_compMp)}: ${mpFmtH(Math.max(0,_saldoMp))} disponíveis.`,'error'); return; }
+    } catch(e) { showToast('Não foi possível verificar o saldo de horas gratuitas.','error'); return; }
+    mpUsar = true;
+    data.valorLancamento = '0.00';
+    data.mpUso = true;
+  }
+
   try {
     let locacaoId = editId;
     if(editId) {
-      await db.collection('locacoes').doc(editId).update(data);
-      showToast('Locação atualizada!','success');
+      if(escopoEd !== 'all') {
+        await salvarEdicaoLocacaoRecorrente(editId, data, escopoEd, origLoc, clickedEd);
+      } else {
+        if(origLoc && origLoc.mpUso) { const _okMp = await mpSyncEdicaoLocacao(editId, data, origLoc); if(!_okMp) return; }
+        await db.collection('locacoes').doc(editId).update(data);
+        showToast('Locação atualizada!','success');
+      }
     } else if(qtdAvulsa > 1) {
       // Recarrega as locações existentes para checar conflito slot a slot
       // (a checagem geral acima usou o intervalo selecionado, mas aqui cada
@@ -5244,12 +5345,14 @@ async function salvarLocacao() {
       for(const slot of geradas) {
         const ref = await db.collection('locacoes').add({...slot, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
         await gerarLancamentoLocacao({...slot, id: ref.id});
+        if(mpUsar) await mpRegistrarUsoAgenda(slot, ref.id);
       }
       showToast(`${qtdAvulsa} locações de Áthos Singular criadas (${geradas[0].inicio}–${geradas[geradas.length-1].fim})!`, 'success');
     } else {
       data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
       const ref = await db.collection('locacoes').add(data);
       locacaoId = ref.id;
+      if(mpUsar) await mpRegistrarUsoAgenda(data, ref.id);
       showToast('Locação confirmada!','success');
       // Se esta locação está apenas consumindo horas de um pacote já existente,
       // o lançamento financeiro do pacote já foi gerado quando ele foi aberto —
@@ -5272,8 +5375,436 @@ async function salvarLocacao() {
     loadFinanceiro();
     // Garante que a barra de saldo de pacote de horas (aba Profissionais)
     // reflita imediatamente as horas descontadas nesta locação
-    if(horasDoPacote(vinculo) > 0) loadProfissionais();
-  } catch(e){showToast('Erro ao salvar locação.','error');}
+    if(typeof renderAgendaMes === 'function') renderAgendaMes();
+    if(horasDoPacote(vinculo) > 0 || mpUsar || (origLoc && origLoc.mpUso)) loadProfissionais();
+  } catch(e){showToast('Erro ao salvar locação.','error'); console.error(e);}
+}
+
+// ══════════════════════════════════════════════════════
+// EDIÇÃO DE LOCAÇÃO RECORRENTE — escopo da alteração
+// "Somente esta ocorrência" | "Esta e as próximas" | "Toda a série"
+// A locação recorrente é UM documento; as ocorrências são calculadas. Por isso:
+//  • single → a data clicada entra em datasExcecao da série e nasce uma locação
+//    avulsa (sem cobrança própria) na nova data/horário;
+//  • future → a série antiga termina no dia anterior (preserva o passado) e nasce
+//    uma série nova a partir da data clicada, herdando a cobrança mensal.
+// ══════════════════════════════════════════════════════
+function diaAnteriorStr(s) {
+  const d = new Date(s + 'T12:00:00');
+  d.setDate(d.getDate() - 1);
+  return toDateStrLocal(d);
+}
+
+// Próxima data (a partir de hoje) em que a série realmente acontece
+function proximaOcorrenciaLoc(l) {
+  const hoje = toDateStrLocal(new Date());
+  const ini = l.dataInicio || hoje;
+  const d = new Date((hoje > ini ? hoje : ini) + 'T12:00:00');
+  for(let i = 0; i < 400; i++) {
+    const s = toDateStrLocal(d);
+    if(locAtivaEmDia(l, s)) return s;
+    d.setDate(d.getDate() + 1);
+  }
+  return l.dataInicio || '';
+}
+
+function onLocEditScopeChange() {
+  const sel = document.querySelector('input[name="loc-edit-scope"]:checked')?.value || 'all';
+  const o = window._locEditOrig || {};
+  const clicked = document.getElementById('loc-clicked-date').value || o.dataInicio || '';
+  const dIni = document.getElementById('loc-data-inicio');
+  const dFim = document.getElementById('loc-data-fim');
+  const hint = document.getElementById('loc-edit-scope-hint');
+  if(sel === 'all') {
+    dIni.value = o.dataInicio || ''; dFim.value = o.dataFim || '';
+    if(hint) hint.textContent = '';
+  } else if(sel === 'future') {
+    dIni.value = clicked; dFim.value = o.dataFim || '';
+    if(hint) hint.textContent = `Os agendamentos antes de ${formatDate(clicked)} não mudam. Ajuste data de início, horário ou dias da semana abaixo: vale a partir dessa data.`;
+  } else {
+    dIni.value = clicked; dFim.value = '';
+    if(hint) hint.textContent = `Só o dia ${formatDate(clicked)} será remarcado. Informe abaixo a nova Data Início e o novo horário. A série e a cobrança mensal continuam iguais.`;
+  }
+  toggleDiasSemana();
+}
+
+async function salvarEdicaoLocacaoRecorrente(editId, data, escopo, orig, clicked) {
+  const FV = firebase.firestore.FieldValue;
+  const col = db.collection('locacoes');
+  if(escopo === 'single') {
+    const nova = {
+      ...data,
+      recorrencia: 'Apenas este horário', dataFim: '', diasSemana: null, diaVencimento: null,
+      valorLancamento: null,            // a cobrança mensal continua só na série original
+      serieOrigemId: editId, ocorrenciaOriginal: clicked,
+      createdAt: FV.serverTimestamp()
+    };
+    await col.add(nova);
+    await col.doc(editId).update({ datasExcecao: FV.arrayUnion(clicked), updatedAt: FV.serverTimestamp() });
+    showToast(`Ocorrência de ${formatDate(clicked)} remarcada para ${formatDate(data.dataInicio)}.`, 'success');
+    return;
+  }
+  // future: divide a série em duas
+  const anteriores = [...(orig.locacoesAnteriores || []), editId];
+  const nova = {
+    ...data,
+    serieOrigemId: editId,
+    locacoesAnteriores: anteriores,
+    vencimentosCancelados: orig.vencimentosCancelados || [],
+    datasExcecao: (orig.datasExcecao || []).filter(d => d >= data.dataInicio),
+    createdAt: FV.serverTimestamp()
+  };
+  const ref = await col.add(nova);
+  await col.doc(editId).update({ dataFim: diaAnteriorStr(clicked), divididaEm: clicked, updatedAt: FV.serverTimestamp() });
+  // Cobranças PENDENTES com vencimento a partir da data de corte passam para a série nova.
+  // As já baixadas (pagas) e as anteriores ao corte ficam intactas na série antiga.
+  try {
+    const snap = await db.collection('receitas').where('origemLocacaoId', '==', editId).where('status', '==', 'Pendente').get();
+    const alvo = snap.docs.filter(d => (d.data().vencimento || '') >= clicked);
+    await Promise.all(alvo.map(d => d.ref.update({ origemLocacaoId: ref.id })));
+  } catch(e) { console.error('Erro ao transferir lançamentos para a nova série:', e); }
+  showToast(`Alterações aplicadas a partir de ${formatDate(clicked)}. Os agendamentos anteriores foram preservados.`, 'success');
+}
+
+// ══════════════════════════════════════════════════════
+// MEMBRO PARCEIRO — mensalidade fixa + horas gratuitas mensais
+// Regras: R$ 185,00/mês e 3 h gratuitas por mês. As condições são gravadas no cadastro
+// do profissional (mpMensalidade / mpHorasMes) para não mudarem retroativamente.
+// Saldo = horas do mês − soma dos registros em usosMembroParceiro daquele mês.
+// A renovação mensal é automática porque o saldo é calculado por competência (AAAA-MM):
+// nenhum dado precisa ser zerado e o histórico dos meses anteriores permanece.
+// ══════════════════════════════════════════════════════
+const MP_VINCULO = 'Membro Parceiro';
+const MP_MENSALIDADE_PADRAO = 185;
+const MP_HORAS_MES_PADRAO = 3;
+const MP_MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+function mpCfg(p) {
+  const h = p && p.mpHorasMes != null && p.mpHorasMes !== '' ? parseFloat(p.mpHorasMes) : NaN;
+  return {
+    mensalidade: parseFloat(p && p.mpMensalidade) || MP_MENSALIDADE_PADRAO,
+    horas: isNaN(h) ? MP_HORAS_MES_PADRAO : h
+  };
+}
+function mpFmtH(h) { return String(Math.round((h || 0) * 100) / 100).replace('.', ',') + 'h'; }
+function mpCompetencia(s) { return String(s || '').slice(0, 7); }
+function mpNomeMes(comp) {
+  const [a, m] = String(comp).split('-');
+  return `${MP_MESES[(parseInt(m) || 1) - 1]}/${a}`;
+}
+function mpCotaDoMes(p, comp) {
+  const m = p && p.mpMeses && p.mpMeses[comp];
+  return m && m.horas != null ? parseFloat(m.horas) : mpCfg(p).horas;
+}
+async function mpCarregarUsos(profId) {
+  const snap = await db.collection('usosMembroParceiro').where('profId', '==', profId).get();
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.data || '').localeCompare(a.data || '') || (b.inicio || '').localeCompare(a.inicio || ''));
+}
+function mpUsadasNoMes(usos, comp, ignorarLocacaoId) {
+  return usos.filter(u => u.competencia === comp && !(ignorarLocacaoId && u.locacaoId === ignorarLocacaoId))
+    .reduce((s, u) => s + (parseFloat(u.horas) || 0), 0);
+}
+
+function mpToggleInfoProf() {
+  const el = document.getElementById('prof-mp-info');
+  const v = document.getElementById('prof-vinculo')?.value;
+  if(el) el.style.display = v === MP_VINCULO ? '' : 'none';
+}
+
+// Barra de saldo no card do profissional
+function mpBarraHtml(p) {
+  if(p.vinculo !== MP_VINCULO) return '';
+  const comp = mpCompetencia(toDateStrLocal(new Date()));
+  const cota = mpCotaDoMes(p, comp);
+  const usadas = (window._mpUsosMes || {})[p.id] || 0;
+  const saldo = Math.max(0, cota - usadas);
+  const pct = cota > 0 ? Math.min(100, Math.round(usadas / cota * 100)) : 0;
+  const cls = pct >= 100 ? 'danger' : pct >= 67 ? 'warning' : '';
+  return `<div class="horas-bar-wrap">
+    <div class="horas-bar-label" style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text-light);margin-bottom:3px">
+      <span>Membro Parceiro · ${mpFmtH(saldo)} gratuitas disponíveis</span>
+      <span style="font-weight:600">${mpFmtH(usadas)} / ${mpFmtH(cota)}</span>
+    </div>
+    <div class="horas-bar"><div class="horas-bar-fill ${cls}" style="width:${pct}%"></div></div>
+    <div style="display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap">
+      <button class="btn btn-secondary" style="font-size:.68rem;padding:.3rem .6rem" onclick="event.stopPropagation();mpAbrirUso('${p.id}')">Registrar uso</button>
+      <button class="btn btn-secondary" style="font-size:.68rem;padding:.3rem .6rem" onclick="event.stopPropagation();mpAbrirHistorico('${p.id}')">Histórico</button>
+    </div>
+  </div>`;
+}
+
+// ── Mensalidade automática (1 por mês, controlada por competência) ──
+async function gerarMensalidadeMP(profId) {
+  try {
+    const profRef = db.collection('profissionais').doc(profId);
+    const hoje = new Date();
+    const comp = mpCompetencia(toDateStrLocal(hoje));
+    let prof = null;
+    // Reserva a competência numa transação: evita duplicar se duas abas abrirem juntas
+    const reservou = await db.runTransaction(async tx => {
+      const doc = await tx.get(profRef);
+      if(!doc.exists) return false;
+      const p = doc.data();
+      if(p.vinculo !== MP_VINCULO || p.status === 'Inativo') return false;
+      if(p.mpMeses && p.mpMeses[comp]) return false;
+      const cfg = mpCfg(p);
+      if(!(cfg.mensalidade > 0)) return false;
+      prof = { id: doc.id, ...p };
+      tx.set(profRef, { mpMeses: { [comp]: { horas: cfg.horas, valor: cfg.mensalidade } } }, { merge: true });
+      return true;
+    });
+    if(!reservou || !prof) return false;
+
+    const cfg = mpCfg(prof);
+    const dia = parseInt(prof.vencLocacao) || 15;
+    let ano = hoje.getFullYear(), mes = hoje.getMonth();
+    const entrada = prof.mpEntradaEm || prof.mpDesde || toDateStrLocal(hoje);
+    // Mesma regra das locações: se a entrada foi depois do dia de vencimento, o 1º vencimento vai para o mês seguinte
+    if(entrada.slice(0, 7) === comp && (parseInt(entrada.slice(8, 10)) || 1) > dia) {
+      mes += 1; if(mes > 11) { mes = 0; ano += 1; }
+    }
+    const ult = new Date(ano, mes + 1, 0).getDate();
+    const venc = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(Math.min(dia, ult)).padStart(2, '0')}`;
+    const [ca, cm] = comp.split('-');
+    try {
+      const rec = await db.collection('receitas').add({
+        profissional: prof.nome || 'Profissional',
+        profId: prof.id,
+        categoria: 'Locação de Sala',
+        tipo: 'Locação',
+        subcategoria: MP_VINCULO,
+        valor: cfg.mensalidade.toFixed(2),
+        desconto: '0',
+        valorFinal: cfg.mensalidade.toFixed(2),
+        vencimento: venc,
+        obs: `Mensalidade Membro Parceiro — ${cm}/${ca} — gerado automaticamente`,
+        status: 'Pendente',
+        origemMembroParceiro: prof.id,
+        competenciaMP: comp,
+        mes: new Date(venc + 'T12:00:00').getMonth(),
+        ano: new Date(venc + 'T12:00:00').getFullYear(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await profRef.set({ mpMeses: { [comp]: { receitaId: rec.id } } }, { merge: true });
+    } catch(e) {
+      // desfaz a reserva para tentar de novo na próxima abertura
+      await profRef.update(new firebase.firestore.FieldPath('mpMeses', comp), firebase.firestore.FieldValue.delete()).catch(() => {});
+      throw e;
+    }
+    return true;
+  } catch(e) { console.error('Erro ao gerar mensalidade Membro Parceiro:', e); return false; }
+}
+
+async function gerarMensalidadesMembroParceiro() {
+  try {
+    const snap = await db.collection('profissionais').where('vinculo', '==', MP_VINCULO).get();
+    for(const d of snap.docs) {
+      if(d.data().status === 'Inativo') continue;
+      await gerarMensalidadeMP(d.id);
+    }
+  } catch(e) { console.error('Erro ao gerar mensalidades de Membro Parceiro:', e); }
+}
+
+// ── Reserva na Agenda usando as horas gratuitas ──
+async function mpToggleLoc() {
+  const grp = document.getElementById('loc-mp-group');
+  if(!grp) return;
+  const info = document.getElementById('loc-mp-info');
+  const chk = document.getElementById('loc-mp-usar');
+  const editId = document.getElementById('loc-edit-id').value;
+  if(editId) {
+    if(window._locEditMp) {
+      grp.style.display = ''; chk.checked = true; chk.disabled = true;
+      info.textContent = 'Reserva feita com horas gratuitas do Membro Parceiro: sem cobrança. Mudar data ou horário atualiza o saldo.';
+    } else { grp.style.display = 'none'; }
+    return;
+  }
+  chk.disabled = false;
+  const vinc = document.getElementById('loc-vinculo').value;
+  const prof = profissionaisCache.find(p => p.id === document.getElementById('loc-prof').value);
+  if(!prof || prof.vinculo !== MP_VINCULO || vinc !== 'Hora Avulsa') { grp.style.display = 'none'; chk.checked = false; return; }
+  grp.style.display = '';
+  const comp = mpCompetencia(document.getElementById('loc-data-inicio').value || toDateStrLocal(new Date()));
+  try {
+    const usos = await mpCarregarUsos(prof.id);
+    const cota = mpCotaDoMes(prof, comp);
+    const saldo = Math.max(0, cota - mpUsadasNoMes(usos, comp));
+    const qtd = parseInt(document.getElementById('loc-qtd-horas')?.value) || 1;
+    const horas = qtd > 1 ? qtd : Math.max(0, (timeToMin(document.getElementById('loc-fim').value) - timeToMin(document.getElementById('loc-inicio').value)) / 60);
+    let msg = `Saldo em ${mpNomeMes(comp)}: ${mpFmtH(saldo)} de ${mpFmtH(cota)}. Esta reserva usaria ${mpFmtH(horas)}.`;
+    if(chk.checked && horas > saldo) msg += ' Saldo insuficiente: reduza as horas ou desmarque para cobrar normalmente.';
+    info.textContent = msg;
+  } catch(e) { info.textContent = ''; }
+}
+
+async function mpRegistrarUsoAgenda(slot, locId) {
+  const prof = profissionaisCache.find(p => p.id === slot.profId);
+  const comp = mpCompetencia(slot.dataInicio);
+  await db.collection('usosMembroParceiro').add({
+    profId: slot.profId, profNome: prof?.nome || '',
+    competencia: comp, data: slot.dataInicio, inicio: slot.inicio, fim: slot.fim,
+    horas: (timeToMin(slot.fim) - timeToMin(slot.inicio)) / 60,
+    obs: 'Reserva na Agenda', origem: 'agenda', locacaoId: locId,
+    cota: mpCotaDoMes(prof, comp),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+// Edição de uma reserva que já usa horas gratuitas: confere o saldo e mantém o registro de uso em dia
+async function mpSyncEdicaoLocacao(editId, data, orig) {
+  if(data.profId !== orig.profId) { showToast('Para trocar o profissional de uma reserva com horas gratuitas, exclua a reserva e crie outra.', 'error'); return false; }
+  data.valorLancamento = '0.00'; data.mpUso = true;
+  const horas = (timeToMin(data.fim) - timeToMin(data.inicio)) / 60;
+  if(!(horas > 0)) { showToast('Horário inválido.', 'error'); return false; }
+  const prof = profissionaisCache.find(p => p.id === data.profId);
+  const comp = mpCompetencia(data.dataInicio);
+  try {
+    const usos = await mpCarregarUsos(data.profId);
+    const saldo = mpCotaDoMes(prof, comp) - mpUsadasNoMes(usos, comp, editId);
+    if(horas > saldo + 1e-9) { showToast(`Saldo insuficiente em ${mpNomeMes(comp)}: ${mpFmtH(Math.max(0, saldo))} disponíveis.`, 'error'); return false; }
+    const meus = usos.filter(u => u.locacaoId === editId);
+    if(meus.length) {
+      await Promise.all(meus.map(u => db.collection('usosMembroParceiro').doc(u.id).update({ competencia: comp, data: data.dataInicio, inicio: data.inicio, fim: data.fim, horas })));
+    } else {
+      await mpRegistrarUsoAgenda({ ...data }, editId);
+    }
+    return true;
+  } catch(e) { console.error(e); showToast('Não foi possível atualizar o saldo de horas.', 'error'); return false; }
+}
+
+// Ao excluir a reserva, as horas voltam para o saldo do mês
+async function mpReverterUsoLocacao(locId) {
+  try {
+    const snap = await db.collection('usosMembroParceiro').where('locacaoId', '==', locId).get();
+    await Promise.all(snap.docs.map(d => d.ref.delete()));
+  } catch(e) { console.error('Erro ao devolver horas gratuitas:', e); }
+}
+
+// ── Registro manual de uso ──
+async function mpAbrirUso(profId) {
+  const p = profissionaisCache.find(x => x.id === profId);
+  if(!p) return;
+  document.getElementById('mp-uso-prof-id').value = profId;
+  document.getElementById('mp-uso-titulo').textContent = `Registrar uso — ${p.nome || ''}`;
+  document.getElementById('mp-uso-data').value = toDateStrLocal(new Date());
+  document.getElementById('mp-uso-ini').value = '';
+  document.getElementById('mp-uso-fim').value = '';
+  document.getElementById('mp-uso-horas').value = '';
+  document.getElementById('mp-uso-obs').value = '';
+  document.getElementById('mp-uso-saldo').textContent = 'Calculando saldo...';
+  openModal('mp-uso');
+  mpAtualizarSaldoUso();
+}
+async function mpAtualizarSaldoUso() {
+  const profId = document.getElementById('mp-uso-prof-id').value;
+  const p = profissionaisCache.find(x => x.id === profId);
+  const comp = mpCompetencia(document.getElementById('mp-uso-data').value);
+  const el = document.getElementById('mp-uso-saldo');
+  if(!p || !comp) { el.textContent = ''; return; }
+  try {
+    const usos = await mpCarregarUsos(profId);
+    const cota = mpCotaDoMes(p, comp);
+    el.textContent = `Saldo em ${mpNomeMes(comp)}: ${mpFmtH(Math.max(0, cota - mpUsadasNoMes(usos, comp)))} de ${mpFmtH(cota)}`;
+  } catch(e) { el.textContent = ''; }
+}
+function mpCalcHorasUso() {
+  const ini = document.getElementById('mp-uso-ini').value, fim = document.getElementById('mp-uso-fim').value;
+  if(ini && fim && fim > ini) document.getElementById('mp-uso-horas').value = Math.round((timeToMin(fim) - timeToMin(ini)) / 60 * 100) / 100;
+}
+async function mpConfirmarUso() {
+  const profId = document.getElementById('mp-uso-prof-id').value;
+  const p = profissionaisCache.find(x => x.id === profId);
+  const data = document.getElementById('mp-uso-data').value;
+  const ini = document.getElementById('mp-uso-ini').value;
+  const fim = document.getElementById('mp-uso-fim').value;
+  const horas = parseFloat(document.getElementById('mp-uso-horas').value);
+  const obs = document.getElementById('mp-uso-obs').value.trim();
+  if(!p) return;
+  if(!data) { showToast('Informe a data do uso.', 'error'); return; }
+  if(!(horas > 0)) { showToast('Informe a quantidade de horas.', 'error'); return; }
+  if(ini && fim && fim <= ini) { showToast('O horário final deve ser depois do inicial.', 'error'); return; }
+  const comp = mpCompetencia(data);
+  try {
+    const usos = await mpCarregarUsos(profId);
+    const saldo = mpCotaDoMes(p, comp) - mpUsadasNoMes(usos, comp);
+    if(horas > saldo + 1e-9) { showToast(`Saldo insuficiente em ${mpNomeMes(comp)}: ${mpFmtH(Math.max(0, saldo))} disponíveis.`, 'error'); return; }
+    await db.collection('usosMembroParceiro').add({
+      profId, profNome: p.nome || '', competencia: comp, data, inicio: ini || '', fim: fim || '',
+      horas, obs, origem: 'manual', cota: mpCotaDoMes(p, comp),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    closeModal('mp-uso');
+    showToast('Uso registrado!', 'success');
+    loadProfissionais();
+    if(document.getElementById('modal-mp-hist')?.classList.contains('open')) mpAbrirHistorico(profId);
+  } catch(e) { console.error(e); showToast('Erro ao registrar uso.', 'error'); }
+}
+
+async function mpExcluirUso(usoId, profId) {
+  if(!confirm('Excluir este registro de uso? As horas voltam para o saldo do mês.')) return;
+  try {
+    await db.collection('usosMembroParceiro').doc(usoId).delete();
+    showToast('Registro removido. Saldo restaurado.', 'success');
+    loadProfissionais();
+    mpAbrirHistorico(profId);
+  } catch(e) { showToast('Erro ao excluir o registro.', 'error'); }
+}
+
+// ── Histórico mensal ──
+async function mpAbrirHistorico(profId) {
+  const p = profissionaisCache.find(x => x.id === profId);
+  if(!p) return;
+  window._mpHistProfId = profId;
+  document.getElementById('mp-hist-titulo').textContent = `Horas gratuitas — ${p.nome || ''}`;
+  const regBtn = document.getElementById('mp-hist-reg-btn');
+  if(regBtn) regBtn.style.display = (p.vinculo === MP_VINCULO && p.status !== 'Inativo') ? '' : 'none';
+  const box = document.getElementById('mp-hist-content');
+  box.innerHTML = '<div style="font-size:.82rem;color:var(--text-light);text-align:center;padding:1rem">Carregando...</div>';
+  openModal('mp-hist');
+  try {
+    const usos = await mpCarregarUsos(profId);
+    box.innerHTML = mpRenderHistorico(p, usos);
+  } catch(e) { console.error(e); box.innerHTML = '<div style="font-size:.82rem;color:var(--danger)">Erro ao carregar o histórico.</div>'; }
+}
+
+function mpRenderHistorico(p, usos) {
+  const cfg = mpCfg(p);
+  const hojeComp = mpCompetencia(toDateStrLocal(new Date()));
+  const meses = new Set(Object.keys(p.mpMeses || {}));
+  usos.forEach(u => u.competencia && meses.add(u.competencia));
+  if(p.vinculo === MP_VINCULO) meses.add(hojeComp);
+  const lista = [...meses].sort().reverse();
+  let html = `<div style="font-size:.78rem;color:var(--text-light);background:#faf7f2;border:1px solid var(--border);border-radius:8px;padding:.55rem .7rem;margin-bottom:.8rem">
+    Mensalidade ${formatMoney(cfg.mensalidade)} · ${mpFmtH(cfg.horas)} gratuitas por mês, renovadas automaticamente todo mês.</div>`;
+  if(lista.length === 0) return html + '<div style="font-size:.82rem;color:var(--text-light);text-align:center;padding:1rem">Nenhum mês registrado ainda.</div>';
+  lista.forEach(comp => {
+    const cota = mpCotaDoMes(p, comp);
+    const doMes = usos.filter(u => u.competencia === comp).sort((a, b) => (a.data || '').localeCompare(b.data || '') || (a.inicio || '').localeCompare(b.inicio || ''));
+    const usadas = doMes.reduce((s, u) => s + (parseFloat(u.horas) || 0), 0);
+    const saldo = Math.max(0, cota - usadas);
+    const pct = cota > 0 ? Math.min(100, Math.round(usadas / cota * 100)) : 0;
+    const cls = pct >= 100 ? 'danger' : pct >= 67 ? 'warning' : '';
+    html += `<div style="border:1px solid var(--border);border-radius:9px;padding:.7rem .8rem;margin-bottom:.6rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;font-size:.85rem;font-weight:600">
+        <span style="text-transform:capitalize">${mpNomeMes(comp)}${comp === hojeComp ? ' <span class="badge badge-gold" style="font-size:.62rem;text-transform:none">mês atual</span>' : ''}</span>
+        <span style="font-size:.76rem;font-weight:500;color:var(--text-light)">Disponibilizadas ${mpFmtH(cota)} · Usadas ${mpFmtH(usadas)} · Saldo ${mpFmtH(saldo)}</span>
+      </div>
+      <div class="horas-bar" style="margin:.45rem 0"><div class="horas-bar-fill ${cls}" style="width:${pct}%"></div></div>
+      ${doMes.length === 0 ? '<div style="font-size:.76rem;color:var(--text-lighter)">Nenhum uso neste mês.</div>' : doMes.map(u => {
+        const horario = u.inicio ? `${u.inicio}${u.fim ? '–' + u.fim : ''}` : 'sem horário';
+        const daAgenda = u.origem === 'agenda';
+        return `<div style="display:flex;align-items:center;gap:.5rem;font-size:.78rem;padding:.3rem 0;border-top:1px solid rgba(160,120,80,.12)">
+          <span style="min-width:74px;font-weight:600">${formatDate(u.data)}</span>
+          <span style="min-width:96px;color:var(--text-light)">${horario}</span>
+          <span style="min-width:38px;font-weight:600">${mpFmtH(parseFloat(u.horas) || 0)}</span>
+          <span style="flex:1;color:var(--text-lighter);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${daAgenda ? 'Agenda' : 'Manual'}${u.obs && !daAgenda ? ' · ' + escH(u.obs) : ''}</span>
+          ${daAgenda ? '<span style="font-size:.68rem;color:var(--text-lighter)" title="Exclua a reserva na Agenda para devolver as horas">via Agenda</span>' : `<button class="btn btn-danger btn-sm" style="padding:.15rem .5rem;font-size:.68rem" onclick="mpExcluirUso('${u.id}','${p.id}')">Excluir</button>`}
+        </div>`;
+      }).join('')}
+    </div>`;
+  });
+  return html;
 }
 
 // ── GERAÇÃO DE LANÇAMENTO FINANCEIRO A PARTIR DE LOCAÇÃO ──
@@ -5308,6 +5839,13 @@ async function gerarLancamentoLocacao(locacao, vencimentoStr) {
     .where('vencimento','==',venc)
     .limit(1).get();
   if(!existente.empty) return;
+  // Série dividida por edição ("esta e as próximas"): se o vencimento já foi cobrado por um trecho anterior, não cobra de novo
+  if(Array.isArray(locacao.locacoesAnteriores)) {
+    for(const antId of locacao.locacoesAnteriores) {
+      const jaAnt = await db.collection('receitas').where('origemLocacaoId','==',antId).where('vencimento','==',venc).limit(1).get();
+      if(!jaAnt.empty) return;
+    }
+  }
 
   // Respeita exclusão manual: se o usuário já excluiu o lançamento deste
   // vencimento para esta locação, não gerar de novo automaticamente.
@@ -5362,6 +5900,8 @@ async function gerarLancamentosLocacoesMensais() {
       const ultimoDiaMes = new Date(anoAtual, mesAtual+1, 0).getDate();
       const dia = Math.min(l.diaVencimento, ultimoDiaMes);
       const vencStr = `${anoAtual}-${String(mesAtual+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+      // Trecho antigo de uma série dividida: o vencimento após o corte pertence ao trecho novo
+      if(l.divididaEm && l.dataFim && vencStr > l.dataFim) continue;
       // Não gerar vencimento de mês anterior ao mês de contratação quando o dia
       // de vencimento já havia passado na contratação (mesma regra do 1º lançamento)
       let primeiroAno = ini.getFullYear(), primeiroMes = ini.getMonth();
@@ -6343,6 +6883,10 @@ function openModal(id) {
       const obsEl=document.getElementById('loc-obs');
       if(obsEl) obsEl.value='';
       popularVinculosLocacao();
+      window._locEditMp = false; window._locEditOrig = null;
+      const _sw0 = document.getElementById('loc-edit-scope-wrap'); if(_sw0) _sw0.style.display = 'none';
+      const _mpg0 = document.getElementById('loc-mp-group'); if(_mpg0) _mpg0.style.display = 'none';
+      const _mpc0 = document.getElementById('loc-mp-usar'); if(_mpc0) { _mpc0.checked = false; _mpc0.disabled = false; }
       const dvI=document.getElementById('loc-desconto-inicio'); if(dvI) dvI.value='';
       const dvF=document.getElementById('loc-desconto-fim'); if(dvF) dvF.value='';
       toggleVigenciaDesconto();
@@ -6359,6 +6903,7 @@ function openModal(id) {
     // reset handled by novoPlano()
   }
   if(id==='novo-prof'){
+    mpToggleInfoProf();
     const profEditId = document.getElementById('prof-edit-id');
     if(profEditId && !profEditId.value) {
       // Só reseta se for novo cadastro (editarProfissional seta o id antes de openModal)
@@ -6440,6 +6985,8 @@ function closeModal(id){
   if(id==='nova-locacao'){
     const editId=document.getElementById('loc-edit-id');
     if(editId) editId.value='';
+    const _sw = document.getElementById('loc-edit-scope-wrap'); if(_sw) _sw.style.display='none';
+    window._locEditMp = false;
   }
   if(id==='nova-despesa'){
     const editId=document.getElementById('despesa-edit-id');
@@ -10244,6 +10791,39 @@ async function verHistoricoProf(profId) {
   </div>
 </div>
 
+<!-- Membro Parceiro — histórico mensal de horas -->
+<div class="modal-overlay" id="modal-mp-hist" onclick="closeModalBg(event,'mp-hist')">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-title" id="mp-hist-titulo">Horas gratuitas</div>
+    <div id="mp-hist-content" style="max-height:62vh;overflow-y:auto"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('mp-hist')">Fechar</button>
+      <button class="btn btn-primary" id="mp-hist-reg-btn" onclick="mpAbrirUso(window._mpHistProfId)">Registrar uso</button>
+    </div>
+  </div>
+</div>
+
+<!-- Membro Parceiro — registrar uso de horas gratuitas -->
+<div class="modal-overlay" id="modal-mp-uso" onclick="closeModalBg(event,'mp-uso')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title" id="mp-uso-titulo">Registrar uso</div>
+    <input type="hidden" id="mp-uso-prof-id">
+    <div style="font-size:.82rem;color:var(--text-light);margin-bottom:.4rem;font-weight:500" id="mp-uso-saldo">—</div>
+    <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.75rem;line-height:1.4">Para reservar a sala, use a Agenda e marque “Usar horas gratuitas”. Este registro serve para uso já realizado ou fora da Agenda.</div>
+    <div class="form-group"><label class="form-label">Data do uso</label><input class="form-input" type="date" id="mp-uso-data" onchange="mpAtualizarSaldoUso()"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Início</label><input class="form-input" type="time" id="mp-uso-ini" onchange="mpCalcHorasUso()"></div>
+      <div class="form-group"><label class="form-label">Fim</label><input class="form-input" type="time" id="mp-uso-fim" onchange="mpCalcHorasUso()"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Horas utilizadas</label><input class="form-input" type="number" min="0.5" step="0.5" id="mp-uso-horas" placeholder="Ex: 1"></div>
+    <div class="form-group"><label class="form-label">Observação (opcional)</label><input class="form-input" id="mp-uso-obs" placeholder="Ex: Atendimento — Áthos I"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('mp-uso')">Cancelar</button>
+      <button class="btn btn-primary" onclick="mpConfirmarUso()">Registrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Registrar Uso de Pacote de Horas -->
 <div class="modal-overlay" id="modal-uso-pacote" onclick="closeModalBg(event,'uso-pacote')">
   <div class="modal" style="max-width:420px">
@@ -11518,8 +12098,8 @@ async function dashPacientes() {
 }
 
 // ── Backup e restauração ──
-const BK_COLECOES = ['locacoes','receitas','despesas','profissionais','bloqueios','lembretes','pacotesHoras','anotacoes','servicos','pacientes','agendamentosPacientes','reservasMateriais','estoqueItens','estoqueMov','estoqueCategorias','planos','pagamentosParceiros','usosPacote','subcategorias','materiais','historicoProf','config'];
-const BK_NOMES = {locacoes:'Locações', receitas:'Receitas', despesas:'Despesas', profissionais:'Profissionais', bloqueios:'Bloqueios', lembretes:'Lembretes', pacotesHoras:'Pacotes de Horas', anotacoes:'Anotações', servicos:'Serviços', pacientes:'Pacientes', agendamentosPacientes:'Agenda de Pacientes', reservasMateriais:'Reservas de Materiais', estoqueItens:'Estoque - Itens', estoqueMov:'Estoque - Movimentos', estoqueCategorias:'Estoque - Categorias', planos:'Planos e Pacotes', pagamentosParceiros:'Pagamentos a Parceiros', usosPacote:'Usos de Pacote', subcategorias:'Subcategorias', materiais:'Materiais', historicoProf:'Histórico Profissionais', config:'Configurações'};
+const BK_COLECOES = ['locacoes','receitas','despesas','profissionais','bloqueios','lembretes','pacotesHoras','usosMembroParceiro','anotacoes','servicos','pacientes','agendamentosPacientes','reservasMateriais','estoqueItens','estoqueMov','estoqueCategorias','planos','pagamentosParceiros','usosPacote','subcategorias','materiais','historicoProf','config'];
+const BK_NOMES = {locacoes:'Locações', receitas:'Receitas', despesas:'Despesas', profissionais:'Profissionais', bloqueios:'Bloqueios', lembretes:'Lembretes', pacotesHoras:'Pacotes de Horas', usosMembroParceiro:'Horas Gratuitas — Membro Parceiro', anotacoes:'Anotações', servicos:'Serviços', pacientes:'Pacientes', agendamentosPacientes:'Agenda de Pacientes', reservasMateriais:'Reservas de Materiais', estoqueItens:'Estoque - Itens', estoqueMov:'Estoque - Movimentos', estoqueCategorias:'Estoque - Categorias', planos:'Planos e Pacotes', pagamentosParceiros:'Pagamentos a Parceiros', usosPacote:'Usos de Pacote', subcategorias:'Subcategorias', materiais:'Materiais', historicoProf:'Histórico Profissionais', config:'Configurações'};
 const BK_LS = ['simulador_lancamentos_v17','simulador_config_v17','athos_transacoes','athos-dark'];
 const BK_MAX_NUVEM = 10;
 let _bkOcupado = false, _rst = null;
