@@ -1565,7 +1565,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
             <div class="cfg-row"><div class="cfg-label">Frequência</div><select class="form-select" id="bk-freq" style="max-width:180px" onchange="bkCfgSalvar()"><option value="6">A cada 6 horas</option><option value="12">A cada 12 horas</option><option value="24">Diário</option><option value="168">Semanal</option></select></div>
             <div class="cfg-row"><div><div class="cfg-label">Baixar cópia no computador</div><div class="cfg-sub">Também baixa o arquivo a cada backup automático</div></div><button class="toggle" id="bk-dl-toggle" onclick="this.classList.toggle('on');bkCfgSalvar()"></button></div>
             <div class="cfg-row"><div><div class="cfg-label">Último backup concluído</div><div class="cfg-sub" id="bk-ultimo">—</div></div><button class="btn btn-secondary btn-sm" onclick="bkNuvemAgora()">Fazer agora na nuvem</button></div>
-            <div class="cfg-row" style="display:block"><div class="cfg-label" style="margin-bottom:.4rem">Cópias na nuvem</div><div id="bk-lista" style="font-size:.8rem">—</div></div>
+            <details class="cfg-row" style="display:block" id="bk-pasta"><summary style="cursor:pointer;font-weight:600;font-size:.85rem;list-style:none">📁 Backups <span id="bk-lista-n" style="font-weight:400;color:var(--text-lighter)"></span> <span style="font-weight:400;font-size:.75rem;color:var(--text-lighter)">— clique para abrir</span></summary><div id="bk-lista" style="font-size:.8rem;margin-top:.5rem;max-height:340px;overflow-y:auto">—</div></details>
             <div class="cfg-row"><div><div class="cfg-label">Restaurar backup</div><div class="cfg-sub">Importa um arquivo .athosbackup e substitui os dados atuais (pede confirmação)</div></div><button class="btn btn-secondary btn-sm" onclick="document.getElementById('bk-file').click()">Importar arquivo</button><input type="file" id="bk-file" accept=".athosbackup,.json,application/json" style="display:none" onchange="bkEscolherArquivo(this)"></div>
           </div>
           <div class="card">
@@ -3918,13 +3918,39 @@ async function loadDashAgenda() {
     const d7 = new Date(); d7.setDate(d7.getDate()+7);
     const limite = toDateStrLocal(d7);
 
-    const [lembSnap, srvSnap, recSnap] = await Promise.all([
+    const [lembSnap, srvSnap, recSnap, pacSnap] = await Promise.all([
       db.collection('lembretes').where('status','!=','Concluído').get(),
       db.collection('servicos').get(),
-      db.collection('receitas').where('status','==','Pendente').get()
+      db.collection('receitas').where('status','==','Pendente').get(),
+      db.collection('pacientes').get().catch(()=>({docs:[]}))
     ]);
 
     const itens = [];
+
+    // Aniversários de pacientes (hoje e próximos 7 dias) — inativos aparecem mais discretos
+    const _h0 = new Date(); _h0.setHours(12,0,0,0);
+    pacSnap.docs.forEach(d=>{
+      const p = d.data();
+      if(!p.nascimento) return;
+      const n = new Date(p.nascimento + 'T12:00:00');
+      for(let i=0;i<=7;i++){
+        const dt = new Date(_h0); dt.setDate(_h0.getDate()+i);
+        if(dt.getDate()!==n.getDate() || dt.getMonth()!==n.getMonth()) continue;
+        const off = p.ativo === false, idade = dt.getFullYear()-n.getFullYear();
+        const quando = i===0 ? '<span style="color:var(--gold)">Hoje! 🎉</span>' : i===1 ? 'Amanhã' : String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0');
+        itens.push({
+          ordem: toDateStrLocal(dt),
+          html: `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid var(--border);${off?'opacity:.6':''}">
+          <div style="flex:1">
+            <span style="font-size:.76rem;font-weight:600">🎂 ${escH(p.nome||'Paciente')}</span>
+            <div style="font-size:.72rem;color:var(--text-lighter)">Aniversário de paciente${idade>0?' · '+idade+' anos':''}${off?' · inativo':''}${p.telefone?' · '+escH(p.telefone):''}</div>
+          </div>
+          <span style="font-size:.7rem;font-weight:600;color:var(--text-light);white-space:nowrap;margin-left:.5rem">${quando}</span>
+        </div>`
+        });
+        break;
+      }
+    });
 
     // Lembretes pendentes (próximos 7 dias e atrasados)
     lembSnap.docs.forEach(d=>{
@@ -7695,7 +7721,7 @@ function _planoPorNome(nome) {
 
 function horasDoPacote(vinculo) {
   // Athos Singular (Hora Avulsa) é cobrado por hora e não gera pacote, mesmo que o plano tenha "horas" preenchidas
-  if(vinculo === 'Hora Avulsa' || vinculo === 'Athos Singular' || vinculo === 'Áthos Singular') return 0;
+  if(vinculo === 'Hora Avulsa' || vinculo === 'Athos Singular' || vinculo === 'Áthos Singular' || _normVinc(vinculo).includes('singular')) return 0;
   // Pacotes cadastrados em "Planos e Pacotes": o vínculo é o próprio nome do plano
   const pl = _planoPorNome(vinculo);
   if(pl) { const h = parseFloat(String(pl.horas||'0').replace(',','.')) || 0; if(h > 0) return h; }
@@ -7706,9 +7732,20 @@ function horasDoPacote(vinculo) {
 }
 
 // Reserva que ocupa só o período escolhido (e não o turno inteiro)
+function _normVinc(v) { return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
 function ehReservaPorHorario(l) {
   const v = (l && l.vinculo) || '';
-  return v === 'Hora Avulsa' || horasDoPacote(v) > 0;
+  if(v === 'Hora Avulsa' || horasDoPacote(v) > 0) return true;
+  // Variações do nome (Áthos/Athos Singular, hora avulsa/extra, HE) também são reserva por hora, não turno
+  const n = _normVinc(v);
+  if(n === 'hora avulsa' || n === 'hora extra' || n === 'he' || n.includes('singular')) return true;
+  // Vínculo sem relação com turno e reserva curta (< 3h): ocupa só o horário reservado
+  if(l && l.inicio && l.fim && !n.includes('turno') && !n.includes('sala mista')) {
+    const m = h => { const [a,b] = String(h).split(':').map(Number); return a*60 + (b||0); };
+    const dur = m(l.fim) - m(l.inicio);
+    if(dur > 0 && dur < 180) return true;
+  }
+  return false;
 }
 // Nomenclatura: "Hora Avulsa" passou a se chamar "Athos Singular" SOMENTE na exibição.
 // O valor gravado nos registros (locações, profissionais, lançamentos) continua 'Hora Avulsa',
@@ -11552,10 +11589,12 @@ function pacCpfValido(c) {
 }
 function pacIdade(d) { return d ? new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : ''; }
 
+// Ativos primeiro (ordem alfabética); inativos agrupados no final (também em ordem alfabética)
+function pacOrdem(a, b) { return ((a.ativo === false) - (b.ativo === false)) || (a.nome||'').localeCompare(b.nome||'','pt'); }
 async function loadPacientes() {
   try {
     const snap = await db.collection('pacientes').get();
-    _pacs = snap.docs.map(d => ({id:d.id, ...d.data()})).sort((a,b) => (a.nome||'').localeCompare(b.nome||'','pt'));
+    _pacs = snap.docs.map(d => ({id:d.id, ...d.data()})).sort(pacOrdem);
     pacRender();
   } catch(e) {
     console.error(e);
@@ -11572,9 +11611,11 @@ function pacRender() {
   });
   const el = document.getElementById('pac-lista');
   if(!lista.length) { el.innerHTML = '<div style="padding:1.5rem;color:var(--text-light);font-size:.85rem">Nenhum paciente encontrado.</div>'; return; }
-  el.innerHTML = lista.map(p => {
+  const _iIn = lista.findIndex(p => p.ativo === false), _nIn = lista.filter(p => p.ativo === false).length;
+  el.innerHTML = lista.map((p, _i) => {
     const ativo = p.ativo !== false;
-    return `<div class="card" style="padding:.8rem 1rem;margin-bottom:.5rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;opacity:${ativo?1:.65}">
+    const _sep = (_i === _iIn && _iIn > 0) ? `<div style="font-size:.72rem;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.04em;margin:.9rem 0 .4rem">Pacientes inativos (${_nIn})</div>` : '';
+    return _sep + `<div class="card" style="padding:.8rem 1rem;margin-bottom:.5rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;opacity:${ativo?1:.65}">
       <div style="flex:1;min-width:180px;cursor:pointer" onclick="pacEditar('${p.id}')">
         <div style="font-weight:600">${escH(p.nome)}</div>
         <div style="font-size:.76rem;color:var(--text-light)">${escH(p.telefone||'Sem telefone')}${p.cpf?' · CPF '+escH(pacCpfFmt(p.cpf)):''}${p.nascimento?' · 🎂 '+pacIdade(p.nascimento):''}</div>
@@ -11696,7 +11737,7 @@ async function loadAgPac() {
   try {
     const [a, p, pr] = await Promise.all([db.collection('agendamentosPacientes').get(), db.collection('pacientes').get(), db.collection('profissionais').get()]);
     _agps = a.docs.map(d => ({id:d.id,...d.data()}));
-    _pacs = p.docs.map(d => ({id:d.id,...d.data()})).sort((x,y) => (x.nome||'').localeCompare(y.nome||'','pt'));
+    _pacs = p.docs.map(d => ({id:d.id,...d.data()})).sort(pacOrdem);
     _agpProfs = pr.docs.map(d => ({id:d.id,...d.data()})).filter(x => x.status !== 'Inativo').sort((x,y) => (x.nome||'').localeCompare(y.nome||'','pt'));
   } catch(e) { console.error(e); document.getElementById('agp-body').innerHTML = '<div style="color:var(--danger);padding:1rem;font-size:.83rem">Erro ao carregar. Verifique as regras do Firestore para as coleções agendamentosPacientes e pacientes.</div>'; return; }
   const opt = (arr, vazio) => `<option value="">${vazio}</option>` + arr.map(x => `<option>${escH(x)}</option>`).join('');
@@ -12064,6 +12105,18 @@ function repSessoes(ini, fim, fp, ok) {
   return out.sort((x,y) => x.profNome.localeCompare(y.profNome,'pt') || x.data.localeCompare(y.data) || x.inicio.localeCompare(y.inicio));
 }
 const repPagavel = x => x.status === 'Realizado' && !x.pago;
+// Percentual e valor retido ficam ocultos; aparecem ao clicar em "ver cálculo"
+function repCalcHtml(x) {
+  const pct = x.pago ? (x.pago.pct || 100) : x.pct;
+  if(pct >= 100) return '';
+  const vs = x.pago ? (x.pago.valorSessao || x.pago.valor) : x.valorSessao, vr = x.pago ? x.pago.valor : x.valor;
+  const clin = Math.round((vs - vr) * 100) / 100;
+  return `<br><span class="est-sub" style="font-weight:400"><a href="javascript:void(0)" style="color:var(--gold);text-decoration:underline" onclick="repVerCalc(this)">ver cálculo</a><span style="display:none"> · ${pct}% de ${_brMoeda(vs)}${clin > 0 ? ' · clínica fica com ' + _brMoeda(clin) : ''}</span></span>`;
+}
+function repVerCalc(a) {
+  const d = a.nextElementSibling, aberto = d.style.display !== 'none';
+  d.style.display = aberto ? 'none' : 'inline'; a.textContent = aberto ? 'ver cálculo' : 'ocultar';
+}
 function repTog(k) { if(_repDesm.has(k)) _repDesm.delete(k); else _repDesm.add(k); repRender(); }
 function repRender() {
   _repLista = repCalcular();
@@ -12085,7 +12138,7 @@ function repRender() {
       const linhas = it.map(x => {
         const sit = x.pago ? `<span class="badge badge-success">Pago em ${_brD(x.pago.data)}</span>` : x.status === 'Realizado' ? '<span class="badge badge-warning">Pendente</span>' : `<span class="badge badge-neutral">Previsto · ${escH(x.status)}</span>`;
         const cb = repPagavel(x) ? `<input type="checkbox" ${_repDesm.has(x.k)?'':'checked'} data-k="${escH(x.k)}" onchange="repTog(this.dataset.k)">` : '';
-        return `<div style="display:grid;grid-template-columns:26px 88px 1fr 90px 150px;gap:.4rem;align-items:center;padding:.45rem .25rem;border-top:1px solid var(--border);font-size:.82rem"><span>${cb}</span><span>${_brD(x.data)}<br><span class="est-sub">${escH(x.inicio)}</span></span><span>${escH(x.paciente)}</span><span style="text-align:right;font-weight:600">${x.valor > 0 || x.pago ? _brMoeda(x.pago ? x.pago.valor : x.valor) : '<span style="color:#dc2626" title="Atendimento sem valor informado">R$ 0,00 ⚠</span>'}${(x.pago ? (x.pago.pct || 100) : x.pct) < 100 ? `<br><span class="est-sub" style="font-weight:400">${x.pago ? (x.pago.pct || 100) : x.pct}% de ${_brMoeda(x.pago ? (x.pago.valorSessao || x.pago.valor) : x.valorSessao)}</span>` : ''}</span><span>${sit}</span></div>`;
+        return `<div style="display:grid;grid-template-columns:26px 88px 1fr 90px 150px;gap:.4rem;align-items:center;padding:.45rem .25rem;border-top:1px solid var(--border);font-size:.82rem"><span>${cb}</span><span>${_brD(x.data)}<br><span class="est-sub">${escH(x.inicio)}</span></span><span>${escH(x.paciente)}</span><span style="text-align:right;font-weight:600">${x.valor > 0 || x.pago ? _brMoeda(x.pago ? x.pago.valor : x.valor) : '<span style="color:#dc2626" title="Atendimento sem valor informado">R$ 0,00 ⚠</span>'}${repCalcHtml(x)}</span><span>${sit}</span></div>`;
       }).join('');
       return `<div class="card" style="margin-bottom:1rem;overflow-x:auto"><div style="min-width:560px"><div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem"><div><div style="font-weight:700;font-size:.95rem">${escH(nome)}</div><div class="est-sub">${it.length} atendimento(s) · total ${_brMoeda(totP)} · pago ${_brMoeda(pagoP)} · pendente <b>${_brMoeda(pendP)}</b></div></div><button class="btn btn-primary btn-sm" ${selec.length?'':'disabled'} data-p="${escH(pid)}" onclick="repAbrirPag(this.dataset.p)">Registrar pagamento (${selec.length} · ${_brMoeda(selV)})</button></div>${linhas}<div style="display:flex;justify-content:flex-end;gap:1rem;border-top:2px solid var(--border);padding-top:.5rem;margin-top:.25rem;font-size:.84rem"><span>Total acumulado: <b>${_brMoeda(totP)}</b></span><span>A pagar: <b style="color:#d97706">${_brMoeda(pendP)}</b></span></div></div></div>`;
     }).join('');
@@ -12117,14 +12170,35 @@ async function repConfirmarPag() {
     const fresh = (await db.collection('pagamentosParceiros').get()).docs.flatMap(d => (d.data().itens || []).map(i => i.k));
     if(_repTmp.itens.some(x => fresh.includes(x.k))) { showToast('Alguma sessão já foi paga. Atualizando...','error'); closeModal('rep-pag'); await loadRepasses(); return; }
     const itens = _repTmp.itens.map(x => ({k:x.k, pacienteNome:x.paciente, data:x.data, inicio:x.inicio, valor:x.valor, valorSessao:x.valorSessao, pct:x.pct}));
-    await db.collection('pagamentosParceiros').add({profKey:_repTmp.profKey, profId:_repTmp.profId, profNome:_repTmp.profNome, dataPagamento:data, total:_repTmp.total, qtd:itens.length, periodoIni:_pv('rep-f-ini'), periodoFim:_pv('rep-f-fim'), itens, obs:_pv('rep-pag-obs'), criadoPor:_quem(), createdAt:firebase.firestore.FieldValue.serverTimestamp()});
-    showToast('Pagamento registrado!','success'); closeModal('rep-pag'); _repTmp = null; await loadRepasses();
+    const pagRef = await db.collection('pagamentosParceiros').add({profKey:_repTmp.profKey, profId:_repTmp.profId, profNome:_repTmp.profNome, dataPagamento:data, total:_repTmp.total, qtd:itens.length, periodoIni:_pv('rep-f-ini'), periodoFim:_pv('rep-f-fim'), itens, obs:_pv('rep-pag-obs'), criadoPor:_quem(), createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    // Parte retida pela clínica (valor da sessão − repasse ao profissional) entra como receita já baixada,
+    // com a origem gravada (repasse, profissional e atendimentos) para rastreio.
+    const retidos = _repTmp.itens.map(x => ({k:x.k, pacienteNome:x.paciente, data:x.data, valorSessao:x.valorSessao, repasse:x.valor, pct:x.pct, retido:Math.round((x.valorSessao - x.valor) * 100) / 100})).filter(r => r.retido > 0);
+    let msgRet = '';
+    if(retidos.length) {
+      const totRet = Math.round(retidos.reduce((t,r) => t + r.retido, 0) * 100) / 100, dRec = new Date(data + 'T12:00:00');
+      try {
+        await db.collection('receitas').add({
+          profissional:_repTmp.profNome, profId:_repTmp.profId || '', categoria:'Variável', tipo:'Não se aplica', subcategoria:'Retenção de repasse (parceiro)',
+          valor:totRet.toFixed(2), desconto:'0', valorFinal:totRet.toFixed(2), vencimento:data, dataBaixa:data, status:'Pago',
+          obs:`Retenção da clínica no repasse a ${_repTmp.profNome} — ${retidos.length} atendimento(s) — gerado automaticamente`,
+          origemRepasseId:pagRef.id, origemRepasse:{pagamentoId:pagRef.id, profKey:_repTmp.profKey, profId:_repTmp.profId || '', profNome:_repTmp.profNome, itens:retidos},
+          mes:dRec.getMonth(), ano:dRec.getFullYear(), createdAt:firebase.firestore.FieldValue.serverTimestamp()
+        });
+        msgRet = ' Receita da clínica lançada: ' + _brMoeda(totRet) + '.';
+      } catch(e2) { console.error(e2); msgRet = ' Atenção: o pagamento foi registrado, mas a receita da clínica NÃO foi lançada (erro ao gravar em receitas).'; }
+    }
+    showToast('Pagamento registrado!' + msgRet, msgRet.includes('Atenção') ? 'error' : 'success'); closeModal('rep-pag'); _repTmp = null; await loadRepasses();
   } catch(e) { console.error(e); btn.disabled = false; showToast('Erro ao registrar o pagamento. Verifique as regras do Firestore (pagamentosParceiros).','error'); }
 }
 async function repEstornar(id) {
   const g = _repPags.find(x => x.id === id); if(!g) return;
-  if(!confirm(`Estornar o pagamento de ${_brMoeda(g.total)} feito em ${_brD(g.dataPagamento)} para ${g.profNome}?\n\nAs ${(g.itens||[]).length} sessões voltam a ficar pendentes.`)) return;
-  try { await db.collection('pagamentosParceiros').doc(id).delete(); showToast('Pagamento estornado.','success'); await loadRepasses(); }
+  if(!confirm(`Estornar o pagamento de ${_brMoeda(g.total)} feito em ${_brD(g.dataPagamento)} para ${g.profNome}?\n\nAs ${(g.itens||[]).length} sessões voltam a ficar pendentes e a receita da clínica gerada por este repasse (se houver) também é removida.`)) return;
+  try {
+    await db.collection('pagamentosParceiros').doc(id).delete();
+    const rr = await db.collection('receitas').where('origemRepasseId','==',id).get();
+    await Promise.all(rr.docs.map(d => d.ref.delete()));
+    showToast('Pagamento estornado.','success'); await loadRepasses(); }
   catch(e) { console.error(e); showToast('Erro ao estornar.','error'); }
 }
 function repExportar() {
@@ -12329,6 +12403,7 @@ async function bkListarNuvem() {
   const el = document.getElementById('bk-lista'); if(!el) return;
   try {
     const l = await bkNuvemMetas();
+    const _n = document.getElementById('bk-lista-n'); if(_n) _n.textContent = '(' + l.length + ')';
     el.innerHTML = l.length ? l.map(m => `<div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.35rem 0;border-top:1px solid var(--border);flex-wrap:wrap"><span>${bkFmt(m.criadoEm)} · ${m.origem === 'automatico' ? 'automático' : 'manual'} · ${m.total} registros · ${(m.tamanho/1048576).toFixed(2)} MB</span><span style="display:flex;gap:.3rem"><button class="btn btn-secondary btn-sm" data-i="${m.id}" onclick="bkNuvemBaixar(this.dataset.i)">Baixar</button><button class="btn btn-secondary btn-sm" data-i="${m.id}" onclick="bkNuvemRestaurar(this.dataset.i)">Restaurar</button></span></div>`).join('') : 'Nenhuma cópia na nuvem ainda.';
   } catch(e) { console.error(e); el.innerHTML = '<span style="color:#b91c1c">Não foi possível ler as cópias na nuvem. Verifique as regras do Firestore para a coleção backupsAuto.</span>'; }
 }
