@@ -740,43 +740,10 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
           </div>
           <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
-              <span style="font-size:.85rem;font-weight:600">Alertas</span>
+              <span style="font-size:.85rem;font-weight:600">Alertas <span style="font-weight:400;font-size:.7rem;color:var(--text-lighter)">· aniversários, vencimentos e lembretes (2 dias)</span></span>
               <span class="badge badge-warning" id="dash-alertas-count">0</span>
             </div>
             <div id="dash-alertas-list"><div class="empty-state" style="padding:1.25rem"><div class="empty-icon" style="background:var(--success-bg);color:var(--success)"><svg class="ic" viewBox="0 0 24 24"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1M22 4 12 14l-3-3"/></svg></div><div class="empty-title">Tudo em dia</div><div class="empty-desc">Nenhum alerta no momento.</div></div></div>
-          </div>
-        </div>
-        <!-- Lembrete: vence hoje -->
-        <div id="dash-vence-hoje-wrap" style="display:none;margin-top:.75rem">
-          <div class="card" style="border-left:3px solid var(--warning);padding:.875rem 1rem">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.625rem">
-              <span style="font-size:.82rem;font-weight:700;color:var(--warning)"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Vence Hoje</span>
-              <span class="badge badge-warning" id="dash-vence-hoje-count">0</span>
-            </div>
-            <div id="dash-vence-hoje-list"></div>
-          </div>
-        </div>
-        <!-- Lembrete: em atraso -->
-        <div id="dash-parcelas-venc-wrap" style="display:none;margin-top:.75rem">
-          <div class="card" style="border-left:3px solid var(--danger);padding:.875rem 1rem">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.625rem">
-              <span style="font-size:.82rem;font-weight:700;color:var(--danger)"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg> Lançamentos em Atraso</span>
-              <span class="badge badge-danger" id="dash-parcelas-venc-count">0</span>
-            </div>
-            <div id="dash-parcelas-venc-list"></div>
-          </div>
-        </div>
-
-        <!-- ── ITEM 4: Lembretes e Vencimentos Próximos ── -->
-        <div style="margin-top:.75rem">
-          <div class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
-              <span style="font-size:.85rem;font-weight:600">📋 Lembretes e Próximos Vencimentos</span>
-              <span class="badge badge-neutral" id="dash-agenda-count">0</span>
-            </div>
-            <div id="dash-agenda-list">
-              <div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0">Carregando...</div>
-            </div>
           </div>
         </div>
 
@@ -927,6 +894,9 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
             <button class="btn btn-secondary" onclick="verificarLancamentosOrfaos()" title="Localiza lançamentos pendentes cuja locação de origem já não existe mais">
               <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M11 8v4M11 16h.01M21 11.5A9.5 9.5 0 1 1 11.5 2 9.5 9.5 0 0 1 21 11.5z"/></svg>
               Verificar lançamentos órfãos
+            </button>
+            <button class="btn btn-secondary" onclick="reclassificarReceitas()" title="Aplica a nova classificação (Fixa/Variável e subcategorias) às receitas já gravadas. Gera backup antes.">
+              Reclassificar receitas
             </button>
           </div>
         </div>
@@ -1546,9 +1516,9 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
             </div>
             <div style="padding:.5rem 0;border-bottom:1px solid var(--border)">
               <div class="alert-days-row">
-                <input class="alert-day-input" type="number" value="2" min="1" id="alerta-d1"> dias antes
+                <input class="alert-day-input" type="number" value="2" min="2" max="2" readonly id="alerta-d1" title="Padrão fixo para todos os avisos"> dias antes
               </div>
-              <div style="font-size:.7rem;color:var(--text-lighter);margin-top:4px">Notificação exibida dentro do sistema 2 dias antes do vencimento.</div>
+              <div style="font-size:.7rem;color:var(--text-lighter);margin-top:4px">Notificação exibida dentro do sistema 2 dias antes do vencimento. Padrão fixo para todos os avisos (aniversários, vencimentos, lembretes e contratos).</div>
             </div>
             <div class="cfg-row"><div><div class="cfg-label">Alertas de inadimplência</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
             <div class="cfg-row"><div><div class="cfg-label">Alertas de aniversário</div><div class="cfg-sub">Notificar no dia</div></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
@@ -1674,7 +1644,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
     <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="loc-prof" onchange="toggleSaldoPacote();mpToggleLoc()"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
       <div class="form-group" id="loc-sala-group"><label class="form-label">Sala</label><select class="form-select" id="loc-sala" onchange="calcDescontoLocacao()"><option value="1" id="loc-s1-opt">Sala 1</option><option value="2" id="loc-s2-opt">Sala 2</option></select></div>
-      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista();toggleQtdAvulsa();mpToggleLoc()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option value="Pacote de 5 Horas">Áthos Essencial</option><option value="Pacote de 10 Horas">Áthos Continuidade</option><option value="Hora Avulsa">Áthos Singular</option></select></div>
+      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista();toggleQtdAvulsa();mpToggleLoc()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option value="Pacote de 5 Horas">Áthos Essencial</option><option value="Pacote de 10 Horas">Áthos Continuidade</option><option value="Hora Avulsa">Áthos Singular</option><option value="Voucher">Voucher (sem cobrança)</option></select></div>
     </div>
     <div class="form-group" id="loc-saldo-pacote-group" style="display:none">
       <div style="background:#f3f4f6;border-radius:8px;padding:.6rem .75rem;font-size:.78rem;color:var(--text-light)" id="loc-saldo-pacote-info">—</div>
@@ -3229,110 +3199,62 @@ function updateDashboardProfs() {
   else
     document.getElementById('dash-profs-sub').textContent=`${ativos} ativo${ativos!==1?'s':''}`;
 
-  // ── ANIVERSARIANTES ──
-  const mesHoje = hoje.getMonth();
-  const diaHoje = hoje.getDate();
-  const mesesNomesB = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-
-  // Aniversariantes do mês atual
-  const bdayMes = profissionaisCache.filter(p => {
-    if(!p.nascimento) return false;
-    const n = new Date(p.nascimento + 'T12:00:00');
-    return n.getMonth() === mesHoje;
-  }).sort((a,b) => new Date(a.nascimento+'T12:00:00').getDate() - new Date(b.nascimento+'T12:00:00').getDate());
-
-  // Próximos aniversários — 7 dias a partir de amanhã
-  const proximos7 = [];
-  for(let i = 1; i <= 7; i++) {
-    const d = new Date(hoje);
-    d.setDate(hoje.getDate() + i);
-    profissionaisCache.forEach(p => {
-      if(!p.nascimento) return;
-      const n = new Date(p.nascimento + 'T12:00:00');
-      if(n.getDate() === d.getDate() && n.getMonth() === d.getMonth()) {
-        proximos7.push({ ...p, _diasParaAniv: i, _dataAniv: d });
-      }
-    });
-  }
-  // Filtrar os do próximo mês (apenas se hoje é nos últimos dias do mês)
-  const diasRestantesNoMes = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).getDate() - diaHoje;
-  const mostrarProxMes = diasRestantesNoMes < 7;
-
+  // ── ALERTAS: aniversários, contratos, vínculo e desconto — janela única de DIAS_AVISO dias ──
   const bdayBanner = document.getElementById('bday-banner');
-  let bannerHtml = '';
-
-  if(bdayMes.length > 0) {
-    const bdayRows = bdayMes.map(p => {
-      const n = new Date(p.nascimento + 'T12:00:00');
-      const isHoje = n.getDate() === diaHoje;
-      const dia = String(n.getDate()).padStart(2,'0') + '/' + String(mesHoje+1).padStart(2,'0');
-      return `<div style="display:flex;align-items:center;gap:8px;padding:.45rem 0;border-bottom:1px solid rgba(160,120,80,.15)">
-        <span style="font-size:.78rem;font-weight:700;min-width:36px;color:var(--gold)">${dia}</span>
-        <span style="font-size:.82rem;font-weight:${isHoje?'700':'500'};color:${isHoje?'var(--gold)':'var(--text)'}">${p.nome||'—'}</span>
-        ${isHoje?'<span class="badge badge-warning" style="margin-left:auto;font-size:.65rem">Hoje!</span>':''}
-      </div>`;
-    }).join('');
-    bannerHtml += `<div class="bday-alert" style="margin-bottom:${proximos7.length>0&&mostrarProxMes?'.5rem':'0'}">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:.5rem">
-        <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8M4 16s1.5-2 4-2 4 2 4 2 1.5-2 4-2 4 2 4 2M12 7v4M12 7a2 2 0 1 0-2-2c0 1.1 2 2 2 2z"/></svg>
-        <strong>Aniversariantes — ${mesesNomesB[mesHoje]}</strong>
-        <span class="badge badge-warning" style="font-size:.65rem">${bdayMes.length}</span>
-      </div>
-      ${bdayRows}
-    </div>`;
-  }
-
-  if(proximos7.length > 0 && mostrarProxMes) {
-    const proxRows = proximos7.map(p => {
-      const dia = String(p._dataAniv.getDate()).padStart(2,'0') + '/' + String(p._dataAniv.getMonth()+1).padStart(2,'0');
-      const label = p._diasParaAniv === 1 ? 'amanhã' : `em ${p._diasParaAniv} dias`;
-      return `<div style="display:flex;align-items:center;gap:8px;padding:.35rem 0;border-bottom:1px solid rgba(160,120,80,.1)">
-        <span style="font-size:.76rem;font-weight:700;min-width:36px;color:var(--gold)">${dia}</span>
-        <span style="font-size:.8rem;font-weight:500">${p.nome||'—'}</span>
-        <span style="font-size:.72rem;color:var(--text-lighter);margin-left:auto">${label}</span>
-      </div>`;
-    }).join('');
-    bannerHtml += `<div class="bday-alert" style="background:var(--gold-pale);border-color:#d4b896">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:.5rem">
-        <svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        <strong>Próximos Aniversários (7 dias)</strong>
-        <span class="badge badge-neutral" style="font-size:.65rem">${proximos7.length}</span>
-      </div>
-      ${proxRows}
-    </div>`;
-  }
-
-  bdayBanner.innerHTML = bannerHtml;
+  if(bdayBanner) bdayBanner.innerHTML = '';
   dashPacientes();
 
-  // Alertas — inclui vencidos
-  const alertas=[];
-  // Aniversário hoje nos alertas
-  bdayMes.filter(p=>{ const n=new Date(p.nascimento+'T12:00:00'); return n.getDate()===diaHoje; })
-    .forEach(p=>alertas.push({icon:'<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8M4 16s1.5-2 4-2 4 2 4 2 1.5-2 4-2 4 2 4 2M12 7v4M12 7a2 2 0 1 0-2-2c0 1.1 2 2 2 2z"/></svg>',title:'Aniversário hoje',sub:p.nome}));
-  vencendo.forEach(p=>{
-    const diff=Math.floor((new Date(p.contratoFim+'T12:00:00')-hoje)/(1000*60*60*24));
-    const label=diff<0?`Contrato VENCIDO há ${Math.abs(diff)} dia(s)`:diff===0?'Contrato vence HOJE':`Contrato vence em ${diff} dia(s)`;
-    alertas.push({icon:'<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg>',title:label,sub:p.nome,action:`abrirRenovar('${p.id}')`});
+  const hojeStrA = toDateStrLocal(hoje);
+  const itensP = [];
+  const h12 = new Date(); h12.setHours(12,0,0,0);
+  profissionaisCache.forEach(p => {
+    if(!p.nascimento) return;
+    const n = new Date(p.nascimento + 'T12:00:00');
+    for(let i = 0; i <= DIAS_AVISO; i++) {
+      const d = new Date(h12); d.setDate(h12.getDate() + i);
+      if(d.getDate() !== n.getDate() || d.getMonth() !== n.getMonth()) continue;
+      const quando = i === 0 ? 'Hoje!' : i === 1 ? 'amanhã' : `em ${i} dias`;
+      itensP.push({ordem: toDateStrLocal(d), html: alertaHtml({icon:'🎂', title:'Aniversário de profissional', sub:escH(p.nome||'—'), right:quando, rightColor: i===0 ? 'var(--gold)' : 'var(--text-light)'})});
+      break;
+    }
   });
-  const vinculoAlertas = checkVinculoAlertas(profissionaisCache);
-  vinculoAlertas.forEach(a => alertas.push(a));
-  (window._alertasDesconto||[]).forEach(a => alertas.push(a));
+  vencendo.forEach(p => {
+    const diff = Math.floor((new Date(p.contratoFim+'T12:00:00') - hoje) / (1000*60*60*24));
+    const label = diff<0 ? `Contrato VENCIDO há ${Math.abs(diff)} dia(s)` : diff===0 ? 'Contrato vence HOJE' : `Contrato vence em ${diff} dia(s)`;
+    itensP.push({ordem: p.contratoFim, html: alertaHtml({icon:'⚠️', title:label, sub:escH(p.nome||'—'), action:`abrirRenovar('${p.id}')`})});
+  });
+  checkVinculoAlertas(profissionaisCache).forEach(a => itensP.push({ordem: hojeStrA, html: alertaHtml(a)}));
+  (window._alertasDesconto||[]).forEach(a => itensP.push({ordem: hojeStrA, html: alertaHtml(a)}));
+  window._alertasProfs = itensP;
+  renderAlertasDash();
+}
 
-  document.getElementById('dash-alertas-count').textContent=alertas.length;
-  if(alertas.length===0){
-    document.getElementById('dash-alertas-list').innerHTML='<div class="empty-state" style="padding:1.25rem"><div class="empty-icon" style="background:var(--success-bg);color:var(--success)"><svg class="ic" viewBox="0 0 24 24"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1M22 4 12 14l-3-3"/></svg></div><div class="empty-title">Tudo em dia</div><div class="empty-desc">Nenhum alerta no momento.</div></div>';
-  } else {
-    document.getElementById('dash-alertas-list').innerHTML=alertas.map(a=>`
-      <div class="mini-item" style="gap:9px">
-        <span>${a.icon}</span>
-        <div style="flex:1">
-          <div style="font-size:.8rem;font-weight:500">${a.title}</div>
-          <div style="font-size:.7rem;color:var(--text-lighter)">${a.sub}</div>
-        </div>
-        ${a.action?`<button class="btn btn-secondary btn-sm" onclick="${a.action}">${a.actionLabel||'Renovar'}</button>`:''}
-      </div>`).join('');
-  }
+// ── ALERTAS DO DASHBOARD ──
+// Antecedência única para TODOS os avisos (aniversários, vencimentos, lembretes, contratos, vínculo, desconto).
+// Itens já vencidos continuam aparecendo (marcados como atraso) até serem resolvidos.
+const DIAS_AVISO = 2;
+function dataMaisDias(str, n) { const d = new Date(str + 'T12:00:00'); d.setDate(d.getDate() + n); return toDateStrLocal(d); }
+function alertaHtml(a) {
+  return `<div class="mini-item" style="gap:9px;${a.dim?'opacity:.6;':''}${a.onclick?'cursor:pointer;':''}"${a.onclick?` onclick="${a.onclick}"`:''}>
+    <span>${a.icon||''}</span>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:.8rem;font-weight:500">${a.title}</div>
+      <div style="font-size:.7rem;color:var(--text-lighter)">${a.sub||''}</div>
+    </div>
+    ${a.right?`<span style="font-size:.7rem;font-weight:600;color:${a.rightColor||'var(--text-light)'};white-space:nowrap">${a.right}</span>`:''}
+    ${a.action?`<button class="btn btn-secondary btn-sm" onclick="${a.action}">${a.actionLabel||'Renovar'}</button>`:''}
+  </div>`;
+}
+function renderAlertasDash() {
+  const list = document.getElementById('dash-alertas-list');
+  if(!list) return;
+  const itens = [...(window._alertasProfs||[]), ...(window._alertasAgenda||[]), ...(window._alertasFin||[])]
+    .sort((a,b) => String(a.ordem).localeCompare(String(b.ordem)));
+  const cnt = document.getElementById('dash-alertas-count');
+  if(cnt) cnt.textContent = itens.reduce((t,i) => t + (i.conta === 0 ? 0 : 1), 0);
+  list.innerHTML = itens.length
+    ? itens.map(i => i.html).join('')
+    : '<div class="empty-state" style="padding:1.25rem"><div class="empty-icon" style="background:var(--success-bg);color:var(--success)"><svg class="ic" viewBox="0 0 24 24"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1M22 4 12 14l-3-3"/></svg></div><div class="empty-title">Tudo em dia</div><div class="empty-desc">Nenhum alerta nos próximos 2 dias.</div></div>';
 }
 
 function loadDashboard() {
@@ -3452,71 +3374,37 @@ function loadDashboard() {
     });
   }).catch(()=>{});
 
-  // Lançamentos que vencem hoje ou estão em atraso (receitas + despesas pendentes)
+  // Vencimentos (receitas + despesas pendentes): atrasados, hoje e próximos DIAS_AVISO dias → card Alertas
   Promise.all([
     db.collection('despesas').get(),
     db.collection('receitas').get()
   ]).then(([despSnap, recSnap])=>{
+    const limite = dataMaisDias(hojeStr, DIAS_AVISO);
     const despesas = despSnap.docs.map(d=>({id:d.id, _tipo:'despesa', ...d.data()}));
     const receitas = recSnap.docs.map(d=>({id:d.id, _tipo:'receita', ...d.data()}));
-    const todos = [...despesas, ...receitas].filter(x=>{
-      if(x.status==='Pago') return false;
-      if(!x.vencimento) return false;
-      return x.vencimento <= hojeStr;
-    });
-
-    const hoje_items = todos.filter(x=>x.vencimento===hojeStr)
-      .sort((a,b)=>(a.descricao||a.profissional||'').localeCompare(b.descricao||b.profissional||''));
-    const atraso_items = todos.filter(x=>x.vencimento<hojeStr)
-      .sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
-
-    function renderItem(x, showDias) {
-      const isRec = x._tipo==='receita';
+    const todos = [...despesas, ...receitas].filter(x => x.status!=='Pago' && x.vencimento && x.vencimento <= limite);
+    const atrasados = todos.filter(x => x.vencimento < hojeStr).sort((a,b) => a.vencimento.localeCompare(b.vencimento));
+    const proximos = todos.filter(x => x.vencimento >= hojeStr);
+    const irFin = "showPage('financeiro',document.querySelector('[onclick*=financeiro]'))";
+    const mk = x => {
+      const isRec = x._tipo === 'receita';
       const label = isRec ? (x.profissional||x.descricao||'—') : (x.descricao||'—');
-      const parcela = x.parcela ? ` <span style="font-size:.72rem;color:var(--text-lighter)">${x.parcela}</span>` : '';
-      const tipo = isRec
-        ? `<span style="font-size:.72rem;color:var(--success);font-weight:500">↑ receber</span>`
-        : `<span style="font-size:.72rem;color:var(--danger);font-weight:500">↓ pagar</span>`;
-      const diasEl = showDias
-        ? `<span style="font-size:.75rem;min-width:36px;color:var(--danger);font-weight:600">${Math.floor((new Date(hojeStr)-new Date(x.vencimento))/86400000)}d</span>`
-        : `<span style="font-size:.75rem;min-width:36px;color:var(--warning);font-weight:600">hoje</span>`;
-      const valorColor = isRec ? 'var(--success)' : 'var(--danger)';
-      return `<div class="mini-item" style="gap:8px;cursor:pointer" onclick="showPage('financeiro',document.querySelector('[onclick*=financeiro]'))">
-        ${diasEl}
-        <div style="flex:1;min-width:0">
-          <div style="font-size:.78rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}${parcela} ${tipo}</div>
-          <div style="font-size:.7rem;color:var(--text-lighter)">${formatDate(x.vencimento)} · ${x.categoria||'—'}</div>
-        </div>
-        <span style="font-size:.78rem;font-weight:600;color:${valorColor};white-space:nowrap">${formatMoney(x.valor)}</span>
-      </div>`;
-    }
-
-    // Bloco "Vence Hoje"
-    const hojeWrap = document.getElementById('dash-vence-hoje-wrap');
-    const hojeList = document.getElementById('dash-vence-hoje-list');
-    const hojeCnt  = document.getElementById('dash-vence-hoje-count');
-    if(hojeWrap && hojeList && hojeCnt) {
-      if(hoje_items.length === 0) {
-        hojeWrap.style.display='none';
-      } else {
-        hojeWrap.style.display='block';
-        hojeCnt.textContent = hoje_items.length;
-        hojeList.innerHTML = hoje_items.slice(0,8).map(x=>renderItem(x,false)).join('');
-        if(hoje_items.length>8) hojeList.innerHTML+=`<div style="font-size:.72rem;color:var(--text-lighter);text-align:center;padding:.5rem 0">+${hoje_items.length-8} mais...</div>`;
-      }
-    }
-
-    // Bloco "Em Atraso"
-    const wrap = document.getElementById('dash-parcelas-venc-wrap');
-    const lista = document.getElementById('dash-parcelas-venc-list');
-    const cnt   = document.getElementById('dash-parcelas-venc-count');
-    if(!wrap || !lista || !cnt) return;
-    if(atraso_items.length === 0) { wrap.style.display='none'; return; }
-    wrap.style.display='block';
-    cnt.textContent = atraso_items.length;
-    lista.innerHTML = atraso_items.slice(0,8).map(x=>renderItem(x,true)).join('');
-    if(atraso_items.length>8) lista.innerHTML+=`<div style="font-size:.72rem;color:var(--text-lighter);text-align:center;padding:.5rem 0">+${atraso_items.length-8} mais...</div>`;
-  }).catch(()=>{});
+      const parcela = x.parcela ? ` ${escH(String(x.parcela))}` : '';
+      const dias = Math.round((new Date(x.vencimento+'T12:00:00') - new Date(hojeStr+'T12:00:00')) / 86400000);
+      const right = dias < 0 ? `${Math.abs(dias)}d em atraso` : dias === 0 ? 'vence hoje' : dias === 1 ? 'vence amanhã' : `vence em ${dias} dias`;
+      const cor = dias < 0 ? 'var(--danger)' : 'var(--warning)';
+      return {ordem: x.vencimento, html: alertaHtml({
+        icon: isRec ? '💰' : '💸',
+        title: `${escH(label)}${parcela}`,
+        sub: `${isRec ? '↑ a receber' : '↓ a pagar'} · ${formatDate(x.vencimento)} · ${formatMoney(x.valor)}`,
+        right, rightColor: cor, onclick: irFin
+      })};
+    };
+    const out = [...atrasados.slice(0,8), ...proximos].map(mk);
+    if(atrasados.length > 8) out.push({ordem:'9999', conta:0, html: alertaHtml({icon:'', title:`+${atrasados.length-8} lançamento(s) em atraso`, sub:'Veja a lista completa no Financeiro.', onclick: irFin})});
+    window._alertasFin = out;
+    renderAlertasDash();
+  }).catch(e=>{ console.error('Alertas de vencimento:', e); });
 
   // Despesa do mês (mesmo critério da receita: vencimento dentro do mês)
   db.collection('despesas').get().then(snap=>{
@@ -3549,9 +3437,9 @@ async function carregarAlertasDesconto() {
       if(l.dataFim && l.dataFim < hojeStr) return;          // locação já encerrada
       if(l.dataFim && l.dataFim <= l.descontoFim) return;   // locação acaba junto/antes do desconto
       const diff = Math.round((new Date(l.descontoFim+'T12:00:00') - hojeD)/86400000);
-      if(diff < 0 || diff > 2) return;
+      if(diff < 0 || diff > DIAS_AVISO) return;
       const prof = profissionaisCache.find(p=>p.id===l.profId)?.nome || 'Profissional';
-      const quando = diff===0 ? 'termina HOJE' : diff===1 ? 'termina amanhã' : 'termina em 2 dias';
+      const quando = diff===0 ? 'termina HOJE' : diff===1 ? 'termina amanhã' : `termina em ${diff} dias`;
       out.push({
         icon:'<svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
         title:`Desconto de ${l.desconto}% ${quando}`,
@@ -3667,6 +3555,34 @@ async function excluirBloqueio_turnosPage(id) {
 }
 
 // ══════════════════════════════════════════════════════
+
+// ── RECLASSIFICAR RECEITAS JÁ GRAVADAS (locações e percentuais de projetos) ──
+async function reclassificarReceitas() {
+  try {
+    const snap = await db.collection('receitas').get();
+    const alvo = [];
+    snap.docs.forEach(d => {
+      const r = d.data(); let novo = null;
+      if(r.origemRepasseId) novo = {categoria:'Variável', subcategoria:'Parcerias'};
+      else if(r.categoria === 'Locação de Sala') novo = classificarReceitaLocacao(r.subcategoria || '');
+      if(novo && (r.categoria !== novo.categoria || r.subcategoria !== novo.subcategoria)) alvo.push({ref:d.ref, antes:{categoria:r.categoria||'', subcategoria:r.subcategoria||''}, novo});
+    });
+    if(!alvo.length) { showToast('Nenhuma receita precisa ser reclassificada.','success'); return; }
+    const nFixa = alvo.filter(a=>a.novo.categoria==='Fixa').length, nHora = alvo.filter(a=>a.novo.subcategoria==='Locação de hora avulsa').length, nParc = alvo.filter(a=>a.novo.subcategoria==='Parcerias').length;
+    if(!confirm(`ATENÇÃO — esta ação ALTERA dados já gravados.\n\nSerão reclassificadas ${alvo.length} receita(s):\n• ${nFixa} → Fixa / Locação de sala\n• ${nHora} → Variável / Locação de hora avulsa\n• ${nParc} → Variável / Parcerias\n\nValores, datas e status NÃO mudam; só categoria e subcategoria (a classificação anterior fica guardada em cada receita).\n\nRISCO: se algo falhar no meio, parte das receitas pode ficar reclassificada e parte não.\nPor segurança, um BACKUP COMPLETO será gerado antes (nuvem + arquivo para download).\n\nContinuar?`)) return;
+    showToast('Gerando backup antes de alterar...','success');
+    await bkNuvemGerar('manual', true);
+    if(!confirm('Backup concluído e baixado.\n\nConfirmar agora a reclassificação das ' + alvo.length + ' receita(s)?')) { showToast('Reclassificação cancelada. Nada foi alterado.','success'); return; }
+    for(let i = 0; i < alvo.length; i += 400) {
+      const bt = db.batch();
+      alvo.slice(i, i + 400).forEach(a => bt.update(a.ref, {...a.novo, classificacaoAnterior:a.antes, reclassificadoEm:firebase.firestore.FieldValue.serverTimestamp()}));
+      await bt.commit();
+    }
+    showToast(`${alvo.length} receita(s) reclassificada(s).`,'success');
+    loadFinanceiro();
+  } catch(e) { console.error(e); showToast('Erro ao reclassificar. Confira o backup baixado e tente novamente.','error'); }
+}
+
 // ── ABA LEVANTAMENTO FINANCEIRO ──
 // ══════════════════════════════════════════════════════
 async function calcularLevantamento() {
@@ -3910,106 +3826,64 @@ async function calcularAnalise() {
 }
 
 async function loadDashAgenda() {
-  const el = document.getElementById('dash-agenda-list');
-  const cnt = document.getElementById('dash-agenda-count');
-  if(!el) return;
   try {
     const hoje = toDateStrLocal(new Date());
-    const d7 = new Date(); d7.setDate(d7.getDate()+7);
-    const limite = toDateStrLocal(d7);
-
-    const [lembSnap, srvSnap, recSnap, pacSnap] = await Promise.all([
+    const limite = dataMaisDias(hoje, DIAS_AVISO);
+    const [lembSnap, srvSnap, pacSnap] = await Promise.all([
       db.collection('lembretes').where('status','!=','Concluído').get(),
       db.collection('servicos').get(),
-      db.collection('receitas').where('status','==','Pendente').get(),
       db.collection('pacientes').get().catch(()=>({docs:[]}))
     ]);
-
     const itens = [];
 
-    // Aniversários de pacientes (hoje e próximos 7 dias) — inativos aparecem mais discretos
+    // Aniversários de pacientes (hoje e próximos DIAS_AVISO dias) — inativos aparecem mais discretos
     const _h0 = new Date(); _h0.setHours(12,0,0,0);
     pacSnap.docs.forEach(d=>{
       const p = d.data();
       if(!p.nascimento) return;
       const n = new Date(p.nascimento + 'T12:00:00');
-      for(let i=0;i<=7;i++){
+      for(let i=0;i<=DIAS_AVISO;i++){
         const dt = new Date(_h0); dt.setDate(_h0.getDate()+i);
         if(dt.getDate()!==n.getDate() || dt.getMonth()!==n.getMonth()) continue;
         const off = p.ativo === false, idade = dt.getFullYear()-n.getFullYear();
-        const quando = i===0 ? '<span style="color:var(--gold)">Hoje! 🎉</span>' : i===1 ? 'Amanhã' : String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0');
-        itens.push({
-          ordem: toDateStrLocal(dt),
-          html: `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid var(--border);${off?'opacity:.6':''}">
-          <div style="flex:1">
-            <span style="font-size:.76rem;font-weight:600">🎂 ${escH(p.nome||'Paciente')}</span>
-            <div style="font-size:.72rem;color:var(--text-lighter)">Aniversário de paciente${idade>0?' · '+idade+' anos':''}${off?' · inativo':''}${p.telefone?' · '+escH(p.telefone):''}</div>
-          </div>
-          <span style="font-size:.7rem;font-weight:600;color:var(--text-light);white-space:nowrap;margin-left:.5rem">${quando}</span>
-        </div>`
-        });
+        itens.push({ordem: toDateStrLocal(dt), html: alertaHtml({
+          icon:'🎂', dim: off,
+          title: escH(p.nome||'Paciente'),
+          sub: `Aniversário de paciente${idade>0?' · '+idade+' anos':''}${off?' · inativo':''}${p.telefone?' · '+escH(p.telefone):''}`,
+          right: i===0 ? 'Hoje! 🎉' : i===1 ? 'Amanhã' : `em ${i} dias`, rightColor: i===0 ? 'var(--gold)' : 'var(--text-light)'
+        })});
         break;
       }
     });
 
-    // Lembretes pendentes (próximos 7 dias e atrasados)
+    // Lembretes pendentes (até DIAS_AVISO dias à frente + atrasados)
     lembSnap.docs.forEach(d=>{
       const l = d.data();
       if(!l.data || l.data > limite) return;
       const vencido = l.data < hoje;
-      itens.push({
-        ordem: l.data,
-        html: `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid var(--border)">
-          <div style="flex:1">
-            <span style="font-size:.76rem;font-weight:600">📌 ${l.titulo||'Lembrete'}</span>
-            ${l.prioridade&&l.prioridade!=='Normal'?`<span class="badge" style="font-size:.62rem;margin-left:4px;background:${l.prioridade==='Urgente'?'var(--danger)':'var(--warning)'};color:#fff">${l.prioridade}</span>`:''}
-            <div style="font-size:.72rem;color:var(--text-lighter)">${l.obs||''}</div>
-          </div>
-          <span style="font-size:.7rem;font-weight:600;color:${vencido?'var(--danger)':'var(--text-light)'};white-space:nowrap;margin-left:.5rem">${vencido?'⚠ Atrasado':formatDate(l.data)}</span>
-        </div>`
-      });
+      const prio = l.prioridade && l.prioridade!=='Normal' ? ` · ${escH(l.prioridade)}` : '';
+      itens.push({ordem: l.data, html: alertaHtml({
+        icon:'📌', title: escH(l.titulo||'Lembrete'),
+        sub: `${escH(l.obs||'')}${prio}`,
+        right: vencido ? '⚠ Atrasado' : formatDate(l.data), rightColor: vencido ? 'var(--danger)' : 'var(--text-light)'
+      })});
     });
 
-    // Serviços com vencimento próximo
+    // Serviços com vencimento próximo ou atrasado
     srvSnap.docs.forEach(d=>{
-      const s = d.data();
-      if(!s.data || s.data > limite || s.status==='Concluído' || s.status==='Cancelado') return;
-      const vencido = s.data < hoje;
-      itens.push({
-        ordem: s.data,
-        html: `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid var(--border)">
-          <div style="flex:1">
-            <span style="font-size:.76rem;font-weight:600">🔧 ${s.tipo||'Serviço'}</span>
-            <div style="font-size:.72rem;color:var(--text-lighter)">${s.empresa||''}</div>
-          </div>
-          <span style="font-size:.7rem;font-weight:600;color:${vencido?'var(--danger)':'var(--text-light)'};white-space:nowrap;margin-left:.5rem">${vencido?'⚠ Atrasado':formatDate(s.data)}</span>
-        </div>`
-      });
+      const sv = d.data();
+      if(!sv.data || sv.data > limite || sv.status==='Concluído' || sv.status==='Cancelado') return;
+      const vencido = sv.data < hoje;
+      itens.push({ordem: sv.data, html: alertaHtml({
+        icon:'🔧', title: escH(sv.tipo||'Serviço'), sub: escH(sv.empresa||''),
+        right: vencido ? '⚠ Atrasado' : formatDate(sv.data), rightColor: vencido ? 'var(--danger)' : 'var(--text-light)'
+      })});
     });
 
-    // Receitas pendentes vencendo nos próximos 7 dias
-    recSnap.docs.forEach(d=>{
-      const r = d.data();
-      if(!r.vencimento || r.vencimento < hoje || r.vencimento > limite) return;
-      itens.push({
-        ordem: r.vencimento,
-        html: `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid var(--border)">
-          <div style="flex:1">
-            <span style="font-size:.76rem;font-weight:600">💰 ${r.profissional||r.descricao||'Receita'}</span>
-            <div style="font-size:.72rem;color:var(--text-lighter)">${rotuloVinc(r.tipo||'')} — ${formatMoney(r.valor)}</div>
-          </div>
-          <span style="font-size:.7rem;font-weight:600;color:var(--warning);white-space:nowrap;margin-left:.5rem">Vence ${formatDate(r.vencimento)}</span>
-        </div>`
-      });
-    });
-
-    itens.sort((a,b)=>a.ordem.localeCompare(b.ordem));
-    if(cnt) cnt.textContent = itens.length;
-    el.innerHTML = itens.length
-      ? itens.map(i=>i.html).join('')
-      : '<div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0;text-align:center">Nenhum item pendente para os próximos 7 dias. ✅</div>';
+    window._alertasAgenda = itens;
+    renderAlertasDash();
   } catch(e) {
-    el.innerHTML = '<div style="color:var(--text-lighter);font-size:.8rem">Erro ao carregar.</div>';
+    console.error('Alertas (aniversários, lembretes, serviços):', e);
   }
 }
 
@@ -4339,7 +4213,7 @@ async function renderPrevisao() {
       const prof = profissionaisCache.find(p => p.id === l.profId);
       locacoesPrevistas.push({
         profissional: prof?.nome || 'Profissional',
-        categoria: 'Locação',
+        categoria: (classificarReceitaLocacao(l.vinculo) || {categoria:'Locação'}).categoria,
         vencimento: vencStr,
         valor: l.valorLancamento,
         origemLocacaoId: l.id,
@@ -5324,7 +5198,14 @@ async function salvarLocacao() {
 
   // ITEM 7.1: Hora Avulsa por quantidade — gera N locações de 1h sequenciais
   // a partir da Hora Início, em vez de exigir uma inserção manual por hora.
-  const qtdAvulsa = (!editId && vinculo === 'Hora Avulsa') ? (parseInt(document.getElementById('loc-qtd-horas')?.value) || 1) : 1;
+  const qtdAvulsa = (!editId && (vinculo === 'Hora Avulsa' || vinculo === 'Voucher')) ? (parseInt(document.getElementById('loc-qtd-horas')?.value) || 1) : 1;
+
+  // Voucher: reserva a hora normalmente, sem cobrança e sem lançamento financeiro
+  if(vinculo === 'Voucher') {
+    data.desconto = '0'; data.descontoInicio = ''; data.descontoFim = '';
+    data.valorBase = '0.00'; data.valorLancamento = '0.00';
+    data.diaVencimento = null; data.voucher = true;
+  }
 
   // Membro Parceiro: reserva usando as horas gratuitas do mês (sem cobrança)
   let mpUsar = false;
@@ -5373,7 +5254,7 @@ async function salvarLocacao() {
         await gerarLancamentoLocacao({...slot, id: ref.id});
         if(mpUsar) await mpRegistrarUsoAgenda(slot, ref.id);
       }
-      showToast(`${qtdAvulsa} locações de Áthos Singular criadas (${geradas[0].inicio}–${geradas[geradas.length-1].fim})!`, 'success');
+      showToast(`${qtdAvulsa} locações de ${rotuloVinc(vinculo)} criadas (${geradas[0].inicio}–${geradas[geradas.length-1].fim})!`, 'success');
     } else {
       data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
       const ref = await db.collection('locacoes').add(data);
@@ -5879,6 +5760,15 @@ function mpRenderHistorico(p, usos) {
 // ── GERAÇÃO DE LANÇAMENTO FINANCEIRO A PARTIR DE LOCAÇÃO ──
 // Gera o lançamento referente ao vencimento corrente (ou ao próximo vencimento
 // a partir da data de início, no caso de locação recorrente).
+// ── Classificação padrão das receitas de locação ──
+// Turnos → Fixa / Locação de sala · Hora avulsa (extra) → Variável / Locação de hora avulsa.
+// Pacotes de horas e Membro Parceiro mantêm a classificação anterior (fora do pedido).
+function classificarReceitaLocacao(vinculo) {
+  if(vinculo === 'Hora Avulsa') return {categoria:'Variável', subcategoria:'Locação de hora avulsa'};
+  if(horasDoPacote(vinculo) > 0 || vinculo === MP_VINCULO) return null;
+  return {categoria:'Fixa', subcategoria:'Locação de sala'};
+}
+
 async function gerarLancamentoLocacao(locacao, vencimentoStr) {
   if(!locacao.valorLancamento || parseFloat(locacao.valorLancamento) <= 0) return; // sem valor cadastrado, não gera
 
@@ -5920,6 +5810,7 @@ async function gerarLancamentoLocacao(locacao, vencimentoStr) {
   // vencimento para esta locação, não gerar de novo automaticamente.
   if(Array.isArray(locacao.vencimentosCancelados) && locacao.vencimentosCancelados.includes(venc)) return;
 
+  const _clsLoc = classificarReceitaLocacao(locacao.vinculo) || {categoria:'Locação de Sala', subcategoria: locacao.vinculo || ''};
   const prof = profissionaisCache.find(p=>p.id===locacao.profId);
   const salaNome = String(locacao.sala)==='2' ? (appConfig.sala2||'Áthos II') : (appConfig.sala1||'Áthos I');
 
@@ -5928,9 +5819,9 @@ async function gerarLancamentoLocacao(locacao, vencimentoStr) {
   await db.collection('receitas').add({
     profissional: prof?.nome || 'Profissional',
     profId: locacao.profId,
-    categoria: 'Locação de Sala',
+    categoria: _clsLoc.categoria,
     tipo: 'Locação',
-    subcategoria: locacao.vinculo || '',
+    subcategoria: _clsLoc.subcategoria,
     valor: calcVal.valor,
     desconto: calcVal.desconto,
     valorFinal: calcVal.valor,
@@ -7284,6 +7175,7 @@ function valorBaseLocacao(sala, vinculo) {
   if(vinculo === 'Pacote de 5 Horas') {
     return num(config.preco5h);
   }
+  if(vinculo === 'Voucher') return 0; // reserva sem cobrança
   if(vinculo === 'Hora Avulsa') {
     return num(config.precoAvulsa);
   }
@@ -7328,6 +7220,7 @@ function calcDescontoLocacao() {
   const sala = document.getElementById('loc-sala').value;
   const vinculo = document.getElementById('loc-vinculo').value;
   const desconto = parseFloat(document.getElementById('loc-desconto').value) || 0;
+  if(vinculo === 'Voucher') { document.getElementById('loc-valor-final').value = 'Sem cobrança (voucher)'; return; }
   const base = valorBaseLocacao(sala, vinculo);
   if(base > 0) {
     const final = base * (1 - desconto/100);
@@ -7357,8 +7250,9 @@ function toggleQtdAvulsa() {
   const vinculo = document.getElementById('loc-vinculo').value;
   const wrap = document.getElementById('loc-qtd-avulsa-wrap');
   if(!wrap) return;
-  wrap.style.display = vinculo === 'Hora Avulsa' ? '' : 'none';
-  if(vinculo === 'Hora Avulsa') atualizarResumoQtdAvulsa();
+  const _porHora = vinculo === 'Hora Avulsa' || vinculo === 'Voucher';
+  wrap.style.display = _porHora ? '' : 'none';
+  if(_porHora) atualizarResumoQtdAvulsa();
 }
 function atualizarResumoQtdAvulsa() {
   const resumoEl = document.getElementById('loc-qtd-resumo');
@@ -7551,8 +7445,10 @@ function updateSubcatSelects() {
   const despFiltroSel = document.getElementById('desp-filtro-subcat-sel');
   const despOpts = '<option value="">Selecionar...</option>' +
     subcatsCache.filter(s=>s.tipo==='ambos'||s.tipo==='despesa').map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+  const _recNomes = subcatsCache.filter(s=>s.tipo==='ambos'||s.tipo==='receita').map(s=>s.nome);
+  const _recPadrao = ['Locação de sala','Locação de hora avulsa','Parcerias'].filter(n => !_recNomes.some(m => _normVinc(m) === _normVinc(n)));
   const recOpts = '<option value="">Selecionar...</option>' +
-    subcatsCache.filter(s=>s.tipo==='ambos'||s.tipo==='receita').map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+    [..._recPadrao, ..._recNomes].map(n=>`<option value="${n}">${n}</option>`).join('');
   const filtroOpts = '<option value="">Todas as subcategorias</option>' +
     subcatsCache.map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
   const despFiltroOpts = '<option value="">Todas as subcategorias</option>' +
@@ -7735,7 +7631,7 @@ function horasDoPacote(vinculo) {
 function _normVinc(v) { return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
 function ehReservaPorHorario(l) {
   const v = (l && l.vinculo) || '';
-  if(v === 'Hora Avulsa' || horasDoPacote(v) > 0) return true;
+  if(v === 'Hora Avulsa' || v === 'Voucher' || horasDoPacote(v) > 0) return true;
   // Variações do nome (Áthos/Athos Singular, hora avulsa/extra, HE) também são reserva por hora, não turno
   const n = _normVinc(v);
   if(n === 'hora avulsa' || n === 'hora extra' || n === 'he' || n.includes('singular')) return true;
@@ -7783,7 +7679,7 @@ function popularVinculosLocacao() {
   const fixos = ['Turno Fixo (4h)','Turno 8h — Áthos I','Turno 8h — Áthos II','Turno 8h — Sala Mista'];
   const nomesPlanos = [...new Set(_planosCache.map(p => p.nome).filter(n => n && !_NOMES_SINGULAR.includes(n)))];
   const pacotes = (nomesPlanos.length || _planosCache.length) ? nomesPlanos : ['Pacote de 5 Horas','Pacote de 10 Horas'];
-  const lista = [...fixos, ...pacotes, 'Hora Avulsa'];
+  const lista = [...fixos, ...pacotes, 'Hora Avulsa', 'Voucher'];
   sel.innerHTML = '';
   lista.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = rotuloVinc(v); sel.appendChild(o); });
   if(atual) { garantirOpcaoVinculo(atual); sel.value = atual; }
@@ -8733,7 +8629,7 @@ function checkVinculoAlertas(profs) {
     }
     proximosAlertas.forEach(meses => {
       const diasParaAlerta = Math.round((meses * 30.44) - diasVinculo);
-      if(diasParaAlerta >= 0 && diasParaAlerta <= 7) {
+      if(diasParaAlerta >= 0 && diasParaAlerta <= DIAS_AVISO) {
         const anos = meses >= 12 ? `${meses/12} ano${meses/12>1?'s':''}` : `${meses} meses`;
         alertas.push({
           icon: '<svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
@@ -12179,7 +12075,7 @@ async function repConfirmarPag() {
       const totRet = Math.round(retidos.reduce((t,r) => t + r.retido, 0) * 100) / 100, dRec = new Date(data + 'T12:00:00');
       try {
         await db.collection('receitas').add({
-          profissional:_repTmp.profNome, profId:_repTmp.profId || '', categoria:'Variável', tipo:'Não se aplica', subcategoria:'Retenção de repasse (parceiro)',
+          profissional:_repTmp.profNome, profId:_repTmp.profId || '', categoria:'Variável', tipo:'Não se aplica', subcategoria:'Parcerias',
           valor:totRet.toFixed(2), desconto:'0', valorFinal:totRet.toFixed(2), vencimento:data, dataBaixa:data, status:'Pago',
           obs:`Retenção da clínica no repasse a ${_repTmp.profNome} — ${retidos.length} atendimento(s) — gerado automaticamente`,
           origemRepasseId:pagRef.id, origemRepasse:{pagamentoId:pagRef.id, profKey:_repTmp.profKey, profId:_repTmp.profId || '', profNome:_repTmp.profNome, itens:retidos},
@@ -12237,19 +12133,6 @@ async function dashPacientes() {
       + card('Atendimentos Hoje', dia.length, `${cnt(dia,'Aguardando confirmação')} aguardando · ${cnt(dia,'Confirmado')} confirmados · ${cnt(dia,'Realizado')} realizados`, 'var(--gold)', 'agpac')
       + card('Atendimentos do Mês', mesVal, `${cnt(occ,'Realizado')} realizados · ${canc} cancelados${occ.length ? ' (' + Math.round(canc*100/occ.length) + '%)' : ''}`, 'inherit', 'agpac')
       + card('Repasses Pendentes', pend, pendSub, '#d97706', 'repasses');
-    // aniversariantes de pacientes
-    const nomesMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const nasc = pacs.filter(p => p.nascimento).map(p => ({p, n:new Date(p.nascimento + 'T12:00:00'), off:p.ativo === false}));
-    const doMes = nasc.filter(x => x.n.getMonth() === mes).sort((a,b) => a.n.getDate() - b.n.getDate() || (a.off - b.off));
-    const prox = [];
-    for(let i = 1; i <= 7; i++) { const d = new Date(hoje); d.setDate(hoje.getDate() + i); if(d.getMonth() === mes) continue; nasc.forEach(x => { if(x.n.getDate() === d.getDate() && x.n.getMonth() === d.getMonth()) prox.push({...x, d, i}); }); }
-    document.getElementById('bday-pac')?.remove();
-    if(doMes.length || prox.length) {
-      const linha = (dd, mm, nome, anos, extra, forte, off) => `<div style="display:flex;align-items:center;gap:8px;padding:${off?'.2rem':'.4rem'} 0;border-bottom:1px solid rgba(160,120,80,.15);${off?'opacity:.6':''}"><span style="font-size:${off?'.72rem':'.78rem'};font-weight:${off?'500':'700'};min-width:36px;color:${off?'var(--text-light)':'var(--gold)'}">${String(dd).padStart(2,'0')}/${String(mm+1).padStart(2,'0')}</span><span style="font-size:${off?'.76rem':'.82rem'};font-weight:${forte?'700':'500'};${off?'color:var(--text-light)':''}">${escH(nome||'—')}</span><span style="font-size:.68rem;color:var(--text-lighter)">${anos} anos${off?' · inativo':''}</span>${extra}</div>`;
-      const rows = doMes.map(x => linha(x.n.getDate(), mes, x.p.nome, ano - x.n.getFullYear(), x.n.getDate() === hoje.getDate() ? '<span class="badge badge-warning" style="margin-left:auto;font-size:.65rem">Hoje!</span>' : '', x.n.getDate() === hoje.getDate(), x.off)).join('')
-        + prox.map(x => linha(x.d.getDate(), x.d.getMonth(), x.p.nome, x.d.getFullYear() - x.n.getFullYear(), `<span style="font-size:.72rem;color:var(--text-lighter);margin-left:auto">${x.i === 1 ? 'amanhã' : 'em ' + x.i + ' dias'}</span>`, false, x.off)).join('');
-      document.getElementById('bday-banner').insertAdjacentHTML('beforeend', `<div class="bday-alert" id="bday-pac" style="margin-top:.5rem"><div style="display:flex;align-items:center;gap:6px;margin-bottom:.5rem"><strong>Aniversariantes — pacientes · ${nomesMes[mes]}</strong><span class="badge badge-warning" style="font-size:.65rem">${doMes.length + prox.length}</span></div>${rows}</div>`);
-    }
   } catch(e) { console.error('Dashboard de pacientes:', e); box.innerHTML = ''; }
 }
 
