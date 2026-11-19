@@ -200,6 +200,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .stat-value{font-size:1.55rem;font-weight:700;line-height:1;margin-bottom:3px;}
 .stat-sub{font-size:.7rem;color:var(--text-lighter);}
 .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.dash-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem;}
+@media(max-width:1180px){.dash-grid3{grid-template-columns:1fr 1fr;}}
 .mini-item{display:flex;align-items:center;gap:9px;padding:.55rem 0;border-bottom:1px solid var(--border);font-size:.8rem;}
 .mini-item:last-child{border-bottom:none;}
 .mini-time{font-size:.7rem;color:var(--text-lighter);width:36px;flex-shrink:0;}
@@ -439,6 +441,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   .hamburger{display:flex;}
   .stats-grid{grid-template-columns:1fr 1fr;}
   .dash-grid{grid-template-columns:1fr;}
+  .dash-grid3{grid-template-columns:1fr;}
   .fin-stats{grid-template-columns:1fr;}
   .config-grid{grid-template-columns:1fr;}
   .prev-grid{grid-template-columns:1fr;}
@@ -740,10 +743,34 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
           </div>
           <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
-              <span style="font-size:.85rem;font-weight:600">Alertas <span style="font-weight:400;font-size:.7rem;color:var(--text-lighter)">· aniversários, vencimentos e lembretes (2 dias)</span></span>
+              <span style="font-size:.85rem;font-weight:600">Alertas <span style="font-weight:400;font-size:.7rem;color:var(--text-lighter)">· aniversários, contratos, descontos e serviços (2 dias)</span></span>
               <span class="badge badge-warning" id="dash-alertas-count">0</span>
             </div>
             <div id="dash-alertas-list"><div class="empty-state" style="padding:1.25rem"><div class="empty-icon" style="background:var(--success-bg);color:var(--success)"><svg class="ic" viewBox="0 0 24 24"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1M22 4 12 14l-3-3"/></svg></div><div class="empty-title">Tudo em dia</div><div class="empty-desc">Nenhum alerta no momento.</div></div></div>
+          </div>
+        </div>
+
+        <div class="dash-grid3">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
+              <span style="font-size:.85rem;font-weight:600">Lançamentos em Atraso</span>
+              <span class="badge badge-danger" id="dash-atrasos-count">0</span>
+            </div>
+            <div id="dash-atrasos-list"><div style="font-size:.78rem;color:var(--text-lighter);padding:.5rem 0">Carregando...</div></div>
+          </div>
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
+              <span style="font-size:.85rem;font-weight:600">Lembretes</span>
+              <span class="badge badge-warning" id="dash-lembretes-count">0</span>
+            </div>
+            <div id="dash-lembretes-list"><div style="font-size:.78rem;color:var(--text-lighter);padding:.5rem 0">Carregando...</div></div>
+          </div>
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
+              <span style="font-size:.85rem;font-weight:600">Próximos Vencimentos <span style="font-weight:400;font-size:.7rem;color:var(--text-lighter)">· 2 dias</span></span>
+              <span class="badge badge-neutral" id="dash-vencimentos-count">0</span>
+            </div>
+            <div id="dash-vencimentos-list"><div style="font-size:.78rem;color:var(--text-lighter);padding:.5rem 0">Carregando...</div></div>
           </div>
         </div>
 
@@ -1570,6 +1597,15 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
             <div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0">Carregando...</div>
           </div>
         </div>
+
+        <div class="card" style="margin-bottom:1.25rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem">
+            <span style="font-size:.85rem;font-weight:600">🗓 Turnos contratados por profissional</span>
+            <span class="badge badge-neutral" id="turnos-contratados-count">—</span>
+          </div>
+          <div style="font-size:.72rem;color:var(--text-lighter);margin-bottom:.6rem">Prévia das próximas 4 semanas. Clique no profissional para ver quais turnos estão locados.</div>
+          <div id="turnos-contratados-list"><div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0">Carregando...</div></div>
+        </div>
       </div>
 
 <!-- ══ LEVANTAMENTO FINANCEIRO ══ -->
@@ -1805,7 +1841,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
     </div>
     <div style="font-size:.78rem;font-weight:600;color:var(--text-light);margin:.75rem 0 .5rem;text-transform:uppercase;letter-spacing:.05em">Contrato</div>
     <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="prof-vinculo" onchange="updateVinculoAuto()"><option value="Hora Avulsa">Áthos Singular</option><option>Pacote de Horas</option><option>Turno Fixo</option><option value="Membro Parceiro">Membro Parceiro</option></select></div>
-    <div id="prof-mp-info" style="display:none;font-size:.76rem;color:var(--text-light);background:#faf7f2;border:1px solid var(--border);border-radius:8px;padding:.55rem .75rem;margin:-.25rem 0 .75rem;line-height:1.45"><strong>Membro Parceiro:</strong> mensalidade fixa de R$ 185,00 e 3 horas gratuitas por mês, renovadas automaticamente. A mensalidade é lançada em A Receber, uma vez por mês, no dia de vencimento escolhido abaixo.</div>
+    <div id="prof-mp-info" style="display:none;font-size:.76rem;color:var(--text-light);background:#faf7f2;border:1px solid var(--border);border-radius:8px;padding:.55rem .75rem;margin:-.25rem 0 .75rem;line-height:1.45"><strong>Membro Parceiro:</strong> mensalidade fixa de R$ 180,00 e 3 horas gratuitas por mês, renovadas automaticamente. A mensalidade é lançada em A Receber, uma vez por mês, no dia de vencimento escolhido abaixo (com “Não se aplica”, usa o dia 15).</div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="prof-status"><option>Ativo</option><option>Inativo</option></select></div>
       <div class="form-group"><label class="form-label">Vínculo Formal</label><input class="form-input" id="prof-vinculo-formal" readonly value="Sem vínculo" style="background:#f9fafb;color:var(--text-light)"></div>
@@ -1820,6 +1856,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
         <option value="5">5</option>
         <option value="15" selected>15</option>
         <option value="30">30</option>
+        <option value="na">Não se aplica</option>
       </select>
     </div>
     <div class="form-group"><label class="form-label">Observações</label><textarea class="form-textarea" id="prof-obs" placeholder="Observações gerais sobre o profissional..."></textarea></div>
@@ -2662,6 +2699,18 @@ async function loadProfissionais() {
       if(!window._pacotesAtivosMap[p.profId]) window._pacotesAtivosMap[p.profId]=[];
       window._pacotesAtivosMap[p.profId].push(p);
     });
+    // 1ª reserva de cada pacote ativo (início dos 30 dias de validade)
+    try {
+      const _ids = new Set(pacotesSnap.docs.map(d=>d.id));
+      if(_ids.size) {
+        const [_lSnap, _uSnap] = await Promise.all([db.collection('locacoes').get(), db.collection('usosPacote').get()]);
+        const _prim = {};
+        const _reg = (id, dt) => { if(!id || !dt || !_ids.has(id)) return; if(!_prim[id] || dt < _prim[id]) _prim[id] = dt; };
+        _lSnap.docs.forEach(d=>{ const l = d.data(); _reg(l.pacoteId, l.dataInicio); });
+        _uSnap.docs.forEach(d=>{ const u = d.data(); _reg(u.pacoteId, u.data); });
+        Object.values(window._pacotesAtivosMap).forEach(arr => arr.forEach(pc => { pc._primeiraReserva = [pc.dataInicio, _prim[pc.id]].filter(Boolean).sort()[0] || ''; }));
+      }
+    } catch(e) { console.error('Validade dos pacotes:', e); }
     renderProfissionais(profissionaisCache);
     updateProfSelect();
     updateDashboardProfs();
@@ -2714,6 +2763,7 @@ function renderProfissionais(profs, filtro='todos') {
             <span>${concluido?'⚠ Pacote concluído':'Saldo: '+saldo+'h disponíveis'}</span>
             <span style="font-weight:600">${usadas}h / ${pac.totalHoras}h</span>
           </div>
+          ${concluido ? '' : `<div style="margin:0 0 4px">${pacBadgeValidade(pac)}</div>`}
           <div class="horas-bar"><div class="horas-bar-fill ${cls}" style="width:${pct}%"></div></div>
           ${!concluido?`<button class="btn btn-secondary" style="font-size:.68rem;padding:.3rem .6rem;margin-top:.4rem"
             onclick="event.stopPropagation();abrirModalUsoPacote('${pac.id}','${(p.nome||'').replace(/'/g,"\\'")}',${saldo})">
@@ -2945,7 +2995,7 @@ async function salvarProfissional() {
     const _ant = id ? profissionaisCache.find(x=>x.id===id) : null;
     const _jaEra = !!(_ant && _ant.vinculo === MP_VINCULO);
     const _hoje = toDateStrLocal(new Date());
-    data.mpMensalidade = (_ant && _ant.mpMensalidade) || MP_MENSALIDADE_PADRAO;
+    data.mpMensalidade = (_ant && _ant.mpMensalidade && parseFloat(_ant.mpMensalidade) !== MP_MENSALIDADE_ANTIGA) ? _ant.mpMensalidade : MP_MENSALIDADE_PADRAO;
     data.mpHorasMes = (_ant && _ant.mpHorasMes != null && _ant.mpHorasMes !== '') ? _ant.mpHorasMes : MP_HORAS_MES_PADRAO;
     data.mpDesde = (_ant && _ant.mpDesde) || _hoje;
     data.mpEntradaEm = (_jaEra && _ant.mpEntradaEm) ? _ant.mpEntradaEm : _hoje;
@@ -3014,6 +3064,7 @@ function verProfissional(id) {
     </div>
     ${p.rua?`<div style="background:#f9fafb;border-radius:7px;padding:.7rem;border:1px solid var(--border);margin-bottom:1rem"><div style="font-size:.72rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Endereço</div><div style="font-size:.82rem">${p.rua}, ${p.numero||''}${p.complemento?' — '+p.complemento:''} — ${p.bairro||''} — ${p.cidade||''} · CEP ${p.cep||''}</div></div>`:''}
     ${p.obs?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:.7rem;margin-bottom:1rem;font-size:.82rem"><strong>Observações:</strong> ${p.obs}</div>`:''}
+    <div id="ver-prof-pac" style="margin-bottom:1rem"></div>
     <div class="modal-actions">
       <button class="btn btn-danger" onclick="excluirProfissional('${id}')">Excluir</button>
       <button class="btn btn-secondary" onclick="closeModal('ver-prof')">Fechar</button>
@@ -3023,6 +3074,7 @@ function verProfissional(id) {
       <button class="btn btn-primary" onclick="closeModal('ver-prof');editarProfissional('${id}')">Editar Cadastro</button>
     </div>`;
   openModal('ver-prof');
+  pacRenderHistoricoProf(id);
 }
 
 // ── LOCAÇÃO RECORRENTE — acesso pelo cadastro do Profissional ──
@@ -3374,7 +3426,7 @@ function loadDashboard() {
     });
   }).catch(()=>{});
 
-  // Vencimentos (receitas + despesas pendentes): atrasados, hoje e próximos DIAS_AVISO dias → card Alertas
+  // Vencimentos (receitas + despesas pendentes): atrasados → "Lançamentos em Atraso"; hoje e próximos DIAS_AVISO dias → "Próximos Vencimentos"
   Promise.all([
     db.collection('despesas').get(),
     db.collection('receitas').get()
@@ -3400,9 +3452,17 @@ function loadDashboard() {
         right, rightColor: cor, onclick: irFin
       })};
     };
-    const out = [...atrasados.slice(0,8), ...proximos].map(mk);
-    if(atrasados.length > 8) out.push({ordem:'9999', conta:0, html: alertaHtml({icon:'', title:`+${atrasados.length-8} lançamento(s) em atraso`, sub:'Veja a lista completa no Financeiro.', onclick: irFin})});
-    window._alertasFin = out;
+    const semDados = txt => `<div style="font-size:.78rem;color:var(--text-lighter);padding:.5rem 0">${txt}</div>`;
+    const htmlAtr = atrasados.slice(0,8).map(x => mk(x).html);
+    if(atrasados.length > 8) htmlAtr.push(alertaHtml({icon:'', title:`+${atrasados.length-8} lançamento(s) em atraso`, sub:'Veja a lista completa no Financeiro.', onclick: irFin}));
+    const elAtr = document.getElementById('dash-atrasos-list');
+    if(elAtr) elAtr.innerHTML = htmlAtr.length ? htmlAtr.join('') : semDados('Nenhum lançamento em atraso.');
+    const cAtr = document.getElementById('dash-atrasos-count'); if(cAtr) cAtr.textContent = atrasados.length;
+    const prox = proximos.slice().sort((a,b) => a.vencimento.localeCompare(b.vencimento));
+    const elVen = document.getElementById('dash-vencimentos-list');
+    if(elVen) elVen.innerHTML = prox.length ? prox.map(x => mk(x).html).join('') : semDados('Nada vence nos próximos 2 dias.');
+    const cVen = document.getElementById('dash-vencimentos-count'); if(cVen) cVen.textContent = prox.length;
+    window._alertasFin = []; // atrasos e vencimentos têm blocos próprios (fora do card Alertas)
     renderAlertasDash();
   }).catch(e=>{ console.error('Alertas de vencimento:', e); });
 
@@ -3457,6 +3517,76 @@ async function carregarAlertasDesconto() {
 // ══════════════════════════════════════════════════════
 // ── ABA TURNOS ──
 // ══════════════════════════════════════════════════════
+// ── CONTROLE DE TURNOS: prévia dos turnos contratados por profissional ──
+// Usa locAtivaEmDia nos próximos 28 dias, igual ao que aparece no Mapa de Consultórios.
+// Só entram locações de turno (4h/8h); pacotes, Áthos Singular e Voucher ficam de fora.
+const _TC_DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const _TC_TURNO = {manha:'Manhã', tarde:'Tarde', noite:'Noite'};
+async function loadTurnosContratados() {
+  const el = document.getElementById('turnos-contratados-list');
+  if(!el) return;
+  try {
+    const hoje = toDateStrLocal(new Date());
+    const [locSnap, profSnap] = await Promise.all([
+      db.collection('locacoes').get(),
+      profissionaisCache.length ? Promise.resolve(null) : db.collection('profissionais').get()
+    ]);
+    const profs = profSnap ? profSnap.docs.map(d=>({id:d.id,...d.data()})) : profissionaisCache;
+    const dias = Array.from({length:28}, (_,i)=>dataMaisDias(hoje, i));
+    const porProf = {};
+    locSnap.docs.map(d=>({id:d.id,...d.data()})).forEach(l=>{
+      if(!l.profId || ehReservaPorHorario(l)) return;
+      const ocorr = dias.filter(d => locAtivaEmDia(l, d));
+      if(!ocorr.length) return;
+      const dows = [...new Set(ocorr.map(d => new Date(d+'T12:00:00').getDay()))].sort((a,b)=>a-b);
+      const sk = getSalaKeyGlobal(l.sala, l.vinculo);
+      const salaNome = sk==='mista' ? 'Sala Mista' : sk==='s2' ? (appConfig.sala2||'Áthos II') : (appConfig.sala1||'Áthos I');
+      (porProf[l.profId] = porProf[l.profId] || []).push({l, dows, turnos:getTurnosOcupados(l), salaNome, proxima:ocorr[0], quinzenal:(l.recorrencia||'').toLowerCase()==='quinzenal'});
+    });
+    const ids = Object.keys(porProf).sort((a,b)=>{
+      const na = (profs.find(p=>p.id===a)||{}).nome||'', nb = (profs.find(p=>p.id===b)||{}).nome||'';
+      return na.localeCompare(nb,'pt');
+    });
+    const cnt = document.getElementById('turnos-contratados-count');
+    if(cnt) cnt.textContent = `${ids.length} profissional(is)`;
+    if(!ids.length) { el.innerHTML = '<div style="color:var(--text-lighter);font-size:.8rem;padding:.5rem 0">Nenhum turno locado nas próximas 4 semanas.</div>'; return; }
+    const desc = r => `${r.dows.map(d=>_TC_DIAS[d]).join('/')} · ${r.turnos.map(x=>_TC_TURNO[x]||x).join('+')} · ${escH(r.salaNome)}${r.quinzenal?' (quinzenal)':''}`;
+    el.innerHTML = ids.map(pid=>{
+      const regs = porProf[pid];
+      const nome = (profs.find(p=>p.id===pid)||{}).nome || 'Profissional';
+      const porSemana = regs.reduce((s,r)=>s + r.dows.length*r.turnos.length, 0);
+      const chips = regs.slice(0,3).map(r=>`<span class="badge badge-neutral" style="font-size:.66rem;margin:2px 4px 0 0">${desc(r)}</span>`).join('') + (regs.length>3 ? `<span style="font-size:.68rem;color:var(--text-lighter)">+${regs.length-3}</span>` : '');
+      const det = regs.map(r=>`<div style="display:flex;justify-content:space-between;gap:.5rem;align-items:center;padding:.45rem 0;border-top:1px solid var(--border)">
+          <div>
+            <div style="font-size:.8rem;font-weight:600">${desc(r)}</div>
+            <div style="font-size:.7rem;color:var(--text-lighter)">${r.l.inicio||''}–${r.l.fim||''} · ${escH(rotuloVinc(r.l.vinculo||''))} · desde ${formatDate(r.l.dataInicio)}${r.l.dataFim?' até '+formatDate(r.l.dataFim):' · sem data fim'} · próxima: ${formatDate(r.proxima)}</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();editarLocacao('${r.l.id}','${r.proxima}')">Abrir</button>
+        </div>`).join('');
+      return `<div style="border:1px solid var(--border);border-radius:8px;margin-bottom:.5rem;overflow:hidden">
+        <div style="padding:.6rem .8rem;cursor:pointer;user-select:none" onclick="toggleTurnosContratados('${pid}')">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem">
+            <span style="font-size:.84rem;font-weight:600">${escH(nome)}</span>
+            <span style="font-size:.72rem;color:var(--text-light);white-space:nowrap">${porSemana} turno${porSemana!==1?'s':''}/semana <span id="tc-seta-${pid}">▾</span></span>
+          </div>
+          <div style="margin-top:2px">${chips}</div>
+        </div>
+        <div id="tc-det-${pid}" style="display:none;padding:0 .8rem .4rem;background:#faf9f6">${det}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--text-lighter);font-size:.8rem">Erro ao carregar.</div>';
+    console.error('Turnos contratados:', e);
+  }
+}
+function toggleTurnosContratados(pid) {
+  const d = document.getElementById('tc-det-'+pid), s = document.getElementById('tc-seta-'+pid);
+  if(!d) return;
+  const abrir = d.style.display === 'none';
+  d.style.display = abrir ? '' : 'none';
+  if(s) s.textContent = abrir ? '▴' : '▾';
+}
+
 async function loadTurnos() {
   const hojeStr = toDateStrLocal(new Date());
   const dataFiltro = document.getElementById('tur-filtro-data')?.value || hojeStr;
@@ -3568,8 +3698,8 @@ async function reclassificarReceitas() {
       if(novo && (r.categoria !== novo.categoria || r.subcategoria !== novo.subcategoria)) alvo.push({ref:d.ref, antes:{categoria:r.categoria||'', subcategoria:r.subcategoria||''}, novo});
     });
     if(!alvo.length) { showToast('Nenhuma receita precisa ser reclassificada.','success'); return; }
-    const nFixa = alvo.filter(a=>a.novo.categoria==='Fixa').length, nHora = alvo.filter(a=>a.novo.subcategoria==='Locação de hora avulsa').length, nParc = alvo.filter(a=>a.novo.subcategoria==='Parcerias').length;
-    if(!confirm(`ATENÇÃO — esta ação ALTERA dados já gravados.\n\nSerão reclassificadas ${alvo.length} receita(s):\n• ${nFixa} → Fixa / Locação de sala\n• ${nHora} → Variável / Locação de hora avulsa\n• ${nParc} → Variável / Parcerias\n\nValores, datas e status NÃO mudam; só categoria e subcategoria (a classificação anterior fica guardada em cada receita).\n\nRISCO: se algo falhar no meio, parte das receitas pode ficar reclassificada e parte não.\nPor segurança, um BACKUP COMPLETO será gerado antes (nuvem + arquivo para download).\n\nContinuar?`)) return;
+    const nFixa = alvo.filter(a=>a.novo.categoria==='Fixa' && a.novo.subcategoria!==MP_VINCULO).length, nMP = alvo.filter(a=>a.novo.subcategoria===MP_VINCULO).length, nHora = alvo.filter(a=>a.novo.subcategoria==='Locação de hora avulsa').length, nParc = alvo.filter(a=>a.novo.subcategoria==='Parcerias').length, nPac = alvo.length - nFixa - nMP - nHora - nParc;
+    if(!confirm(`ATENÇÃO — esta ação ALTERA dados já gravados.\n\nSerão reclassificadas ${alvo.length} receita(s):\n• ${nFixa} → Fixa / Locação de sala\n• ${nMP} → Fixa / Membro Parceiro\n• ${nHora} → Variável / Locação de hora avulsa\n• ${nPac} → Variável / Pacotes de horas\n• ${nParc} → Variável / Parcerias\n\nValores, datas e status NÃO mudam; só categoria e subcategoria (a classificação anterior fica guardada em cada receita).\n\nRISCO: se algo falhar no meio, parte das receitas pode ficar reclassificada e parte não.\nPor segurança, um BACKUP COMPLETO será gerado antes (nuvem + arquivo para download).\n\nContinuar?`)) return;
     showToast('Gerando backup antes de alterar...','success');
     await bkNuvemGerar('manual', true);
     if(!confirm('Backup concluído e baixado.\n\nConfirmar agora a reclassificação das ' + alvo.length + ' receita(s)?')) { showToast('Reclassificação cancelada. Nada foi alterado.','success'); return; }
@@ -3835,6 +3965,7 @@ async function loadDashAgenda() {
       db.collection('pacientes').get().catch(()=>({docs:[]}))
     ]);
     const itens = [];
+    const itensLemb = [];
 
     // Aniversários de pacientes (hoje e próximos DIAS_AVISO dias) — inativos aparecem mais discretos
     const _h0 = new Date(); _h0.setHours(12,0,0,0);
@@ -3862,7 +3993,7 @@ async function loadDashAgenda() {
       if(!l.data || l.data > limite) return;
       const vencido = l.data < hoje;
       const prio = l.prioridade && l.prioridade!=='Normal' ? ` · ${escH(l.prioridade)}` : '';
-      itens.push({ordem: l.data, html: alertaHtml({
+      itensLemb.push({ordem: l.data, html: alertaHtml({
         icon:'📌', title: escH(l.titulo||'Lembrete'),
         sub: `${escH(l.obs||'')}${prio}`,
         right: vencido ? '⚠ Atrasado' : formatDate(l.data), rightColor: vencido ? 'var(--danger)' : 'var(--text-light)'
@@ -3880,6 +4011,10 @@ async function loadDashAgenda() {
       })});
     });
 
+    itensLemb.sort((a,b) => String(a.ordem).localeCompare(String(b.ordem)));
+    const elLmb = document.getElementById('dash-lembretes-list');
+    if(elLmb) elLmb.innerHTML = itensLemb.length ? itensLemb.map(i => i.html).join('') : '<div style="font-size:.78rem;color:var(--text-lighter);padding:.5rem 0">Nenhum lembrete para os próximos 2 dias.</div>';
+    const cLmb = document.getElementById('dash-lembretes-count'); if(cLmb) cLmb.textContent = itensLemb.length;
     window._alertasAgenda = itens;
     renderAlertasDash();
   } catch(e) {
@@ -5375,21 +5510,22 @@ async function salvarEdicaoLocacaoRecorrente(editId, data, escopo, orig, clicked
 
 // ══════════════════════════════════════════════════════
 // MEMBRO PARCEIRO — mensalidade fixa + horas gratuitas mensais
-// Regras: R$ 185,00/mês e 3 h gratuitas por mês. As condições são gravadas no cadastro
+// Regras: R$ 180,00/mês e 3 h gratuitas por mês. As condições são gravadas no cadastro
 // do profissional (mpMensalidade / mpHorasMes) para não mudarem retroativamente.
 // Saldo = horas do mês − soma dos registros em usosMembroParceiro daquele mês.
 // A renovação mensal é automática porque o saldo é calculado por competência (AAAA-MM):
 // nenhum dado precisa ser zerado e o histórico dos meses anteriores permanece.
 // ══════════════════════════════════════════════════════
 const MP_VINCULO = 'Membro Parceiro';
-const MP_MENSALIDADE_PADRAO = 185;
+const MP_MENSALIDADE_PADRAO = 180;
+const MP_MENSALIDADE_ANTIGA = 185; // valor padrão anterior: cadastros que ainda o trazem gravado passam a usar o atual
 const MP_HORAS_MES_PADRAO = 3;
 const MP_MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
 function mpCfg(p) {
   const h = p && p.mpHorasMes != null && p.mpHorasMes !== '' ? parseFloat(p.mpHorasMes) : NaN;
   return {
-    mensalidade: parseFloat(p && p.mpMensalidade) || MP_MENSALIDADE_PADRAO,
+    mensalidade: (parseFloat(p && p.mpMensalidade) && parseFloat(p.mpMensalidade) !== MP_MENSALIDADE_ANTIGA) ? parseFloat(p.mpMensalidade) : MP_MENSALIDADE_PADRAO,
     horas: isNaN(h) ? MP_HORAS_MES_PADRAO : h
   };
 }
@@ -5478,7 +5614,7 @@ async function gerarMensalidadeMP(profId) {
       const rec = await db.collection('receitas').add({
         profissional: prof.nome || 'Profissional',
         profId: prof.id,
-        categoria: 'Locação de Sala',
+        categoria: 'Fixa',
         tipo: 'Locação',
         subcategoria: MP_VINCULO,
         valor: cfg.mensalidade.toFixed(2),
@@ -5762,10 +5898,12 @@ function mpRenderHistorico(p, usos) {
 // a partir da data de início, no caso de locação recorrente).
 // ── Classificação padrão das receitas de locação ──
 // Turnos → Fixa / Locação de sala · Hora avulsa (extra) → Variável / Locação de hora avulsa.
-// Pacotes de horas e Membro Parceiro mantêm a classificação anterior (fora do pedido).
+// Pacotes de horas (Essencial e Continuidade) → Variável · Membro Parceiro → Fixa.
+// A subcategoria dos dois continua sendo o próprio nome do vínculo.
 function classificarReceitaLocacao(vinculo) {
   if(vinculo === 'Hora Avulsa') return {categoria:'Variável', subcategoria:'Locação de hora avulsa'};
-  if(horasDoPacote(vinculo) > 0 || vinculo === MP_VINCULO) return null;
+  if(vinculo === MP_VINCULO) return {categoria:'Fixa', subcategoria:MP_VINCULO};
+  if(horasDoPacote(vinculo) > 0) return {categoria:'Variável', subcategoria:vinculo};
   return {categoria:'Fixa', subcategoria:'Locação de sala'};
 }
 
@@ -6826,7 +6964,7 @@ function showPage(n,el) {
   if(n==='repasses') loadRepasses();
   if(n==='planos') preencherValoresTabela();
   if(n==='servicos') loadServicos();
-  if(n==='turnos') loadDashCapacidade('turnos-capacidade-list','turnos-cap-mes-label');
+  if(n==='turnos') { loadDashCapacidade('turnos-capacidade-list','turnos-cap-mes-label'); loadTurnosContratados(); }
   if(n==='levantamento') LevSim.init();
   if(n==='analise') calcularAnalise();
 }
@@ -7495,6 +7633,63 @@ async function excluirSubcat(id) {
 //  - Excluir uso: remove o documento de usosPacote E reverte horasUsadas.
 //  - horasUsadas no pacote = soma dos documentos em usosPacote (fonte da verdade).
 // ══════════════════════════════════════════════════════════════════
+
+// ── PACOTES: validade de 30 dias contados a partir da primeira reserva ──
+const PAC_VALIDADE_DIAS = 30;
+const PAC_ALERTA_DIAS = 7;
+// Retorna null enquanto não houver reserva (o prazo ainda não começou).
+function pacValidade(pac) {
+  const ini = pac && pac._primeiraReserva;
+  if(!ini) return null;
+  const venc = dataMaisDias(ini, PAC_VALIDADE_DIAS);
+  const hoje = toDateStrLocal(new Date());
+  const dias = Math.round((new Date(venc + 'T12:00:00') - new Date(hoje + 'T12:00:00')) / 86400000);
+  const estado = dias < 0 ? 'vencido' : dias <= 3 ? 'critico' : dias <= PAC_ALERTA_DIAS ? 'alerta' : 'ok';
+  return {ini, venc, dias, estado};
+}
+function pacBadgeValidade(pac) {
+  const v = pacValidade(pac);
+  if(!v) return '<span class="badge badge-neutral" style="font-size:.66rem">Validade começa na 1ª reserva</span>';
+  const dm = formatDate(v.venc).slice(0,5);
+  if(v.estado === 'vencido') return `<span class="badge badge-danger" style="font-size:.66rem">⛔ Vencido em ${dm}</span>`;
+  if(v.estado === 'critico') return `<span class="badge badge-danger" style="font-size:.66rem">⚠ ${v.dias === 0 ? 'Vence HOJE' : v.dias === 1 ? 'Vence amanhã' : 'Vence em ' + v.dias + ' dias'} (${dm})</span>`;
+  if(v.estado === 'alerta') return `<span class="badge badge-warning" style="font-size:.66rem">⏳ Vence em ${v.dias} dias (${dm})</span>`;
+  return `<span class="badge badge-neutral" style="font-size:.66rem">Válido até ${dm}</span>`;
+}
+// Histórico de consumo no cadastro do profissional (Ver profissional)
+async function pacRenderHistoricoProf(profId) {
+  const box = document.getElementById('ver-prof-pac');
+  if(!box) return;
+  try {
+    const [pSnap, uSnap, lSnap] = await Promise.all([
+      db.collection('pacotesHoras').where('profId','==',profId).get(),
+      db.collection('usosPacote').where('profId','==',profId).get(),
+      db.collection('locacoes').where('profId','==',profId).get()
+    ]);
+    const usos = uSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const locs = lSnap.docs.map(d=>d.data());
+    const pacotes = pSnap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>String(b.dataInicio||'').localeCompare(String(a.dataInicio||''))).slice(0,4);
+    if(!pacotes.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div style="font-size:.78rem;font-weight:600;color:var(--text-light);margin:.25rem 0 .5rem;text-transform:uppercase;letter-spacing:.05em">Pacotes de horas — histórico de consumo</div>' + pacotes.map(pac=>{
+      const meus = usos.filter(u=>u.pacoteId===pac.id).sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+      const datas = [pac.dataInicio, ...meus.map(u=>u.data), ...locs.filter(l=>l.pacoteId===pac.id).map(l=>l.dataInicio)].filter(Boolean).sort();
+      pac._primeiraReserva = datas[0] || '';
+      const saldo = Math.max(0, (pac.totalHoras||0) - (pac.horasUsadas||0));
+      const ativo = pac.status === 'Ativo' && saldo > 0;
+      const v = ativo ? pacValidade(pac) : null;
+      const bordaCor = v && (v.estado==='critico'||v.estado==='vencido') ? 'var(--danger)' : v && v.estado==='alerta' ? 'var(--warning)' : 'var(--border)';
+      return `<div style="border:1px solid ${bordaCor};border-radius:8px;padding:.65rem .8rem;margin-bottom:.6rem;background:#fff">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">
+          <span style="font-size:.82rem;font-weight:600">Pacote de ${pac.totalHoras}h · ${pac.horasUsadas||0}h usadas · ${saldo}h de saldo${pac.status!=='Ativo'?' · encerrado':''}</span>
+          ${ativo ? pacBadgeValidade(pac) : ''}
+        </div>
+        ${ativo && v ? `<div style="font-size:.72rem;color:var(--text-lighter);margin-top:2px">1ª reserva em ${formatDate(v.ini)} · validade de ${PAC_VALIDADE_DIAS} dias, até ${formatDate(v.venc)}</div>` : ''}
+        <div style="margin-top:.4rem">${meus.length ? meus.map(u=>`<div style="display:flex;gap:.6rem;font-size:.76rem;padding:.2rem 0;border-top:1px solid var(--border)"><span style="min-width:78px">${formatDate(u.data)}</span><span style="min-width:40px;font-weight:600">${u.horas}h</span><span style="color:var(--text-lighter)">${escH(u.obs||'')}</span></div>`).join('') : '<div style="font-size:.76rem;color:var(--text-lighter)">Nenhum consumo registrado.</div>'}</div>
+      </div>`;
+    }).join('');
+  } catch(e) { console.error('Histórico de pacotes:', e); }
+}
 
 // Busca pacotes ativos de um profissional
 async function getPacotesAtivos(profId) {
