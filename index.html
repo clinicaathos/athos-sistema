@@ -1680,7 +1680,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
     <div class="form-group"><label class="form-label">Profissional</label><select class="form-select" id="loc-prof" onchange="toggleSaldoPacote();mpToggleLoc()"><option value="">Selecionar...</option></select></div>
     <div class="form-row">
       <div class="form-group" id="loc-sala-group"><label class="form-label">Sala</label><select class="form-select" id="loc-sala" onchange="calcDescontoLocacao()"><option value="1" id="loc-s1-opt">Sala 1</option><option value="2" id="loc-s2-opt">Sala 2</option></select></div>
-      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista();toggleQtdAvulsa();mpToggleLoc()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option value="Pacote de 5 Horas">Áthos Essencial</option><option value="Pacote de 10 Horas">Áthos Continuidade</option><option value="Hora Avulsa">Áthos Singular</option><option value="Voucher">Voucher (sem cobrança)</option></select></div>
+      <div class="form-group"><label class="form-label">Vínculo</label><select class="form-select" id="loc-vinculo" onchange="calcDescontoLocacao();toggleSaldoPacote();toggleSalaMista();toggleQtdAvulsa();mpToggleLoc();atualizarCorModalidade()"><option>Turno Fixo (4h)</option><option>Turno 8h — Áthos I</option><option>Turno 8h — Áthos II</option><option>Turno 8h — Sala Mista</option><option value="Pacote de 5 Horas">Áthos Essencial</option><option value="Pacote de 10 Horas">Áthos Continuidade</option><option value="Hora Avulsa">Áthos Singular</option><option value="Voucher">Voucher (sem cobrança)</option></select></div>
     </div>
     <div class="form-group" id="loc-saldo-pacote-group" style="display:none">
       <div style="background:#f3f4f6;border-radius:8px;padding:.6rem .75rem;font-size:.78rem;color:var(--text-light)" id="loc-saldo-pacote-info">—</div>
@@ -1754,7 +1754,8 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
     <div class="form-group"><label class="form-label">Observação (exibida na agenda)</label><input class="form-input" type="text" id="loc-obs" placeholder="Ex: Último dia, Início de contrato..."></div>
     <div class="form-group">
       <label class="form-label">Cor do bloco na agenda</label>
-      <div class="color-picker-row">
+      <div id="loc-cor-hint" style="display:none;font-size:.74rem;color:var(--text-light);margin-bottom:.4rem"></div>
+      <div class="color-picker-row" id="loc-cor-wrap">
         <div class="color-dot selected" style="background:#a07850" onclick="selectColor(this)" data-color="#a07850"></div>
         <div class="color-dot" style="background:#3d8a7a" onclick="selectColor(this)" data-color="#3d8a7a"></div>
         <div class="color-dot" style="background:#6d5aac" onclick="selectColor(this)" data-color="#6d5aac"></div>
@@ -3372,7 +3373,16 @@ function loadDashboard() {
       // Sala Mista ocupa as duas colunas simultaneamente
       if(l.sala==='mista') { if(sala==='s1') itensS2.push(item); else itensS1.push(item); }
     });
-    const ocupados = Math.min(hoje_loc.length, 6);
+    // Só turnos fixos contam como turno locado (hora avulsa, pacote e voucher ficam de fora)
+    const _slotsFixos = new Set();
+    hoje_loc.filter(ehTurnoFixo).forEach(l=>{
+      const sk = getSalaKeyGlobal(l.sala, l.vinculo);
+      getTurnosOcupados(l).forEach(t=>{
+        if(sk==='mista'){ _slotsFixos.add(t+'_s1'); _slotsFixos.add(t+'_s2'); }
+        else _slotsFixos.add(t+'_'+sk);
+      });
+    });
+    const ocupados = _slotsFixos.size;
     // (removidas referências a #dash-turnos/#dash-turnos-sub — esses elementos
     // não existem mais no HTML atual; a linha antiga lançava um erro aqui e
     // interrompia a execução, impedindo o card "Hoje" de carregar a agenda)
@@ -3609,8 +3619,13 @@ async function loadTurnos() {
 
     // Mapa turno+sala → locação
     const mapaLoc = {};
+    const mapaHoras = {}; // reservas por hora (avulsa/pacote/voucher): não contam como turno locado
     locacoes.forEach(l=>{
       const sk = getSalaKeyGlobal(l.sala,l.vinculo);
+      if(!ehTurnoFixo(l)) {
+        getTurnosOcupados(l).forEach(t=>{ const kk=`${t}_${sk==='s2'?'s2':'s1'}`; mapaHoras[kk]=(mapaHoras[kk]||0)+1; });
+        return;
+      }
       getTurnosOcupados(l).forEach(t=>{
         if(sk==='mista'){mapaLoc[`${t}_s1`]=l;mapaLoc[`${t}_s2`]=l;}
         else mapaLoc[`${t}_${sk}`]=l;
@@ -3638,9 +3653,10 @@ async function loadTurnos() {
       if(bloq) return `<div style="${bloqStyle};cursor:pointer" onclick="editarBloqueio('${bloq.id}')">🔒 Bloqueado<br><span style="font-size:.7rem">${bloq.motivo}</span></div>`;
       if(loc) {
         const prof = profissionaisCache.find(p=>p.id===loc.profId)?.nome||'?';
-        return `<div style="background:${loc.cor||'var(--gold)'};border-radius:8px;padding:.6rem .75rem;font-size:.78rem;font-weight:600;color:#fff;cursor:pointer" onclick="editarLocacao('${loc.id}','${dataFiltro}')">${prof}<br><span style="font-size:.7rem;opacity:.85">${loc.inicio||''}–${loc.fim||''}</span></div>`;
+        return `<div style="background:${corLocacao(loc, loc.cor||'var(--gold)')};border-radius:8px;padding:.6rem .75rem;font-size:.78rem;font-weight:600;color:#fff;cursor:pointer" onclick="editarLocacao('${loc.id}','${dataFiltro}')">${prof}<br><span style="font-size:.7rem;opacity:.85">${loc.inicio||''}–${loc.fim||''}</span></div>`;
       }
-      return `<div style="border:1.5px dashed #d1d5db;border-radius:8px;padding:.6rem .75rem;font-size:.78rem;color:var(--text-lighter);text-align:center;cursor:pointer" onclick="abrirModalBloqueio('${salaK==='s1'?'1':'2'}','${dataFiltro}','${turnoK}')">Disponível<br><span style="font-size:.68rem">+ bloquear</span></div>`;
+      const nh = mapaHoras[k] || 0;
+      return `<div style="border:1.5px dashed #d1d5db;border-radius:8px;padding:.6rem .75rem;font-size:.78rem;color:var(--text-lighter);text-align:center;cursor:pointer" onclick="abrirModalBloqueio('${salaK==='s1'?'1':'2'}','${dataFiltro}','${turnoK}')">Disponível<br><span style="font-size:.68rem">+ bloquear</span>${nh?`<br><span style="font-size:.66rem">${nh} reserva${nh>1?'s':''} por hora</span>`:''}</div>`;
     }
     function renderGridSala(containerId, salaN, salaK) {
       const el = document.getElementById(containerId);
@@ -3749,8 +3765,8 @@ async function calcularLevantamento() {
         if(!locAtivaEmDia(l,dStr)) return;
         if(!locPeriodo[l.profId]) locPeriodo[l.profId]={locacoes:new Set(),turnos:0};
         locPeriodo[l.profId].locacoes.add(l.id);
-        locPeriodo[l.profId].turnos += getTurnosOcupados(l).length;
-        turnosTotal += getTurnosOcupados(l).length / Object.values(locPeriodo).length;
+        locPeriodo[l.profId].turnos += (ehTurnoFixo(l) ? getTurnosOcupados(l).length : 0);
+        turnosTotal += (ehTurnoFixo(l) ? getTurnosOcupados(l).length : 0) / Object.values(locPeriodo).length;
       });
     }
     // Deduplicar contagem de turnos (cada locação conta pelos turnos × dias que ocorre)
@@ -3768,7 +3784,7 @@ async function calcularLevantamento() {
       // Para locação recorrente, o valor é mensal (1 lançamento/mês)
       const vlMes = l.recorrencia && l.recorrencia!=='Apenas este horário' ? vLoc : vLoc;
       locProfMap[l.profId].valorProj += vlMes;
-      locProfMap[l.profId].turnos += getTurnosOcupados(l).length * (l.recorrencia!=='Apenas este horário'?4:1);
+      locProfMap[l.profId].turnos += (ehTurnoFixo(l) ? getTurnosOcupados(l).length : 0) * (l.recorrencia!=='Apenas este horário'?4:1);
       locProfMap[l.profId].loc = l;
     });
 
@@ -4065,6 +4081,7 @@ async function loadDashCapacidade(elId, labelElId) {
       const dStr = toDateStrLocal(dia);
       locacoes.forEach(l=>{
         if(!locAtivaEmDia(l, dStr)) return;
+        if(!ehTurnoFixo(l)) return; // só turnos fixos entram na capacidade
         const sk = getSalaKeyGlobal(l.sala, l.vinculo);
         const turnosOcup = getTurnosOcupados(l).filter(t=>g.turnos.includes(t));
         turnosOcup.forEach(t=>{
@@ -4774,6 +4791,15 @@ function renderAgendaDia() {
         turnosOcup.forEach(t => { mapa[`${t}_${salaKey}`] = l; });
       }
     });
+    // Contagem dos badges de sala: somente turnos fixos
+    const mapaFixo = {};
+    locacoesDia.filter(ehTurnoFixo).forEach(l => {
+      const sk = getSalaKeyGlobal(l.sala, l.vinculo);
+      getTurnosOcupados(l).forEach(t => {
+        if(sk === 'mista') { mapaFixo[`${t}_s1`] = l; mapaFixo[`${t}_s2`] = l; }
+        else mapaFixo[`${t}_${sk}`] = l;
+      });
+    });
     const mapaBloq = {};
     bloqueiosDia.forEach(b => {
       const salaKey = b.sala==='2' ? 's2' : 's1';
@@ -4846,7 +4872,7 @@ function renderAgendaDia() {
         let span = 1;
         while(i+span < cells.length && cells[i+span] && cells[i+span].id === loc.id) span++;
         const prof = loc._ap ? loc._rotulo : (profissionaisCache.find(p=>p.id===loc.profId)?.nome || loc.profId || '?');
-        const cor = loc.cor||corDefault;
+        const cor = corLocacao(loc, loc.cor||corDefault);
         for(let k=0;k<span;k++) {
           const isFirst = k===0, isLast = k===span-1;
           let radius;
@@ -4870,8 +4896,8 @@ function renderAgendaDia() {
     }
 
     // Atualizar badges de sala
-    const s1Count = Object.keys(mapa).filter(k=>k.endsWith('_s1')).length;
-    const s2Count = Object.keys(mapa).filter(k=>k.endsWith('_s2')).length;
+    const s1Count = Object.keys(mapaFixo).filter(k=>k.endsWith('_s1')).length;
+    const s2Count = Object.keys(mapaFixo).filter(k=>k.endsWith('_s2')).length;
     document.getElementById('sala-occ-badges').innerHTML=`
       <div class="sala-occ-card"><div><div class="sala-occ-name">${s1}</div><div style="font-size:.73rem;color:var(--text-light)">${s1Count} turno(s) ocupado(s)</div></div><span class="badge ${s1Count>0?'badge-success':'badge-neutral'}" style="margin-left:auto">${s1Count}/3</span></div>
       <div class="sala-occ-card"><div><div class="sala-occ-name">${s2}</div><div style="font-size:.73rem;color:var(--text-light)">${s2Count} turno(s) ocupado(s)</div></div><span class="badge ${s2Count>0?'badge-success':'badge-neutral'}" style="margin-left:auto">${s2Count}/3</span></div>`;
@@ -4979,6 +5005,7 @@ function editarLocacao(id, dataClicada) {
     document.querySelectorAll('.color-dot').forEach(d=>{
       d.classList.toggle('selected', d.dataset.color===selectedColor);
     });
+    atualizarCorModalidade();
   }).catch(()=>{});
   openModal('nova-locacao');
 }
@@ -5261,7 +5288,7 @@ async function salvarLocacao() {
     recorrencia:rec,
     diasSemana: diasSelecionados.length > 0 ? diasSelecionados : null,
     obs:document.getElementById('loc-obs').value,
-    cor:selectedColor,
+    cor: corLocacao({vinculo, voucher: vinculo==='Voucher'}, selectedColor),
     desconto: desconto,
     // Vigência do desconto: fora desse período a cobrança usa o valor cheio (valorBase)
     descontoInicio: descontoNum > 0 ? (document.getElementById('loc-desconto-inicio').value || '') : '',
@@ -5781,7 +5808,7 @@ async function mpConfirmarUso() {
       const loc = {
         profId, sala, vinculo: 'Hora Avulsa', inicio: ini, fim,
         dataInicio: data, dataFim: '', recorrencia: 'Apenas este horário', diasSemana: null,
-        obs: 'Horas gratuitas — Membro Parceiro', cor: '#3d8a7a',
+        obs: 'Horas gratuitas — Membro Parceiro', cor: COR_LOC_AVULSA,
         desconto: '0', descontoInicio: '', descontoFim: '',
         valorBase: valorBaseLocacao(sala, 'Hora Avulsa').toFixed(2), valorLancamento: '0.00', diaVencimento: null,
         mpUso: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -6215,7 +6242,7 @@ function renderAgendaSemana() {
                 const conteudo = pxH>=44
                   ? `<span style="font-size:.72rem;font-weight:600;color:#fff;line-height:1.2">${prof}</span>${periodo?`<span style="font-size:.65rem;font-weight:400;color:#fff;opacity:.9">${periodo}</span>`:''}`
                   : `<span style="font-size:.68rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${prof}${periodo?' · '+periodo:''}</span>`;
-                return `<div style="position:absolute;left:0;right:0;top:${topPct}%;height:${hPct}%;box-sizing:border-box;background:${loc.cor||(String(loc.sala)==='2'?'#3d8a7a':'var(--gold)')};opacity:.9;cursor:pointer;border-radius:4px;padding:3px 5px;overflow:hidden;display:flex;flex-direction:column;justify-content:${pxH>=44?'flex-start':'center'};gap:1px" onclick="editarLocacao('${loc.id}','${ds}')" title="${prof}${periodo?' — '+periodo:' — '+t.range}">${conteudo}</div>`;
+                return `<div style="position:absolute;left:0;right:0;top:${topPct}%;height:${hPct}%;box-sizing:border-box;background:${corLocacao(loc, loc.cor||(String(loc.sala)==='2'?'#3d8a7a':'var(--gold)'))};opacity:.9;cursor:pointer;border-radius:4px;padding:3px 5px;overflow:hidden;display:flex;flex-direction:column;justify-content:${pxH>=44?'flex-start':'center'};gap:1px" onclick="editarLocacao('${loc.id}','${ds}')" title="${prof}${periodo?' — '+periodo:' — '+t.range}">${conteudo}</div>`;
               }).join('');
               return `<div class="wg-cell${isH?' wg-today':''}" style="background:transparent;padding:2px"><div style="position:relative;width:100%;height:${ALT}px">${blocos}</div></div>`;
             }
@@ -6990,6 +7017,7 @@ function openModal(id) {
       toggleVigenciaDesconto();
       selectedColor='#a07850';
       document.querySelectorAll('.color-dot').forEach((d,i)=>d.classList.toggle('selected',i===0));
+      atualizarCorModalidade();
       // Reset dias da semana
       for(let i=0;i<=6;i++){const cb=document.getElementById(`loc-dia-${i}`);if(cb)cb.checked=false;}
       const recSel=document.getElementById('loc-recorrencia');
@@ -7838,6 +7866,52 @@ function ehReservaPorHorario(l) {
   }
   return false;
 }
+// ── TURNO FIXO x demais modalidades ──
+// Só vínculos de turno (Turno Fixo 4h / Turno 8h) contam como "turno locado".
+// Hora avulsa (Áthos Singular), pacotes de horas, voucher e atendimentos de pacientes
+// ocupam apenas o horário reservado e NÃO entram na contabilização de turnos.
+function ehTurnoFixo(l) {
+  if(!l || l._ap) return false;
+  if(ehReservaPorHorario(l)) return false;
+  return String(l.vinculo||'').startsWith('Turno');
+}
+// ── COR AUTOMÁTICA POR MODALIDADE (Mapa de Consultórios) ──
+// Turno fixo mantém a cor escolhida no cadastro; as demais são automáticas.
+const COR_LOC_AVULSA = '#a78bda'; // lilás
+const COR_LOC_PACOTE = '#3f9b5f'; // verde
+const COR_LOC_VOUCHER = '#ea8a2f'; // laranja
+function modalidadeLoc(l) {
+  const v = (l && l.vinculo) || '';
+  if((l && l.voucher) || v === 'Voucher') return 'voucher';
+  if(horasDoPacote(v) > 0) return 'pacote';
+  const n = _normVinc(v);
+  if(/^pacote/.test(n) || n.includes('essencial') || n.includes('continuidade')) return 'pacote';
+  if(v === 'Hora Avulsa' || n === 'hora avulsa' || n === 'hora extra' || n === 'he' || n.includes('singular')) return 'avulsa';
+  return 'turno';
+}
+function corLocacao(l, padrao) {
+  if(!l || l._ap) return padrao; // atendimentos de pacientes mantêm a própria cor
+  switch(modalidadeLoc(l)) {
+    case 'voucher': return COR_LOC_VOUCHER;
+    case 'pacote': return COR_LOC_PACOTE;
+    case 'avulsa': return COR_LOC_AVULSA;
+    default: return padrao;
+  }
+}
+// No formulário: trava o seletor de cor quando a modalidade define a cor sozinha
+function atualizarCorModalidade() {
+  const v = document.getElementById('loc-vinculo')?.value || '';
+  const wrap = document.getElementById('loc-cor-wrap'), hint = document.getElementById('loc-cor-hint');
+  if(!wrap) return;
+  const loc = {vinculo:v, voucher:v==='Voucher'};
+  const auto = modalidadeLoc(loc) !== 'turno';
+  wrap.style.opacity = auto ? '.35' : '';
+  wrap.style.pointerEvents = auto ? 'none' : '';
+  if(hint) {
+    hint.style.display = auto ? '' : 'none';
+    hint.innerHTML = auto ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${corLocacao(loc,'')};margin-right:5px"></span>Cor automática pela modalidade (${escH(rotuloVinc(v))}).` : '';
+  }
+}
 // Nomenclatura: "Hora Avulsa" passou a se chamar "Athos Singular" SOMENTE na exibição.
 // O valor gravado nos registros (locações, profissionais, lançamentos) continua 'Hora Avulsa',
 // então nenhum dado existente nem configuração financeira é alterado.
@@ -7878,6 +7952,7 @@ function popularVinculosLocacao() {
   sel.innerHTML = '';
   lista.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = rotuloVinc(v); sel.appendChild(o); });
   if(atual) { garantirOpcaoVinculo(atual); sel.value = atual; }
+  atualizarCorModalidade();
 }
 
 // ── CRIAÇÃO / VINCULAÇÃO DE PACOTE AO CONFIRMAR LOCAÇÃO ──
