@@ -737,7 +737,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
           <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
               <span style="font-size:.85rem;font-weight:600" id="dash-hoje-label">Hoje</span>
-              <span class="badge badge-neutral" id="dash-hoje-count">0 turnos</span>
+              <span class="badge badge-neutral" id="dash-hoje-count">0 reservas</span>
             </div>
             <div id="dash-hoje-list"><div class="sk-row"><div class="sk sk-chip"></div><div style="flex:1"><div class="sk sk-line w80"></div><div class="sk sk-line w40" style="margin-bottom:0"></div></div></div><div class="sk-row"><div class="sk sk-chip"></div><div style="flex:1"><div class="sk sk-line w60"></div><div class="sk sk-line w40" style="margin-bottom:0"></div></div></div></div>
           </div>
@@ -3373,21 +3373,13 @@ function loadDashboard() {
       // Sala Mista ocupa as duas colunas simultaneamente
       if(l.sala==='mista') { if(sala==='s1') itensS2.push(item); else itensS1.push(item); }
     });
-    // Só turnos fixos contam como turno locado (hora avulsa, pacote e voucher ficam de fora)
-    const _slotsFixos = new Set();
-    hoje_loc.filter(ehTurnoFixo).forEach(l=>{
-      const sk = getSalaKeyGlobal(l.sala, l.vinculo);
-      getTurnosOcupados(l).forEach(t=>{
-        if(sk==='mista'){ _slotsFixos.add(t+'_s1'); _slotsFixos.add(t+'_s2'); }
-        else _slotsFixos.add(t+'_'+sk);
-      });
-    });
-    const ocupados = _slotsFixos.size;
+    // Badge "Hoje": todas as reservas do dia (turno fixo, hora avulsa, pacote e voucher)
+    const ocupados = hoje_loc.length;
     // (removidas referências a #dash-turnos/#dash-turnos-sub — esses elementos
     // não existem mais no HTML atual; a linha antiga lançava um erro aqui e
     // interrompia a execução, impedindo o card "Hoje" de carregar a agenda)
     const badgeEl = document.getElementById('dash-hoje-count');
-    if(badgeEl) badgeEl.textContent=`${ocupados} turno${ocupados!==1?'s':''}`;
+    if(badgeEl) badgeEl.textContent=`${ocupados} reserva${ocupados!==1?'s':''}`;
     // ITEM 6: agenda do dia separada em colunas por sala, para facilitar
     // visualizar ocupação simultânea (antes era uma lista única cronológica
     // misturando as duas salas).
