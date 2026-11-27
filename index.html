@@ -561,6 +561,15 @@ body.dark .tag{background:#111827;border-color:#374151;}
 .parc-svc{display:inline-block;padding:1px 8px;margin:1px 3px 1px 0;border-radius:999px;font-size:.68rem;background:var(--gold-pale);color:var(--gold-dark);}
 body.dark .parc-svc{color:#d4b896;}
 .parc-row-enc{opacity:.6;}
+.parc-cont{background:#e0e7ff;color:#3730a3;}.parc-cont i{background:#6366f1;}
+.parc-pill-btn{border:none;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .1s;}
+.parc-pill-btn:hover{opacity:.8;}.parc-pill-btn:active{transform:scale(.96);}
+.parc-stats{grid-template-columns:repeat(5,1fr);}
+@media(max-width:900px){.parc-stats{grid-template-columns:1fr 1fr;}}
+.parc-val-row{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.4rem 0;border-bottom:1px dashed var(--border);}
+.parc-val-nome{font-size:.82rem;font-weight:500;}
+.parc-val-in{display:flex;align-items:center;gap:.4rem;width:150px;}
+.parc-val-in span{font-size:.78rem;color:var(--text-light);}
 
 .cr-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
 .cr-wd{text-align:center;font-size:.7rem;font-weight:700;color:var(--text-light);padding:4px 0;}
@@ -593,6 +602,12 @@ body.dark .parc-svc{color:#d4b896;}
 .cr-item.conc .cr-item-t{text-decoration:line-through;color:var(--text-lighter);}
 .cr-item-d{font-size:.78rem;color:var(--text-light);margin-top:2px;white-space:pre-wrap;}
 .cr-item-m{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-top:.4rem;font-size:.7rem;color:var(--text-light);}
+/* vencimento em até 2 dias */
+.cr-ev.vp{background:#ffedd5;color:#9a3412;border-color:#ea580c;font-weight:700;box-shadow:0 0 0 2px #fb923c;}
+.cr-day.vp{border-color:#f97316;}
+.cr-item.vp{background:#fff7ed;box-shadow:0 0 0 2px #fdba74;}
+body.dark .cr-item.vp{background:#3a2a1a;}
+@media(max-width:640px){.cr-ev.vp{width:10px;height:10px;background:#f97316;box-shadow:0 0 0 2px #fdba74;}}
 @media(max-width:640px){
   .cr-grid{gap:2px;}
   .cr-day{min-height:58px;padding:3px;border-radius:6px;}
@@ -797,7 +812,7 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
           </div>
           <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
-              <span style="font-size:.85rem;font-weight:600">Alertas <span style="font-weight:400;font-size:.7rem;color:var(--text-lighter)">· aniversários, contratos, descontos, serviços e parcerias (2 dias)</span></span>
+              <span style="font-size:.85rem;font-weight:600">Alertas <span style="font-weight:400;font-size:.7rem;color:var(--text-lighter)">· aniversários, contratos, descontos, serviços, parcerias e demandas (2 dias)</span></span>
               <span class="badge badge-warning" id="dash-alertas-count">0</span>
             </div>
             <div id="dash-alertas-list"><div class="empty-state" style="padding:1.25rem"><div class="empty-icon" style="background:var(--success-bg);color:var(--success)"><svg class="ic" viewBox="0 0 24 24"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1M22 4 12 14l-3-3"/></svg></div><div class="empty-title">Tudo em dia</div><div class="empty-desc">Nenhum alerta no momento.</div></div></div>
@@ -1353,25 +1368,27 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
             </button>
           </div>
         </div>
-        <div style="font-size:.82rem;color:var(--text-light);margin-bottom:1rem">Empresas, escolas, instituições e projetos parceiros da clínica: contato responsável, serviços contemplados e prazo de reavaliação.</div>
+        <div style="font-size:.82rem;color:var(--text-light);margin-bottom:1rem">Empresas, escolas, instituições e projetos parceiros da clínica: contato, especialidades e valores acordados, vigência e status da negociação.</div>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
           <input class="form-input" id="parc-f-q" placeholder="Buscar por parceiro, contato ou serviço" style="flex:2;min-width:200px" oninput="parcRender()">
           <select class="form-select" id="parc-f-st" style="flex:1;min-width:150px" onchange="parcRender()">
             <option value="">Todos os status</option>
-            <option value="Ativa">🟢 Ativa</option>
+            <option value="A contactar">🔵 A contactar</option>
             <option value="Em avaliação">🟡 Em avaliação</option>
+            <option value="Ativa">🟢 Ativa</option>
             <option value="Encerrada">🔴 Encerrada</option>
           </select>
           <select class="form-select" id="parc-f-reav" style="flex:1;min-width:170px" onchange="parcRender()">
             <option value="">Qualquer reavaliação</option>
-            <option value="alerta">Próxima ou vencida</option>
+            <option value="alerta">Vencimento/reavaliação próximo ou vencido</option>
           </select>
         </div>
-        <div class="stats-grid" style="margin-bottom:1rem">
-          <div class="stat-card"><div class="stat-label">🟢 Ativas</div><div class="stat-value" id="parc-n-ativa">—</div></div>
+        <div class="stats-grid parc-stats" style="margin-bottom:1rem">
+          <div class="stat-card"><div class="stat-label">🔵 A contactar</div><div class="stat-value" id="parc-n-cont">—</div></div>
           <div class="stat-card"><div class="stat-label">🟡 Em avaliação</div><div class="stat-value" id="parc-n-aval">—</div></div>
+          <div class="stat-card"><div class="stat-label">🟢 Ativas</div><div class="stat-value" id="parc-n-ativa">—</div></div>
           <div class="stat-card"><div class="stat-label">🔴 Encerradas</div><div class="stat-value" id="parc-n-enc">—</div></div>
-          <div class="stat-card"><div class="stat-label">⏰ Reavaliar (próx. 30 dias ou vencida)</div><div class="stat-value" id="parc-n-alerta">—</div></div>
+          <div class="stat-card"><div class="stat-label">⏰ Vencimento/reavaliação (próx. 30 dias ou vencido)</div><div class="stat-value" id="parc-n-alerta">—</div></div>
         </div>
         <div class="card" style="padding:0;overflow:hidden;margin-top:.5rem">
           <div class="data-table fin-table-desktop" id="parc-table"></div>
@@ -1388,12 +1405,14 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
           </button>
         </div>
         <div class="agenda-controls">
-          <div style="display:flex;align-items:center;gap:.5rem"><button class="arr-btn" onclick="crNav(-1)">←</button><span class="week-label" id="cr-label" style="min-width:120px;text-align:center">—</span><button class="arr-btn" onclick="crNav(1)">→</button><button class="btn btn-secondary" style="padding:4px 10px;font-size:.78rem" onclick="crHoje()">Hoje</button></div>
+          <div style="display:flex;align-items:center;gap:.5rem"><button class="arr-btn" onclick="crNav(-1)">←</button><span class="week-label" id="cr-label" style="min-width:120px;text-align:center">—</span><button class="arr-btn" onclick="crNav(1)">→</button><button class="btn btn-secondary" style="padding:4px 10px;font-size:.78rem" onclick="crHoje()">Hoje</button>
+            <select class="form-select" id="cr-sel-mes" onchange="crIrMes()" title="Filtrar por mês"><option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option><option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option></select>
+            <select class="form-select" id="cr-sel-ano" onchange="crIrMes()" title="Ano"></select></div>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap">
             <input class="form-input" id="cr-f-q" placeholder="Buscar demanda" style="min-width:160px" oninput="crRender()">
             <select class="form-select" id="cr-f-st" onchange="crRender()">
               <option value="">Todos os status</option>
-              <option>Pendente</option><option>Em andamento</option><option>Concluída</option><option value="Atrasada">Atrasadas</option>
+              <option>Pendente</option><option>Em andamento</option><option>Concluída</option><option value="Atrasada">Atrasadas</option><option value="Vencendo">Vencem em até 2 dias</option>
             </select>
           </div>
         </div>
@@ -1404,11 +1423,13 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
           <div class="stat-card"><div class="stat-label">Atrasadas</div><div class="stat-value" id="cr-n-atr" style="color:var(--danger)">—</div></div>
         </div>
         <div id="cr-body"></div>
+        <div id="cr-lista-mes"></div>
         <div class="cr-legend">
           <span><i style="background:#d97706"></i>Pendente</span>
           <span><i style="background:#2563eb"></i>Em andamento</span>
           <span><i style="background:#059669"></i>Concluída</span>
           <span><i style="background:#dc2626"></i>Atrasada</span>
+          <span><i style="background:#f97316"></i>Vence em até 2 dias</span>
           <span>⏰ Prazo final (quando diferente do dia)</span>
         </div>
       </div>
@@ -2402,23 +2423,35 @@ body.dark .est-table tr:hover td{background:rgba(255,255,255,.03);}
     <div class="form-group"><label class="form-label">Nome da Empresa/Instituição</label><input class="form-input" id="parc-empresa" placeholder="Ex: Colégio Exemplo, Empresa X, Projeto Y"></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Nome do Contato/Representante</label><input class="form-input" id="parc-contato" placeholder="Responsável pela parceria"></div>
-      <div class="form-group"><label class="form-label">E-mail do Contato</label><input class="form-input" type="email" id="parc-email" placeholder="contato@empresa.com"></div>
+      <div class="form-group"><label class="form-label">Telefone do responsável</label><input class="form-input" id="parc-tel" type="tel" inputmode="tel" placeholder="(85) 90000-0000"></div>
+    </div>
+    <div class="form-group"><label class="form-label">E-mail do Contato</label><input class="form-input" type="email" id="parc-email" placeholder="contato@empresa.com"></div>
+    <div class="form-group">
+      <label class="form-label">Especialidades <span style="font-weight:400;color:var(--text-lighter)">(clique para selecionar uma ou mais)</span></label>
+      <div id="parc-chips" style="display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.5rem"></div>
+      <div style="display:flex;gap:.4rem">
+        <input class="form-input" id="parc-nova-esp" placeholder="Nova especialidade (ex: Terapia Ocupacional)" onkeydown="if(event.key==='Enter'){event.preventDefault();parcAddEspecialidade();}">
+        <button type="button" class="btn btn-secondary" style="white-space:nowrap" onclick="parcAddEspecialidade()">+ Adicionar</button>
+      </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Serviços da Parceria <span style="font-weight:400;color:var(--text-lighter)">(separe por vírgula)</span></label>
-      <input class="form-input" id="parc-servicos" placeholder="Ex: Psicologia, Nutrição" oninput="parcChipsSync()">
-      <div id="parc-chips" style="display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.5rem"></div>
+      <label class="form-label">Valores acordados por especialidade</label>
+      <div id="parc-valores"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Data de Início</label><input class="form-input" type="date" id="parc-inicio"></div>
-      <div class="form-group"><label class="form-label">Prazo para Reavaliação</label><input class="form-input" type="date" id="parc-reav"></div>
+      <div class="form-group"><label class="form-label">Data final da parceria <span style="font-weight:400;color:var(--text-lighter)">(gera alerta)</span></label><input class="form-input" type="date" id="parc-fim"></div>
     </div>
-    <div class="form-group"><label class="form-label">Status da Parceria</label>
-      <select class="form-select" id="parc-status">
-        <option value="Ativa">🟢 Ativa</option>
-        <option value="Em avaliação">🟡 Em avaliação</option>
-        <option value="Encerrada">🔴 Encerrada</option>
-      </select>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Prazo para Reavaliação</label><input class="form-input" type="date" id="parc-reav"></div>
+      <div class="form-group"><label class="form-label">Status da Parceria</label>
+        <select class="form-select" id="parc-status">
+          <option value="A contactar">🔵 A contactar</option>
+          <option value="Em avaliação">🟡 Em avaliação</option>
+          <option value="Ativa">🟢 Ativa</option>
+          <option value="Encerrada">🔴 Encerrada</option>
+        </select>
+      </div>
     </div>
     <div class="form-group"><label class="form-label">Observações</label><textarea class="form-input" id="parc-obs" rows="3" style="resize:vertical" placeholder="Condições acordadas, valores, particularidades..."></textarea></div>
     <div style="display:flex;gap:.5rem;margin-top:.5rem">
@@ -3497,7 +3530,7 @@ function alertaHtml(a) {
 function renderAlertasDash() {
   const list = document.getElementById('dash-alertas-list');
   if(!list) return;
-  const itens = [...(window._alertasProfs||[]), ...(window._alertasAgenda||[]), ...(window._alertasFin||[]), ...(window._alertasParc||[])]
+  const itens = [...(window._alertasProfs||[]), ...(window._alertasAgenda||[]), ...(window._alertasFin||[]), ...(window._alertasParc||[]), ...(window._alertasCr||[])]
     .sort((a,b) => String(a.ordem).localeCompare(String(b.ordem)));
   const cnt = document.getElementById('dash-alertas-count');
   if(cnt) cnt.textContent = itens.reduce((t,i) => t + (i.conta === 0 ? 0 : 1), 0);
@@ -3678,6 +3711,7 @@ function loadDashboard() {
   // Alerta de término de desconto de locação (2 dias antes)
   carregarAlertasDesconto();
   carregarAlertasParcerias();
+  carregarAlertasCronograma();
 
   // Novas seções — item 4
   loadDashAgenda();
@@ -7163,15 +7197,21 @@ function closeMobileSidebar() {
 // ══════════════════════════════════════════
 // ── PARCERIAS ──
 // ══════════════════════════════════════════
-const PARC_STATUS = ['Ativa','Em avaliação','Encerrada'];
-const PARC_DIAS_ALERTA = 30; // sinalização "reavaliação próxima" na aba Parcerias
+const PARC_STATUS = ['A contactar','Em avaliação','Ativa','Encerrada'];
+const PARC_DIAS_ALERTA = 30; // sinalização "vencimento/reavaliação próxima" dentro da aba Parcerias
 const PARC_SUGESTOES = ['Psicologia','Nutrição','Psicopedagogia','Fonoaudiologia','Psiquiatria','Neuropsicologia'];
 let _parcs = [];
+let _parcCustom = []; // especialidades cadastradas pelo usuário (config/parcEspecialidades)
+let _parcSel = [];    // especialidades selecionadas no modal
+let _parcVals = {};   // valor acordado por especialidade (chave em minúsculas)
+let _parcBusy = {};
 
-function parcPill(s) {
+const parcStClasse = s => ({'A contactar':'parc-cont','Em avaliação':'parc-aval','Ativa':'parc-ativa','Encerrada':'parc-enc'})[s] || 'parc-ativa';
+// Com id: botão clicável que avança o status (A contactar → Em avaliação → Ativa → Encerrada → A contactar)
+function parcPill(s, id) {
   s = PARC_STATUS.includes(s) ? s : 'Ativa';
-  const cls = s === 'Ativa' ? 'parc-ativa' : s === 'Em avaliação' ? 'parc-aval' : 'parc-enc';
-  return `<span class="parc-pill ${cls}"><i></i>${s}</span>`;
+  if(!id) return `<span class="parc-pill ${parcStClasse(s)}"><i></i>${s}</span>`;
+  return `<button type="button" class="parc-pill parc-pill-btn ${parcStClasse(s)}" title="Clique para alterar o status" onclick="event.stopPropagation();parcCiclo('${id}')"><i></i>${s} <span style="opacity:.6;font-size:.7rem">⇄</span></button>`;
 }
 function parcDiasAte(dataStr) {
   const hoje = new Date(toDateStrLocal(new Date()) + 'T12:00:00');
@@ -7186,10 +7226,24 @@ function parcReavInfo(p, janela) {
   if(d <= lim) return {nivel:'prox', dias:d, txt: d === 0 ? '⏰ Reavaliar hoje' : `⏰ Reavaliar em ${d} dia(s)`};
   return null;
 }
+// Vencimento da parceria = data final cadastrada
+function parcFimInfo(p, janela) {
+  if(p.status === 'Encerrada' || !p.dataFim) return null;
+  const lim = janela == null ? PARC_DIAS_ALERTA : janela;
+  const d = parcDiasAte(p.dataFim);
+  if(d < 0) return {nivel:'venc', dias:d, txt:`⚠ Parceria vencida há ${-d} dia(s)`};
+  if(d <= lim) return {nivel:'prox', dias:d, txt: d === 0 ? '⏰ Parceria vence hoje' : `⏰ Vence em ${d} dia(s)`};
+  return null;
+}
 function parcRank(p) {
   if(p.status === 'Encerrada') return 3;
-  const i = parcReavInfo(p);
-  return !i ? 2 : i.nivel === 'venc' ? 0 : 1;
+  const a = [parcReavInfo(p), parcFimInfo(p)].filter(Boolean);
+  return !a.length ? 2 : a.some(i => i.nivel === 'venc') ? 0 : 1;
+}
+function parcValoresMap(p) {
+  const m = {};
+  (p.valoresEsp || []).forEach(x => { if(x && x.nome) m[String(x.nome).toLowerCase()] = parseFloat(x.valor) || 0; });
+  return m;
 }
 
 async function loadParcerias() {
@@ -7204,6 +7258,10 @@ async function loadParcerias() {
     t.innerHTML = '<div style="color:var(--danger);font-size:.83rem;padding:1rem">Erro ao carregar parcerias. Verifique as regras do Firestore para a coleção parcerias.</div>';
     return;
   }
+  try {
+    const c = await db.collection('config').doc('parcEspecialidades').get();
+    _parcCustom = c.exists && Array.isArray(c.data().lista) ? c.data().lista : [];
+  } catch(e) { console.error('Especialidades de parcerias:', e); _parcCustom = []; }
   parcRender();
 }
 
@@ -7215,17 +7273,18 @@ function parcRender() {
 
   // Indicadores (sobre todas as parcerias, sem filtros)
   const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
-  set('parc-n-ativa', _parcs.filter(p => st(p) === 'Ativa').length);
+  set('parc-n-cont', _parcs.filter(p => st(p) === 'A contactar').length);
   set('parc-n-aval', _parcs.filter(p => st(p) === 'Em avaliação').length);
+  set('parc-n-ativa', _parcs.filter(p => st(p) === 'Ativa').length);
   set('parc-n-enc', _parcs.filter(p => st(p) === 'Encerrada').length);
-  set('parc-n-alerta', _parcs.filter(p => parcReavInfo(p)).length);
+  set('parc-n-alerta', _parcs.filter(p => parcReavInfo(p) || parcFimInfo(p)).length);
 
   const q = _pv('parc-f-q').toLowerCase(), fst = _pv('parc-f-st'), freav = _pv('parc-f-reav');
   let lista = _parcs.filter(p =>
-    (!q || [p.empresa, p.contato, p.email, (p.servicos||[]).join(' '), p.observacoes].some(x => (x||'').toLowerCase().includes(q)))
+    (!q || [p.empresa, p.contato, p.telefone, p.email, (p.servicos||[]).join(' '), p.observacoes].some(x => (x||'').toLowerCase().includes(q)))
     && (!fst || st(p) === fst)
-    && (!freav || parcReavInfo(p)));
-  lista.sort((a,b) => parcRank(a) - parcRank(b) || (a.reavaliacao||'9999').localeCompare(b.reavaliacao||'9999') || (a.empresa||'').localeCompare(b.empresa||'','pt'));
+    && (!freav || parcReavInfo(p) || parcFimInfo(p)));
+  lista.sort((a,b) => parcRank(a) - parcRank(b) || (a.dataFim||a.reavaliacao||'9999').localeCompare(b.dataFim||b.reavaliacao||'9999') || (a.empresa||'').localeCompare(b.empresa||'','pt'));
 
   if(!lista.length) {
     const vazio = _parcs.length
@@ -7236,37 +7295,39 @@ function parcRender() {
     return;
   }
 
-  const reavHtml = p => {
-    const i = parcReavInfo(p);
-    return `${p.reavaliacao ? formatDate(p.reavaliacao) : '—'}${i ? `<span class="parc-reav-${i.nivel}">${i.txt}</span>` : ''}`;
+  const vigHtml = p => {
+    const f = parcFimInfo(p), r = parcReavInfo(p);
+    return `<div style="color:var(--text-light)">Início: ${p.dataInicio ? formatDate(p.dataInicio) : '—'}</div>`
+      + `<div>Final: ${p.dataFim ? formatDate(p.dataFim) : '—'}${f ? `<span class="parc-reav-${f.nivel}">${f.txt}</span>` : ''}</div>`
+      + (p.reavaliacao ? `<div style="color:var(--text-light)">Reavaliação: ${formatDate(p.reavaliacao)}${r ? `<span class="parc-reav-${r.nivel}">${r.txt}</span>` : ''}</div>` : '');
   };
-  const svcHtml = p => (p.servicos||[]).map(s => `<span class="parc-svc">${escH(s)}</span>`).join('') || '<span style="color:var(--text-lighter)">—</span>';
+  const espHtml = p => {
+    const vals = parcValoresMap(p);
+    return (p.servicos||[]).map(s => { const v = vals[String(s).toLowerCase()]; return `<span class="parc-svc">${escH(s)}${v > 0 ? ` · ${formatMoney(v)}` : ''}</span>`; }).join('') || '<span style="color:var(--text-lighter)">—</span>';
+  };
   const mail = p => p.email ? `<a href="mailto:${escH(p.email)}" onclick="event.stopPropagation()" style="color:inherit">${escH(p.email)}</a>` : '';
+  const tel = p => p.telefone ? `<a href="tel:${escH(String(p.telefone).replace(/[^\d+]/g,''))}" onclick="event.stopPropagation()" style="color:inherit">📞 ${escH(p.telefone)}</a>` : '';
+  const contatoLinha = p => [p.contato ? escH(p.contato) : '', tel(p), mail(p)].filter(Boolean).join(' · ');
   const lixo = '<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
 
-  const cols = '2.2fr 1.5fr .9fr 1.3fr 1.1fr 70px 40px';
-  table.innerHTML = `<div class="dt-head" style="grid-template-columns:${cols}"><span>Parceiro</span><span>Serviços</span><span>Início</span><span>Reavaliação</span><span>Status</span><span></span><span></span></div>`
+  const cols = '2fr 2fr 1.5fr 1.25fr 70px 40px';
+  table.innerHTML = `<div class="dt-head" style="grid-template-columns:${cols}"><span>Parceiro</span><span>Especialidades e valores</span><span>Vigência</span><span>Status</span><span></span><span></span></div>`
     + lista.map(p => `<div class="dt-row${st(p)==='Encerrada'?' parc-row-enc':''}" style="grid-template-columns:${cols}">
       <span style="font-weight:500;cursor:pointer;color:var(--gold)" onclick="parcAbrir('${p.id}')">${escH(p.empresa||'—')}
-        ${(p.contato||p.email) ? `<br><span style="font-size:.72rem;color:var(--text-light);font-weight:400">${escH(p.contato||'')}${p.contato&&p.email?' · ':''}${mail(p)}</span>` : ''}
+        ${contatoLinha(p) ? `<br><span style="font-size:.72rem;color:var(--text-light);font-weight:400">${contatoLinha(p)}</span>` : ''}
         ${p.observacoes ? `<br><span style="font-size:.7rem;color:var(--text-lighter);font-weight:400" title="${escH(p.observacoes)}">${escH(trunc(p.observacoes,80))}</span>` : ''}</span>
-      <span>${svcHtml(p)}</span>
-      <span style="color:var(--text-light)">${p.dataInicio ? formatDate(p.dataInicio) : '—'}</span>
-      <span>${reavHtml(p)}</span>
-      <span>${parcPill(st(p))}</span>
+      <span>${espHtml(p)}</span>
+      <span style="font-size:.78rem">${vigHtml(p)}</span>
+      <span>${parcPill(st(p), p.id)}</span>
       <span><button class="btn btn-secondary" style="font-size:.72rem;padding:4px 9px" onclick="parcAbrir('${p.id}')">Editar</button></span>
       <span><button class="fin-del-btn" style="opacity:1" onclick="excluirParceriaRapido('${p.id}')">${lixo}</button></span>
     </div>`).join('');
 
   if(mobileEl) mobileEl.innerHTML = lista.map(p => `<div class="fin-card-item${st(p)==='Encerrada'?' parc-row-enc':''}">
-      <div class="fin-card-item-top"><div class="fin-card-item-name">${escH(p.empresa||'—')}</div>${parcPill(st(p))}</div>
-      <div class="fin-card-item-meta" style="flex-wrap:wrap">
-        ${p.contato ? `<span>${escH(p.contato)}</span>` : ''}
-        ${p.email ? `<span>${mail(p)}</span>` : ''}
-        ${p.reavaliacao ? `<span>Reavaliação: ${formatDate(p.reavaliacao)}</span>` : ''}
-      </div>
-      ${parcReavInfo(p) ? `<div style="margin:.25rem 0"><span class="parc-reav-${parcReavInfo(p).nivel}">${parcReavInfo(p).txt}</span></div>` : ''}
-      ${(p.servicos||[]).length ? `<div style="margin:.25rem 0">${svcHtml(p)}</div>` : ''}
+      <div class="fin-card-item-top"><div class="fin-card-item-name">${escH(p.empresa||'—')}</div>${parcPill(st(p), p.id)}</div>
+      ${contatoLinha(p) ? `<div class="fin-card-item-meta" style="flex-wrap:wrap"><span>${contatoLinha(p)}</span></div>` : ''}
+      <div style="font-size:.76rem;margin:.3rem 0">${vigHtml(p)}</div>
+      ${(p.servicos||[]).length ? `<div style="margin:.25rem 0">${espHtml(p)}</div>` : ''}
       ${p.observacoes ? `<div style="font-size:.74rem;color:var(--text-lighter)">${escH(trunc(p.observacoes,120))}</div>` : ''}
       <div class="fin-card-item-actions">
         <button class="btn btn-secondary btn-sm" onclick="parcAbrir('${p.id}')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Editar</button>
@@ -7275,22 +7336,80 @@ function parcRender() {
     </div>`).join('');
 }
 
-// ── Serviços: sugestões clicáveis que alimentam o campo de texto ──
-function parcServicosLista() {
-  return _pv('parc-servicos').split(',').map(s => s.trim()).filter(Boolean);
+// Clicar no status avança para o próximo e grava na hora
+async function parcCiclo(id) {
+  const p = _parcs.find(x => x.id === id);
+  if(!p || _parcBusy[id]) return;
+  const atual = PARC_STATUS.includes(p.status) ? p.status : 'Ativa';
+  const novo = PARC_STATUS[(PARC_STATUS.indexOf(atual) + 1) % PARC_STATUS.length];
+  _parcBusy[id] = true;
+  try {
+    await db.collection('parcerias').doc(id).update({status: novo, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+    p.status = novo;
+    parcRender();
+    carregarAlertasParcerias();
+    showToast(`Status: ${novo}`, 'success');
+  } catch(e) { console.error(e); showToast('Erro ao atualizar o status.', 'error'); }
+  finally { delete _parcBusy[id]; }
+}
+
+// ── Especialidades: botões clicáveis (padrão + cadastradas) e valor acordado de cada uma ──
+function parcServicosLista() { return [..._parcSel]; }
+function parcCatalogo() {
+  const vistos = new Map();
+  [...PARC_SUGESTOES, ..._parcCustom, ..._parcs.flatMap(p => p.servicos || []), ..._parcSel].forEach(n => {
+    const nome = String(n || '').trim(), k = nome.toLowerCase();
+    if(k && !vistos.has(k)) vistos.set(k, nome);
+  });
+  return [...vistos.values()];
 }
 function parcChipsSync() {
   const el = document.getElementById('parc-chips');
   if(!el) return;
-  const atuais = parcServicosLista().map(s => s.toLowerCase());
-  el.innerHTML = PARC_SUGESTOES.map(s => `<button type="button" class="qf-btn${atuais.includes(s.toLowerCase())?' active':''}" onclick="parcToggleServico('${s}')">${s}</button>`).join('');
+  const sel = _parcSel.map(s => s.toLowerCase());
+  el.innerHTML = parcCatalogo().map(s => `<button type="button" class="qf-btn${sel.includes(s.toLowerCase()) ? ' active' : ''}" data-esp="${escH(s)}" onclick="parcToggleServico(this.dataset.esp)">${escH(s)}</button>`).join('');
 }
 function parcToggleServico(nome) {
-  let l = parcServicosLista();
-  if(l.some(s => s.toLowerCase() === nome.toLowerCase())) l = l.filter(s => s.toLowerCase() !== nome.toLowerCase());
-  else l.push(nome);
-  document.getElementById('parc-servicos').value = l.join(', ');
+  const k = nome.toLowerCase();
+  if(_parcSel.some(s => s.toLowerCase() === k)) _parcSel = _parcSel.filter(s => s.toLowerCase() !== k);
+  else _parcSel.push(nome);
   parcChipsSync();
+  parcValoresRender();
+}
+function parcValoresRender() {
+  const el = document.getElementById('parc-valores');
+  if(!el) return;
+  if(!_parcSel.length) { el.innerHTML = '<div style="font-size:.76rem;color:var(--text-lighter)">Selecione ao menos uma especialidade para informar o valor acordado.</div>'; return; }
+  el.innerHTML = _parcSel.map((n, i) => {
+    const v = _parcVals[n.toLowerCase()];
+    return `<div class="parc-val-row"><span class="parc-val-nome">${escH(n)}</span><div class="parc-val-in"><span>R$</span><input class="form-input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" value="${v == null ? '' : escH(v)}" oninput="parcSetValor(${i}, this.value)"></div></div>`;
+  }).join('');
+}
+function parcSetValor(i, v) {
+  const n = _parcSel[i];
+  if(n) _parcVals[n.toLowerCase()] = v;
+}
+async function parcAddEspecialidade() {
+  const el = document.getElementById('parc-nova-esp');
+  if(!el) return;
+  let nome = (el.value || '').trim().replace(/\s+/g, ' ');
+  if(!nome) { showToast('Digite o nome da especialidade.', 'error'); return; }
+  nome = nome.charAt(0).toUpperCase() + nome.slice(1);
+  const existente = parcCatalogo().find(x => x.toLowerCase() === nome.toLowerCase());
+  if(existente) {
+    if(!_parcSel.some(s => s.toLowerCase() === existente.toLowerCase())) _parcSel.push(existente);
+    showToast('Essa especialidade já existe — foi selecionada.', 'success');
+  } else {
+    _parcCustom.push(nome);
+    _parcSel.push(nome);
+    try {
+      await db.collection('config').doc('parcEspecialidades').set({lista: _parcCustom, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}, {merge:true});
+      showToast('Especialidade cadastrada!', 'success');
+    } catch(e) { console.error(e); showToast('Não foi possível salvar a especialidade para uso futuro; ela vale só para esta parceria.', 'error'); }
+  }
+  el.value = '';
+  parcChipsSync();
+  parcValoresRender();
 }
 
 function parcAbrir(id) {
@@ -7298,13 +7417,17 @@ function parcAbrir(id) {
   const set = (k, v) => { document.getElementById(k).value = v || ''; };
   document.getElementById('parc-modal-title').textContent = p ? 'Editar Parceria' : 'Nova Parceria';
   set('parc-edit-id', p ? p.id : '');
-  set('parc-empresa', p?.empresa); set('parc-contato', p?.contato); set('parc-email', p?.email);
-  set('parc-servicos', (p?.servicos || []).join(', '));
-  set('parc-inicio', p?.dataInicio); set('parc-reav', p?.reavaliacao);
-  set('parc-status', PARC_STATUS.includes(p?.status) ? p.status : 'Ativa');
+  set('parc-empresa', p?.empresa); set('parc-contato', p?.contato); set('parc-tel', p?.telefone); set('parc-email', p?.email);
+  _parcSel = [...(p?.servicos || [])];
+  _parcVals = {};
+  (p?.valoresEsp || []).forEach(x => { if(x && x.nome && parseFloat(x.valor) > 0) _parcVals[String(x.nome).toLowerCase()] = x.valor; });
+  set('parc-nova-esp', '');
+  set('parc-inicio', p?.dataInicio); set('parc-fim', p?.dataFim); set('parc-reav', p?.reavaliacao);
+  set('parc-status', p ? (PARC_STATUS.includes(p.status) ? p.status : 'Ativa') : 'A contactar');
   set('parc-obs', p?.observacoes);
   document.getElementById('parc-excluir-btn').style.display = p ? 'inline-flex' : 'none';
   parcChipsSync();
+  parcValoresRender();
   openModal('parceria');
 }
 
@@ -7314,13 +7437,15 @@ async function salvarParceria() {
   if(!empresa) { showToast('Informe o nome da empresa/instituição.', 'error'); return; }
   const email = _pv('parc-email');
   if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('E-mail do contato inválido.', 'error'); return; }
-  const inicio = _pv('parc-inicio'), reav = _pv('parc-reav');
+  const inicio = _pv('parc-inicio'), fim = _pv('parc-fim'), reav = _pv('parc-reav');
+  if(inicio && fim && fim < inicio) { showToast('A data final não pode ser anterior à data de início.', 'error'); return; }
   if(inicio && reav && reav < inicio) { showToast('O prazo de reavaliação não pode ser anterior à data de início.', 'error'); return; }
   const data = {
-    empresa, contato: _pv('parc-contato'), email,
-    servicos: [...new Set(parcServicosLista())],
-    dataInicio: inicio, reavaliacao: reav,
-    status: _pv('parc-status') || 'Ativa',
+    empresa, contato: _pv('parc-contato'), telefone: _pv('parc-tel'), email,
+    servicos: [..._parcSel],
+    valoresEsp: _parcSel.map(n => ({nome: n, valor: Math.max(0, parseFloat(_parcVals[n.toLowerCase()]) || 0)})),
+    dataInicio: inicio, dataFim: fim, reavaliacao: reav,
+    status: _pv('parc-status') || 'A contactar',
     observacoes: _pv('parc-obs'),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
@@ -7360,15 +7485,17 @@ async function excluirParceriaRapido(id) {
 
 function exportarParceriasCSV() {
   if(!_parcs.length) { showToast('Nenhuma parceria para exportar.', 'error'); return; }
-  const linhas = [['Empresa/Instituição','Contato','E-mail','Serviços','Início','Reavaliação','Status','Observações']];
+  const linhas = [['Empresa/Instituição','Contato','Telefone','E-mail','Especialidades','Valores por especialidade','Início','Data final','Reavaliação','Status','Observações']];
   [..._parcs].sort((a,b) => (a.empresa||'').localeCompare(b.empresa||'','pt')).forEach(p => {
-    linhas.push([p.empresa||'', p.contato||'', p.email||'', (p.servicos||[]).join('; '), p.dataInicio ? formatDate(p.dataInicio) : '', p.reavaliacao ? formatDate(p.reavaliacao) : '', p.status||'Ativa', p.observacoes||'']);
+    const vals = parcValoresMap(p);
+    const valTxt = (p.servicos||[]).filter(s => vals[String(s).toLowerCase()] > 0).map(s => `${s}: ${formatMoney(vals[String(s).toLowerCase()])}`).join('; ');
+    linhas.push([p.empresa||'', p.contato||'', p.telefone||'', p.email||'', (p.servicos||[]).join('; '), valTxt, p.dataInicio ? formatDate(p.dataInicio) : '', p.dataFim ? formatDate(p.dataFim) : '', p.reavaliacao ? formatDate(p.reavaliacao) : '', p.status||'Ativa', p.observacoes||'']);
   });
   baixarCSV(linhas, `parcerias_${toDateStrLocal(new Date())}.csv`);
   showToast('Exportação gerada!', 'success');
 }
 
-// Dashboard → card Alertas: reavaliações vencidas ou dentro da janela padrão de avisos (DIAS_AVISO)
+// Dashboard → card Alertas: data final (vencimento) e reavaliação, vencidas ou dentro da janela padrão de avisos (DIAS_AVISO)
 function parcAbrirAba() {
   showPage('parcerias', document.querySelector('.nav-item[onclick*="\'parcerias\'"]'));
 }
@@ -7376,17 +7503,27 @@ async function carregarAlertasParcerias() {
   try {
     const snap = await db.collection('parcerias').get();
     const out = [];
+    const quandoTxt = (dias, verbo) => dias < 0 ? `${verbo} há ${-dias} dia(s)` : dias === 0 ? 'HOJE' : dias === 1 ? 'amanhã' : `em ${dias} dias`;
     snap.docs.forEach(d => {
       const p = {id:d.id, ...d.data()};
-      const info = parcReavInfo(p, DIAS_AVISO);
-      if(!info) return;
-      const quando = info.dias < 0 ? `reavaliação vencida há ${-info.dias} dia(s)` : info.dias === 0 ? 'reavaliar HOJE' : info.dias === 1 ? 'reavaliar amanhã' : `reavaliar em ${info.dias} dias`;
-      out.push({ordem: p.reavaliacao, html: alertaHtml({
-        icon:'🤝', title:`Parceria: ${quando}`,
-        sub:`${escH(p.empresa||'—')} · prazo ${formatDate(p.reavaliacao)}`,
-        right: info.dias < 0 ? '⚠ Vencida' : '', rightColor:'var(--danger)',
-        action:'parcAbrirAba()', actionLabel:'Ver'
-      })});
+      const fim = parcFimInfo(p, DIAS_AVISO);
+      if(fim) {
+        out.push({ordem: p.dataFim, html: alertaHtml({
+          icon:'🤝', title: fim.dias < 0 ? `Parceria vencida há ${-fim.dias} dia(s)` : `Vencimento da parceria: ${quandoTxt(fim.dias)}`,
+          sub:`${escH(p.empresa||'—')} · data final ${formatDate(p.dataFim)}`,
+          right: fim.dias < 0 ? '⚠ Vencida' : '', rightColor:'var(--danger)',
+          action:'parcAbrirAba()', actionLabel:'Ver'
+        })});
+      }
+      const reav = parcReavInfo(p, DIAS_AVISO);
+      if(reav) {
+        out.push({ordem: p.reavaliacao, html: alertaHtml({
+          icon:'🤝', title:`Parceria: ${reav.dias < 0 ? 'reavaliação vencida há ' + (-reav.dias) + ' dia(s)' : 'reavaliar ' + quandoTxt(reav.dias)}`,
+          sub:`${escH(p.empresa||'—')} · prazo ${formatDate(p.reavaliacao)}`,
+          right: reav.dias < 0 ? '⚠ Vencida' : '', rightColor:'var(--danger)',
+          action:'parcAbrirAba()', actionLabel:'Ver'
+        })});
+      }
     });
     window._alertasParc = out;
     renderAlertasDash();
@@ -7406,6 +7543,15 @@ const crHojeStr = () => toDateStrLocal(new Date());
 const crAtrasada = d => d.status !== 'Concluída' && (d.prazo || d.data) < crHojeStr();
 const crClasse = d => d.status === 'Concluída' ? 'conc' : crAtrasada(d) ? 'atr' : d.status === 'Em andamento' ? 'and' : 'pend';
 const crRank = d => ({atr:0, pend:1, and:2, conc:3})[crClasse(d)];
+// Vencimento próximo: demanda não concluída que vence hoje ou em até DIAS_AVISO (2) dias. Retorna os dias restantes ou null.
+function crVencDias(d) {
+  if(d.status === 'Concluída') return null;
+  const due = d.prazo || d.data;
+  if(!due) return null;
+  const n = parcDiasAte(due);
+  return n >= 0 && n <= DIAS_AVISO ? n : null;
+}
+const crVencTxt = n => n === 0 ? 'Vence hoje' : n === 1 ? 'Vence amanhã' : `Vence em ${n} dias`;
 
 async function loadCronograma() {
   const body = document.getElementById('cr-body');
@@ -7419,9 +7565,57 @@ async function loadCronograma() {
     return;
   }
   crRender();
+  crMontarAlertas();
 }
 function crNav(dir) { _crD.setMonth(_crD.getMonth() + dir, 1); crRender(); }
 function crHoje() { _crD = new Date(); _crD.setDate(1); _crD.setHours(12,0,0,0); crRender(); }
+
+// Seletores de mês e ano (filtro por mês)
+function crSyncSeletores(ano, mes) {
+  const sm = document.getElementById('cr-sel-mes'), sa = document.getElementById('cr-sel-ano');
+  if(sm) sm.value = String(mes);
+  if(sa) {
+    const base = new Date().getFullYear(), de = Math.min(base - 2, ano), ate = Math.max(base + 3, ano);
+    if(sa.dataset.de !== String(de) || sa.dataset.ate !== String(ate)) {
+      let o = '';
+      for(let y = de; y <= ate; y++) o += `<option value="${y}">${y}</option>`;
+      sa.innerHTML = o; sa.dataset.de = String(de); sa.dataset.ate = String(ate);
+    }
+    sa.value = String(ano);
+  }
+}
+function crIrMes() {
+  const m = parseInt(document.getElementById('cr-sel-mes').value, 10), a = parseInt(document.getElementById('cr-sel-ano').value, 10);
+  if(isNaN(m) || isNaN(a)) return;
+  _crD = new Date(a, m, 1, 12, 0, 0, 0);
+  crRender();
+}
+
+// Cartão de uma demanda (usado na lista do dia e na lista do mês)
+function crItemHtml(d, tipo, comData) {
+  const lixo = '<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+  const cls = crClasse(d), st = d.status || 'Pendente', vp = crVencDias(d);
+  const badge = cls === 'atr' ? 'badge-danger' : st === 'Concluída' ? 'badge-success' : st === 'Em andamento' ? 'badge-info' : 'badge-warning';
+  return `<div class="cr-item ${cls}${tipo==='prazo'?' prz':''}${vp !== null ? ' vp' : ''}">
+      <button class="cr-check" title="${st==='Concluída'?'Reabrir':'Concluir'}" onclick="crToggleConcluir('${d.id}')">✓</button>
+      <div style="flex:1;min-width:0">
+        <div class="cr-item-t">${tipo==='prazo'?'⏰ Prazo: ':''}${escH(d.titulo||'(sem título)')}</div>
+        ${tipo==='prazo' ? `<div class="cr-item-d">Demanda marcada para ${formatDate(d.data)}.</div>` : ''}
+        ${d.descricao ? `<div class="cr-item-d">${escH(d.descricao)}</div>` : ''}
+        <div class="cr-item-m">
+          <span class="badge ${badge} status-click" title="Clique para mudar o status" onclick="crCiclo('${d.id}')">${cls==='atr'?'Atrasada · ':''}${st}</span>
+          ${vp !== null ? `<span class="badge" style="background:#ffedd5;color:#9a3412">⏰ ${crVencTxt(vp)}</span>` : ''}
+          ${comData ? `<span>📅 ${formatDate(tipo==='prazo' ? d.prazo : d.data)}</span>` : ''}
+          ${d.prazo && tipo !== 'prazo' ? `<span>⏰ Prazo: ${formatDate(d.prazo)}</span>` : ''}
+          ${d.observacoes ? `<span style="color:var(--text-lighter)">${escH(trunc(d.observacoes,70))}</span>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:.25rem;align-items:center;flex-shrink:0">
+        <button class="btn btn-secondary btn-sm" onclick="crEditar('${d.id}')">Editar</button>
+        <button class="fin-del-btn" style="opacity:1" onclick="crExcluirRapido('${d.id}')">${lixo}</button>
+      </div>
+    </div>`;
+}
 
 function crRender() {
   const body = document.getElementById('cr-body');
@@ -7431,7 +7625,9 @@ function crRender() {
   const nDias = new Date(ano, mes+1, 0).getDate();
   const fim = `${ano}-${crPad(mes+1)}-${crPad(nDias)}`;
   const rotulo = new Date(ano, mes, 1).toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
-  document.getElementById('cr-label').textContent = rotulo.charAt(0).toUpperCase() + rotulo.slice(1);
+  const rotuloCap = rotulo.charAt(0).toUpperCase() + rotulo.slice(1);
+  document.getElementById('cr-label').textContent = rotuloCap;
+  crSyncSeletores(ano, mes);
 
   const q = _pv('cr-f-q').toLowerCase(), fst = _pv('cr-f-st');
   const busca = _crItens.filter(d => !q || [d.titulo, d.descricao, d.observacoes].some(x => (x||'').toLowerCase().includes(q)));
@@ -7445,7 +7641,7 @@ function crRender() {
   set('cr-n-conc', doMes.filter(d => d.status === 'Concluída').length);
   set('cr-n-atr', doMes.filter(crAtrasada).length);
 
-  const filtrados = busca.filter(d => !fst || (fst === 'Atrasada' ? crAtrasada(d) : d.status === fst));
+  const filtrados = busca.filter(d => !fst || (fst === 'Atrasada' ? crAtrasada(d) : fst === 'Vencendo' ? crVencDias(d) !== null : d.status === fst));
   const porDia = {};
   filtrados.forEach(d => {
     if(d.data >= ini && d.data <= fim) (porDia[d.data] = porDia[d.data] || []).push({d, tipo:'dia'});
@@ -7458,8 +7654,9 @@ function crRender() {
   for(let dia = 1; dia <= nDias; dia++) {
     const ds = `${ano}-${crPad(mes+1)}-${crPad(dia)}`;
     const it = (porDia[ds] || []).sort((a,b) => crRank(a.d) - crRank(b.d) || (a.d.titulo||'').localeCompare(b.d.titulo||'','pt'));
-    h += `<div class="cr-day${ds === hoje ? ' today' : ''}" data-d="${ds}"><span class="cr-num">${dia}</span>`
-      + it.slice(0,3).map(x => `<div class="cr-ev ${crClasse(x.d)}${x.tipo==='prazo'?' prz':''}" data-id="${x.d.id}" title="${escH(x.d.titulo||'')}${x.tipo==='prazo'?' (prazo)':''}">${x.tipo==='prazo'?'⏰ ':''}<span class="cr-t">${escH(x.d.titulo||'(sem título)')}</span></div>`).join('')
+    const temVp = it.some(x => crVencDias(x.d) !== null);
+    h += `<div class="cr-day${ds === hoje ? ' today' : ''}${temVp ? ' vp' : ''}" data-d="${ds}"><span class="cr-num">${dia}</span>`
+      + it.slice(0,3).map(x => { const vp = crVencDias(x.d) !== null; return `<div class="cr-ev ${crClasse(x.d)}${x.tipo==='prazo'?' prz':''}${vp?' vp':''}" data-id="${x.d.id}" title="${escH(x.d.titulo||'')}${x.tipo==='prazo'?' (prazo)':''}${vp?' — vence em breve':''}">${(x.tipo==='prazo'||vp)?'⏰ ':''}<span class="cr-t">${escH(x.d.titulo||'(sem título)')}</span></div>`; }).join('')
       + (it.length > 3 ? `<div class="cr-more">+${it.length-3} mais</div>` : '') + '</div>';
   }
   body.innerHTML = h + '</div>';
@@ -7469,6 +7666,15 @@ function crRender() {
     const c = e.target.closest('.cr-day');
     if(c) crAbrirDia(c.dataset.d);
   };
+
+  // Lista das demandas do mês selecionado (respeita busca e status)
+  const lm = document.getElementById('cr-lista-mes');
+  if(lm) {
+    const lista = filtrados.filter(noMes).map(d => { const emDia = d.data >= ini && d.data <= fim; return {d, tipo: emDia ? 'dia' : 'prazo', ref: emDia ? d.data : d.prazo}; })
+      .sort((a,b) => a.ref.localeCompare(b.ref) || crRank(a.d) - crRank(b.d) || (a.d.titulo||'').localeCompare(b.d.titulo||'','pt'));
+    lm.innerHTML = `<div style="margin:1.1rem 0 .6rem;font-size:.85rem;font-weight:600">Demandas de ${rotuloCap} <span class="badge badge-neutral">${lista.length}</span></div>`
+      + (lista.length ? lista.map(x => crItemHtml(x.d, x.tipo, true)).join('') : '<div style="padding:1rem 0;color:var(--text-lighter);font-size:.83rem">Nenhuma demanda neste mês.</div>');
+  }
 }
 
 // ── Demandas do dia (ao clicar na data) ──
@@ -7485,32 +7691,49 @@ function crDiaRender() {
     .map(d => ({d, tipo: d.data === ds ? 'dia' : 'prazo'}))
     .sort((a,b) => crRank(a.d) - crRank(b.d) || (a.d.titulo||'').localeCompare(b.d.titulo||'','pt'));
   if(!it.length) { el.innerHTML = '<div style="padding:1.25rem 0;text-align:center;color:var(--text-lighter);font-size:.83rem">Nenhuma demanda neste dia.</div>'; return; }
-  const lixo = '<svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
-  el.innerHTML = it.map(({d, tipo}) => {
-    const cls = crClasse(d), st = d.status || 'Pendente';
-    const badge = cls === 'atr' ? 'badge-danger' : st === 'Concluída' ? 'badge-success' : st === 'Em andamento' ? 'badge-info' : 'badge-warning';
-    return `<div class="cr-item ${cls}${tipo==='prazo'?' prz':''}">
-      <button class="cr-check" title="${st==='Concluída'?'Reabrir':'Concluir'}" onclick="crToggleConcluir('${d.id}')">✓</button>
-      <div style="flex:1;min-width:0">
-        <div class="cr-item-t">${tipo==='prazo'?'⏰ Prazo: ':''}${escH(d.titulo||'(sem título)')}</div>
-        ${tipo==='prazo' ? `<div class="cr-item-d">Demanda marcada para ${formatDate(d.data)}.</div>` : ''}
-        ${d.descricao ? `<div class="cr-item-d">${escH(d.descricao)}</div>` : ''}
-        <div class="cr-item-m">
-          <span class="badge ${badge} status-click" title="Clique para mudar o status" onclick="crCiclo('${d.id}')">${cls==='atr'?'Atrasada · ':''}${st}</span>
-          ${d.prazo && tipo !== 'prazo' ? `<span>⏰ Prazo: ${formatDate(d.prazo)}</span>` : ''}
-          ${d.observacoes ? `<span style="color:var(--text-lighter)">${escH(trunc(d.observacoes,70))}</span>` : ''}
-        </div>
-      </div>
-      <div style="display:flex;gap:.25rem;align-items:center;flex-shrink:0">
-        <button class="btn btn-secondary btn-sm" onclick="crEditar('${d.id}')">Editar</button>
-        <button class="fin-del-btn" style="opacity:1" onclick="crExcluirRapido('${d.id}')">${lixo}</button>
-      </div>
-    </div>`;
-  }).join('');
+  el.innerHTML = it.map(({d, tipo}) => crItemHtml(d, tipo, false)).join('');
 }
 function crAtualizarTelas() {
   crRender();
   if(document.getElementById('modal-cr-dia').classList.contains('open')) crDiaRender();
+  crMontarAlertas();
+}
+
+// ── Dashboard → card Alertas: demandas que vencem em até DIAS_AVISO (2) dias, ou já atrasadas ──
+function crMontarAlertas() {
+  const out = [];
+  _crItens.forEach(d => {
+    if(d.status === 'Concluída') return;
+    const due = d.prazo || d.data;
+    if(!due) return;
+    const dias = parcDiasAte(due);
+    if(dias > DIAS_AVISO) return;
+    const quando = dias < 0 ? `atrasada há ${-dias} dia(s)` : dias === 0 ? 'vence HOJE' : dias === 1 ? 'vence amanhã' : `vence em ${dias} dias`;
+    out.push({ordem: due, html: alertaHtml({
+      icon:'📌', title:`Demanda: ${quando}`,
+      sub:`${escH(d.titulo||'(sem título)')} · ${d.prazo ? 'prazo' : 'dia'} ${formatDate(due)}`,
+      right: dias < 0 ? '⚠ Atrasada' : '', rightColor:'var(--danger)',
+      action:`crAbrirDoAlerta('${d.id}')`, actionLabel:'Ver'
+    })});
+  });
+  window._alertasCr = out;
+  renderAlertasDash();
+}
+async function carregarAlertasCronograma() {
+  try {
+    const snap = await db.collection('cronograma').get();
+    _crItens = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    crMontarAlertas();
+  } catch(e) { console.error('Alertas do cronograma:', e); }
+}
+// Botão "Ver" do alerta: abre o Cronograma no mês da demanda, já com as demandas do dia
+function crAbrirDoAlerta(id) {
+  const d = _crItens.find(x => x.id === id);
+  if(!d) return;
+  const due = d.prazo || d.data;
+  _crD = new Date(due + 'T12:00:00'); _crD.setDate(1);
+  showPage('cronograma', document.querySelector('.nav-item[onclick*="\'cronograma\'"]'));
+  crAbrirDia(due);
 }
 
 // ── Cadastro / edição de demanda ──
@@ -7584,7 +7807,7 @@ async function crExcluirRapido(id) {
   await crExcluirId(id);
 }
 
-// Atualização rápida de status direto na lista do dia
+// Atualização rápida de status direto na lista
 async function crMudarStatus(id, novo) {
   const d = _crItens.find(x => x.id === id);
   if(!d) return;
